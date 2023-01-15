@@ -263,7 +263,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
                 hover = false;
             }
-
+            
             for(int i=0;i<tab_info_size;i++) {
                 x = mplayer->e.button.x <= tab_info[i].text_canvas.x+tab_info[i].text_canvas.w &&
                         mplayer->e.button.x >= tab_info[i].text_canvas.x,
