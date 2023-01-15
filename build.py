@@ -9,7 +9,5 @@ print("Running music player...")
 
 if platform.system() != "Windows":
     os.system(f"gcc main.c music_player.o music_filemanager.o {LINK_FILES} -o mplayer && ./mplayer")
-    os.system("rm *.o *.out")
 else:
     os.system(f"gcc main.c music_player.o music_filemanager.o -lmingw32 {LINK_FILES} -o mplayer.exe && .\mplayer.exe")
-    os.system("del *.o *.obj *.exe *.out")
