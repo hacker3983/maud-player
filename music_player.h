@@ -8,10 +8,11 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <shlwapi.h>
+#include <commdlg.h>
 #endif
 
 extern const char* WINDOW_TITLE, *SETTING_TITLE, *FONT_FILE, *MUSIC_PATHINFO_FILE;
-extern int WIDTH, HEIGHT, FONT_SIZE, TAB_INIT, active_tab, TAB_SPACING, SBOXDISTANCE_X,  SETTING_LINESPACING,
+extern int WIDTH, HEIGHT, FONT_SIZE, TAB_INIT, active_tab, prev_tab, TAB_SPACING, SBOXDISTANCE_X,  SETTING_LINESPACING,
 UNDERLINE_THICKNESS;
 extern SDL_Rect scrollbar, music_status, songs_box;
 extern const size_t text_info_size, tab_info_size, setting_textinfo_size, MUSICBTN_COUNT, MTOTALBTN_COUNT, SETTINGSBTN_COUNT;
@@ -50,16 +51,25 @@ typedef struct tab_info {
     int font_size;
     char* text;
     SDL_Color text_color, underline_color;
-    bool active;
     SDL_Rect text_canvas;
     int id;
+    bool active, hover;
 } tabinfo_t;
 
-typedef struct music_buttons {
+typedef struct image_buttons {
     char* imgbtn_path;
-    int value;
+    int id;
     SDL_Rect btn_canvas;
-} mbtn_t;
+    int hover;
+} ibtn_t;
+
+typedef struct text_buttons {
+    int font_size;
+    char* text;
+    SDL_Color text_color;
+    SDL_Rect btn_canvas;
+    int id, hover;
+} tbtn_t;
 
 enum musical_buttons {
     MUSIC_PLAYBTN,
@@ -133,6 +143,12 @@ void mplayer_settingmenu(mplayer_t* mplayer);
 void mplayer_setcursor(mplayer_t* mplayer, int cursor_type);
 void mplayer_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color);
 void mplayer_set_window_title(mplayer_t* mplayer, const char* title);
+bool mplayer_tab_hover(mplayer_t* mplayer, tabinfo_t tab);
+bool mplayer_ibutton_hover(mplayer_t* mplayer, ibtn_t button);
+bool mplayer_tbutton_hover(mplayer_t* mplayer, tbtn_t button);
+bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t tab_count);
+bool mplayer_ibuttons_hover(mplayer_t* mplayer, ibtn_t* buttons, int* btn_id, size_t button_count);
+bool mplayer_tbuttons_hover(mplayer_t* mplayer, tbtn_t* buttons, int* btn_id, size_t button_count);
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, text_info_t* text_info);
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);
@@ -143,5 +159,5 @@ void mplayer_destroytextures(SDL_Texture** textures, size_t n);
 void mplayer_destroyall(mplayer_t* mplayer);
 extern text_info_t text_info[], setting_textinfo[];
 extern tabinfo_t tab_info[];
-extern mbtn_t music_btns[], setting_btns[], setting_iconbtn;
+extern ibtn_t music_btns[], setting_btns[], setting_iconbtn;
 #endif
