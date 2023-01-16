@@ -29,21 +29,21 @@ setting_textinfo[] = {
 };
 
 tabinfo_t tab_info[] = {
-        {28, "Songs", text2_color, underline_color, true, {0, 9}, SONGS_TAB},
-        {28, "Albums", text2_color, {0}, false, {0, 9}, ALBUMS_TAB},
-        {28, "Queues", text2_color, {0}, false, {0, 9}, QUEUES_TAB}
+        {28, "Songs", text2_color, underline_color, {0, 9}, SONGS_TAB, true, false},
+        {28, "Albums", text2_color, {0}, {0, 9}, ALBUMS_TAB, false, false},
+        {28, "Queues", text2_color, {0}, {0, 9}, QUEUES_TAB, false, false}
 };
-int active_tab = SONGS_TAB;
+int active_tab = SONGS_TAB, prev_tab = -1;
 
-mbtn_t music_btns[] = {
-        {"images/play.png", MUSIC_PLAYBTN, {0, 0, 35, 35}},
-        {"images/skip-track.png", MUSIC_SKIPBTN, {0, 0, 35, 35}},
-        {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}}
+ibtn_t music_btns[] = {
+        {"images/play.png", MUSIC_PLAYBTN, {0, 0, 35, 35}, false},
+        {"images/skip-track.png", MUSIC_SKIPBTN, {0, 0, 35, 35}, false},
+        {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}, false}
 },
 setting_btns[] = {
-        {"images/back-button.png", BACK_BUTTON, {0, 5, 35, 35}}
+        {"images/back-button.png", BACK_BUTTON, {0, 5, 35, 35}, false}
 },
-setting_iconbtn = {"images/settings (5).png", SETTING_BUTTON, {0, 9, 45, 45}};
+setting_iconbtn = {"images/settings (5).png", SETTING_BUTTON, {0, 9, 45, 45}, false};
 
 SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},
         img_border = {10, 0, 80, 70};
@@ -51,6 +51,6 @@ SDL_Rect scrollbar = {0, 0, 10, 50}, music_status = {0, 0, 0, 150},
         songs_box = {0, 0, 0, 0};
 
 const size_t text_info_size = sizeof(text_info)/sizeof(text_info_t), tab_info_size = sizeof(tab_info)/sizeof(tabinfo_t),
-setting_textinfo_size = sizeof(setting_textinfo)/sizeof(text_info_t), MUSICBTN_COUNT = sizeof(music_btns)/sizeof(mbtn_t),
-MTOTALBTN_COUNT = (sizeof(music_btns)/sizeof(mbtn_t)) + 1, SETTINGSBTN_COUNT = sizeof(setting_btns) / sizeof(mbtn_t);
+setting_textinfo_size = sizeof(setting_textinfo)/sizeof(text_info_t), MUSICBTN_COUNT = sizeof(music_btns)/sizeof(ibtn_t),
+MTOTALBTN_COUNT = (sizeof(music_btns)/sizeof(ibtn_t)) + 1, SETTINGSBTN_COUNT = sizeof(setting_btns) / sizeof(ibtn_t);
 #endif
