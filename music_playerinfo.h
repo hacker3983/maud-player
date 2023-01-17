@@ -1,7 +1,7 @@
 #ifndef _MUSIC_PLAYERINFO
 #define _MUSIC_PLAYERINFO
 #include "music_player.h"
-const char* WINDOW_TITLE = "Music Player", *SETTING_TITLE = "Music Player Settings",
+const char* WINDOW_TITLE = "Maud Player (Music Audio Player)", *SETTING_TITLE = "Maud Player Settings",
         *FONT_FILE = "SF-Pro-Display-Black.otf", *MUSIC_PATHINFO_FILE = "MUSICPATHS.info";
 const SDL_Color window_color = {0, 0, 0, 0}/*{0x2c, 0x36, 0x5e, 0xff}/*{0x3C, 0x16, 0x42, 0xff}*/,
 text_color = {0xFF, 0xFF, 0x00, 0xFF}/*0xC4, 0x90, 0xD1, 0xff}/*{0xff, 0x8a, 0x5b, 0xff}{0xAF, 0xFC, 0x41, 0xff}*/,
