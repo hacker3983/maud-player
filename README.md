@@ -1,2 +1,2 @@
 # maud-player
-A Simple Music Player Written In C
+A Music Audio Player Written In C
