@@ -41,8 +41,8 @@ void mplayer_createall(mplayer_t* mplayer) {
     mplayer->cursors[MPLAYER_CURSOR_POINTER] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 
     // create music information
-    mplayer_getmusic_locations(mplayer);
-    if(mplayer->location_list == NULL) {
+    mplayer_getmusicpath_info(mplayer);
+    if(mplayer->musinfo.locations == NULL) {
         #ifdef _WIN32
         char* username = getenv("USERNAME"), *location = NULL, root_path[4] = {0};
         location = calloc(16+strlen(username), sizeof(char));
@@ -207,12 +207,9 @@ void mplayer_destroyall(mplayer_t* mplayer) {
     TTF_CloseFont(mplayer->font);
 
     // Free resources used by program
-    for(size_t i=0;i<mplayer->location_count;i++) {
-        free(mplayer->location_list[i].location);
-    }
+    mplayer_freemusic_info(mplayer);
 
     mplayer_destroytextures(mplayer->menus[MPLAYER_DEFAULT_MENU].obj_textures[MPLAYER_BUTTON_TEXTURE], MTOTALBTN_COUNT);
-    free(mplayer->location_list);
     for(size_t i=0;i<MENU_COUNT;i++) {
         free(mplayer->menus[i].obj_canvases[MPLAYER_TEXT_TEXTURE]);
         free(mplayer->menus[i].obj_canvases[MPLAYER_BUTTON_TEXTURE]);
@@ -226,7 +223,6 @@ void mplayer_destroyall(mplayer_t* mplayer) {
         mplayer->menus[i].obj_canvases[MPLAYER_BUTTON_TEXTURE] = NULL;
         mplayer->menus[i].obj_canvases[MPLAYER_TAB_TEXTURE] = NULL;
     }
-
     SDL_FreeCursor(mplayer->cursors[MPLAYER_CURSOR_POINTER]);
 
     // uninitialize libraries

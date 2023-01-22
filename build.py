@@ -1,7 +1,7 @@
 import os
 import platform
 
-LINK_FILES = "-lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image"
+LINK_FILES = "-lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image -lSDL2_mixer"
 
 print("Building music player...")
 os.system("gcc -c music_player.c music_filemanager.c")

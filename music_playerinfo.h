@@ -2,7 +2,8 @@
 #define _MUSIC_PLAYERINFO
 #include "music_player.h"
 const char* WINDOW_TITLE = "Maud Player (Music Audio Player)", *SETTING_TITLE = "Maud Player Settings",
-        *FONT_FILE = "SF-Pro-Display-Black.otf", *MUSIC_PATHINFO_FILE = "MUSICPATHS.info";
+        *FONT_FILE = "SF-Pro-Display-Black.otf", *MUSIC_PATHINFO_FILE = "MUSICPATHS.info",
+        *FILE_EXTENSIONS[] = {"mp3", "flac", "ogg", "opus", "wav", NULL};
 const SDL_Color window_color = {0, 0, 0, 0}/*{0x2c, 0x36, 0x5e, 0xff}/*{0x3C, 0x16, 0x42, 0xff}*/,
 text_color = {0xFF, 0xFF, 0x00, 0xFF}/*0xC4, 0x90, 0xD1, 0xff}/*{0xff, 0x8a, 0x5b, 0xff}{0xAF, 0xFC, 0x41, 0xff}*/,
 text2_color = {0xd8, 0x1e, 0x5b, 0xff}/*{0x1D, 0xD3, 0xB0, 0xff}*/,

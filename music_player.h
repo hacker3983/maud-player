@@ -1,17 +1,22 @@
 #ifndef _MPLAYER_H
 #define _MPLAYER_H
-#include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
+#include <string.h>
+#include <stdbool.h>
 #ifdef _WIN32
 #include <windows.h>
 #include <shlwapi.h>
 #include <commdlg.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 #endif
 
-extern const char* WINDOW_TITLE, *SETTING_TITLE, *FONT_FILE, *MUSIC_PATHINFO_FILE;
+extern const char* WINDOW_TITLE, *SETTING_TITLE, *FONT_FILE, *MUSIC_PATHINFO_FILE, *FILE_EXTENSIONS[];
 extern int WIDTH, HEIGHT, FONT_SIZE, TAB_INIT, active_tab, prev_tab, TAB_SPACING, SBOXDISTANCE_X,  SETTING_LINESPACING,
 UNDERLINE_THICKNESS;
 extern SDL_Rect scrollbar, music_status, songs_box;
@@ -32,13 +37,20 @@ typedef struct music_time {
 
 // structure representing music
 typedef struct music {
-    char* music_name;
+    char* music_name, *music_path;
     Mix_Music* music;
     mtime_t music_position;
     mtime_t music_duration;
 } music_t;
 
-typedef struct music_location { char* location; } musloc_t;
+typedef struct music_location {
+    char* path;
+} musloc_t;
+
+typedef struct music_info {
+    musloc_t* locations, *files;
+    size_t location_count, file_count;
+} musinfo_t;
 
 typedef struct text_info {
     int font_size;
@@ -120,9 +132,9 @@ typedef struct mplayer {
     mplayer_menu_t menus[MENU_COUNT], *menu;
     SDL_Cursor* cursors[2];
 
-    // Music Information
-    musloc_t* location_list;
-    size_t location_count;
+    // Music Informations such music name, path, duration, etc
+    musinfo_t musinfo;
+    music_t* music_list;
 } mplayer_t;
 
 void mplayer_init();
@@ -134,9 +146,13 @@ void mplayer_createmusicbar(mplayer_t* mplayer);
 void mplayer_createall(mplayer_t* mplayer);
 void mplayer_getroot_path(char* root_path);
 void mplayer_getmusic_locations(mplayer_t* mplayer);
+void mplayer_getmusic_filepaths(mplayer_t* mplayer);
+void mplayer_getmusicpath_info(mplayer_t* mplayer);
+char* mplayer_getmusic_namefrompath(const char* path);
 void mplayer_addmusic_location(mplayer_t* mplayer, char* location);
+mtime_t mplayer_music_gettime(double seconds);
 bool mplayer_musiclocation_exists(mplayer_t* mplayer, char* location);
-void mplayer_freemusic_locations(mplayer_t* mplayer);
+void mplayer_freemusic_info(mplayer_t* mplayer);
 void mplayer_run(mplayer_t* mplayer);
 void mplayer_defaultmenu(mplayer_t* mplayer);
 void mplayer_settingmenu(mplayer_t* mplayer);
