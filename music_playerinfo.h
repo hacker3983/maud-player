@@ -14,7 +14,7 @@ green = {0x00, 0xFF, 0x00, 0xFF},
 music_statusbar_color = {0x7A, 0x65, 0x63, 0xFF},
 songs_boxcolor = green, back_btnbg_color = {0x46, 0xB1, 0xC9, 0xFF},
 /* Reference: https://coolors.co/023c40-c3979f-0ad3ff-78ffd6-e1faf9 */
-setting_wincolor = {0x02, 0x3C, 0x40, 0xFF},
+setting_wincolor = black/*{0x02, 0x3C, 0x40, 0xFF}*/,
 setting_textcolor = {0xC3, 0x97, 0x9F, 0xFF};
 int WIDTH = 900, HEIGHT = 600, TAB_INIT = 0, FONT_SIZE = 20, TAB_SPACING = 20,
 SBOXDISTANCE_X = 50, SETTING_LINESPACING = 10, UNDERLINE_THICKNESS = 10;
@@ -25,8 +25,9 @@ text_info_t text_info[] = {
         {36, "You're in the Albums tab.", text_color, {0}}
 },
 setting_textinfo[] = {
-        {36, "Settings", setting_textcolor, {10, 0}},
-        {36, "Go Back To Home", setting_textcolor, {10, 0}}
+        {45, "Go Back To Home", text2_color, {10, 0}},
+        {36, "Hello, World!", white, {0}},
+        {36, "How are you doing?", white, {0}}
 };
 
 tabinfo_t tab_info[] = {
@@ -42,7 +43,7 @@ ibtn_t music_btns[] = {
         {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}, false}
 },
 setting_btns[] = {
-        {"images/back-button.png", BACK_BUTTON, {0, 5, 35, 35}, false}
+        {"images/back-button.png", BACK_BUTTON, {0, 5, 45, 45}, false}
 },
 setting_iconbtn = {"images/settings (5).png", SETTING_BUTTON, {0, 9, 45, 45}, false};
 

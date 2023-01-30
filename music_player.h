@@ -112,8 +112,10 @@ enum texture_types {
 };
 
 typedef struct mplayer_menu {
+    text_info_t* texts;
     SDL_Texture** obj_textures[TEXTURE_TYPECOUNT];
     SDL_Rect* obj_canvases[TEXTURE_TYPECOUNT];
+    size_t obj_sizes[TEXTURE_TYPECOUNT], text_count;
 } mplayer_menu_t;
 
 enum cursor_types {
@@ -138,13 +140,13 @@ typedef struct mplayer {
 } mplayer_t;
 
 void mplayer_init();
+
 SDL_Window* mplayer_createwindow(const char* title, int width, int height);
 SDL_Renderer* mplayer_createrenderer(SDL_Window* window);
 TTF_Font* mplayer_openfont(const char* file, int size);
 void mplayer_createsongs_box(mplayer_t* mplayer);
 void mplayer_createmusicbar(mplayer_t* mplayer);
 void mplayer_createall(mplayer_t* mplayer);
-void mplayer_getroot_path(char* root_path);
 void mplayer_getmusic_locations(mplayer_t* mplayer);
 void mplayer_getmusic_filepaths(mplayer_t* mplayer);
 void mplayer_getmusicpath_info(mplayer_t* mplayer);
@@ -171,8 +173,19 @@ void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_centertext(mplayer_t* mplayer, text_info_t* text_info);
 void mplayer_centerx(mplayer_t* mplayer, text_info_t* text_info);
 void mplayer_centery(mplayer_t* mplayer, text_info_t* text_info);
+void mplayer_menu_appendtext(mplayer_t* mplayer, text_info_t text);
+SDL_Texture** mplayer_createtextureobj_list(size_t amount);
+void mplayer_realloctexture_object(SDL_Texture*** texture_objs, size_t* amount);
+void mplayer_createmenu_textureobject(mplayer_t* mplayer, int type, size_t amount);
+void mplayer_addmenu_textureobject(mplayer_t* mplayer, int type);
+void mplayer_menuplace_textureobject(mplayer_t* mplayer, int type, SDL_Texture* texture, SDL_Rect canvas);
+void mplayer_menus_freetexts(mplayer_t* mplayer);
 void mplayer_destroytextures(SDL_Texture** textures, size_t n);
 void mplayer_destroyall(mplayer_t* mplayer);
+
+#ifdef _WIN32
+void mplayer_getroot_path(char* root_path);
+#endif
 extern text_info_t text_info[], setting_textinfo[];
 extern tabinfo_t tab_info[];
 extern ibtn_t music_btns[], setting_btns[], setting_iconbtn;

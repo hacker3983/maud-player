@@ -1,5 +1,6 @@
 #include "music_player.h"
 
+#ifdef _WIN32
 void mplayer_getroot_path(char* root_path) {
         size_t directory_length = GetCurrentDirectoryA(0, NULL);
         char* directory = calloc(directory_length, sizeof(char));
@@ -9,6 +10,7 @@ void mplayer_getroot_path(char* root_path) {
         SetCurrentDirectoryA(directory);
         free(directory); directory = NULL;
 }
+#endif
 
 void mplayer_getmusic_locations(mplayer_t* mplayer) {
     FILE* f = fopen(MUSIC_PATHINFO_FILE, "r");
@@ -110,7 +112,6 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
                     music_files[mfile_count].path = NULL;
                 }
             }
-            memset
             entry = readdir(dirp);
         }
         closedir(dirp);
@@ -156,7 +157,7 @@ void mplayer_addmusic_location(mplayer_t* mplayer, char* location) {
 }
 
 void mplayer_loadmusics(mplayer_t* mplayer) {
-    music_t* music_list = calloc(1, sizeof(music_t));
+    music_t* music_list = calloc(mplayer->musinfo.file_count, sizeof(music_t));
     Mix_Music* music = NULL;
     double music_durationsecs = 0;
     for(size_t i=0;i<mplayer->musinfo.file_count;i++) {
@@ -183,8 +184,8 @@ char* mplayer_getmusic_namefrompath(const char* path) {
     #endif
     size_t name_len = (strlen(filename) - strlen(ext));
     music_name = calloc(name_len + 1, sizeof(char));
-    for(size_t i=0;i<name_len;i++) {
-        music_name[i] = filename[i+1];
+    for(size_t i=1;i<name_len;i++) {
+        music_name[i] = filename[i];
     }
     return music_name;
 }
