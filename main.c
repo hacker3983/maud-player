@@ -13,6 +13,6 @@ int main(int argc, char** argv) {
         printf("%s\n", mplayer.musinfo.files[i].path);
     }
     mplayer_run(&mplayer);
-    mplayer_destroyall(&mplayer);
+    mplayer_destroyapp(&mplayer);
     return 0;
 }

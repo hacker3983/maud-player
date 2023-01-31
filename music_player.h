@@ -181,7 +181,7 @@ void mplayer_addmenu_textureobject(mplayer_t* mplayer, int type);
 void mplayer_menuplace_textureobject(mplayer_t* mplayer, int type, SDL_Texture* texture, SDL_Rect canvas);
 void mplayer_menus_freetexts(mplayer_t* mplayer);
 void mplayer_destroytextures(SDL_Texture** textures, size_t n);
-void mplayer_destroyall(mplayer_t* mplayer);
+void mplayer_destroyapp(mplayer_t* mplayer);
 
 #ifdef _WIN32
 void mplayer_getroot_path(char* root_path);

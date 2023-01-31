@@ -212,7 +212,7 @@ void mplayer_menu_freetext(mplayer_t* mplayer, int menu_option) {
     mplayer->menus[menu_option].text_count = 0;
 }
 
-void mplayer_destroyall(mplayer_t* mplayer) {
+void mplayer_destroyapp(mplayer_t* mplayer) {
     // destroys music player graphrical utilities
     SDL_DestroyRenderer(mplayer->renderer);
     SDL_DestroyWindow(mplayer->window);
