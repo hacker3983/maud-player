@@ -23,7 +23,7 @@ TTF_Font* mplayer_openfont(const char* file, int size) {
     return font;
 }
 
-void mplayer_createall(mplayer_t* mplayer) {
+void mplayer_createapp(mplayer_t* mplayer) {
     // create music player's graphical utilities
     mplayer->menu_opt = MPLAYER_DEFAULT_MENU;
     mplayer->window = mplayer_createwindow(WINDOW_TITLE, WIDTH, HEIGHT);

@@ -146,7 +146,7 @@ SDL_Renderer* mplayer_createrenderer(SDL_Window* window);
 TTF_Font* mplayer_openfont(const char* file, int size);
 void mplayer_createsongs_box(mplayer_t* mplayer);
 void mplayer_createmusicbar(mplayer_t* mplayer);
-void mplayer_createall(mplayer_t* mplayer);
+void mplayer_createapp(mplayer_t* mplayer);
 void mplayer_getmusic_locations(mplayer_t* mplayer);
 void mplayer_getmusic_filepaths(mplayer_t* mplayer);
 void mplayer_getmusicpath_info(mplayer_t* mplayer);
