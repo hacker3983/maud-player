@@ -32,12 +32,14 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->quit = 0;
     for(size_t i=0;i<MENU_COUNT;i++) {
         for(size_t j=0;j<TEXTURE_TYPECOUNT;j++) {
-            mplayer->menus[i].obj_textures[j] = NULL;
-            mplayer->menus[i].obj_canvases[j] = NULL;
-            mplayer->menus[i].obj_sizes[j] = 0;
+            mplayer->menus[i].textures[j] = NULL;
+            mplayer->menus[i].texture_canvases[j] = NULL;
+            mplayer->menus[i].texture_sizes[j] = 0;
         }
         mplayer->menus[i].texts = NULL;
+        mplayer->menus[i].canvases = NULL;
         mplayer->menus[i].text_count = 0;
+        mplayer->menus[i].canvas_count = 0;
     }
     mplayer->menu = &mplayer->menus[mplayer->menu_opt];
     mplayer->cursors[MPLAYER_CURSOR_DEFAULT] = SDL_GetDefaultCursor();
@@ -222,34 +224,35 @@ void mplayer_destroyapp(mplayer_t* mplayer) {
     mplayer_freemusic_info(mplayer);
 
     // free the text informations
-    // mplayer_menus_freetexts(mplayer);
+    mplayer_menu_freetext(mplayer, MPLAYER_DEFAULT_MENU);
+    mplayer_menu_freetext(mplayer, MPLAYER_SETTINGS_MENU);
 
     // free texture objects for default menu
-    mplayer_destroytextures(mplayer->menus[MPLAYER_DEFAULT_MENU].obj_textures[MPLAYER_BUTTON_TEXTURE],
-    mplayer->menus[MPLAYER_DEFAULT_MENU].obj_sizes[MPLAYER_BUTTON_TEXTURE]);
+    mplayer_destroytextures(mplayer->menus[MPLAYER_DEFAULT_MENU].textures[MPLAYER_BUTTON_TEXTURE],
+    mplayer->menus[MPLAYER_DEFAULT_MENU].texture_sizes[MPLAYER_BUTTON_TEXTURE]);
 
     // free texture objects for setting menu
-    mplayer_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].obj_textures[MPLAYER_TEXT_TEXTURE],
-        mplayer->menus[MPLAYER_SETTINGS_MENU].obj_sizes[MPLAYER_TEXT_TEXTURE]);
-    mplayer_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].obj_textures[MPLAYER_BUTTON_TEXTURE],
-        mplayer->menus[MPLAYER_SETTINGS_MENU].obj_sizes[MPLAYER_BUTTON_TEXTURE]);
+    mplayer_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].textures[MPLAYER_TEXT_TEXTURE],
+        mplayer->menus[MPLAYER_SETTINGS_MENU].texture_sizes[MPLAYER_TEXT_TEXTURE]);
+    mplayer_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].textures[MPLAYER_BUTTON_TEXTURE],
+        mplayer->menus[MPLAYER_SETTINGS_MENU].texture_sizes[MPLAYER_BUTTON_TEXTURE]);
 
     for(size_t i=0;i<MENU_COUNT;i++) {
-        free(mplayer->menus[i].obj_canvases[MPLAYER_TEXT_TEXTURE]);
-        free(mplayer->menus[i].obj_canvases[MPLAYER_BUTTON_TEXTURE]);
-        free(mplayer->menus[i].obj_canvases[MPLAYER_TAB_TEXTURE]);
+        free(mplayer->menus[i].texture_canvases[MPLAYER_TEXT_TEXTURE]);
+        free(mplayer->menus[i].texture_canvases[MPLAYER_BUTTON_TEXTURE]);
+        free(mplayer->menus[i].texture_canvases[MPLAYER_TAB_TEXTURE]);
 
-        free(mplayer->menus[i].obj_textures[MPLAYER_TEXT_TEXTURE]);
-        free(mplayer->menus[i].obj_textures[MPLAYER_BUTTON_TEXTURE]);
-        free(mplayer->menus[i].obj_textures[MPLAYER_TAB_TEXTURE]);
+        free(mplayer->menus[i].textures[MPLAYER_TEXT_TEXTURE]);
+        free(mplayer->menus[i].textures[MPLAYER_BUTTON_TEXTURE]);
+        free(mplayer->menus[i].textures[MPLAYER_TAB_TEXTURE]);
 
-        mplayer->menus[i].obj_textures[MPLAYER_TEXT_TEXTURE] = NULL;
-        mplayer->menus[i].obj_textures[MPLAYER_BUTTON_TEXTURE] = NULL;
-        mplayer->menus[i].obj_textures[MPLAYER_TAB_TEXTURE] = NULL;
+        mplayer->menus[i].textures[MPLAYER_TEXT_TEXTURE] = NULL;
+        mplayer->menus[i].textures[MPLAYER_BUTTON_TEXTURE] = NULL;
+        mplayer->menus[i].textures[MPLAYER_TAB_TEXTURE] = NULL;
 
-        mplayer->menus[i].obj_canvases[MPLAYER_TEXT_TEXTURE] = NULL;
-        mplayer->menus[i].obj_canvases[MPLAYER_BUTTON_TEXTURE] = NULL;
-        mplayer->menus[i].obj_canvases[MPLAYER_TAB_TEXTURE] = NULL;
+        mplayer->menus[i].texture_canvases[MPLAYER_TEXT_TEXTURE] = NULL;
+        mplayer->menus[i].texture_canvases[MPLAYER_BUTTON_TEXTURE] = NULL;
+        mplayer->menus[i].texture_canvases[MPLAYER_TAB_TEXTURE] = NULL;
     }
     SDL_FreeCursor(mplayer->cursors[MPLAYER_CURSOR_POINTER]);
 
@@ -279,8 +282,8 @@ void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures
 
     // render all buttons on music status bar
     for(int i=0;i<MUSICBTN_COUNT;i++) {
-        mplayer->menu->obj_canvases[MPLAYER_BUTTON_TEXTURE][i] = music_btns[i].btn_canvas;
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->obj_textures[MPLAYER_BUTTON_TEXTURE][i],
+        mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = music_btns[i].btn_canvas;
+        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][i],
             NULL, &music_btns[i].btn_canvas);
     }
 }
@@ -302,68 +305,84 @@ void mplayer_menu_appendtext(mplayer_t* mplayer, text_info_t text) {
     mplayer->menu->text_count++;
     mplayer->menu->texts = realloc(mplayer->menu->texts,
         (mplayer->menu->text_count) * sizeof(text_info_t));
-    mplayer->menu->texts[mplayer->menu->text_count] = text;
+    mplayer->menu->texts[mplayer->menu->text_count-1] = text;
 }
 
-SDL_Texture** mplayer_createtextureobj_list(size_t amount) {
+SDL_Texture** mplayer_createtexture_list(size_t amount) {
     SDL_Texture** objtexture_list = calloc(amount, sizeof(SDL_Texture*));
     return objtexture_list;
 }
 
-void mplayer_realloctexture_object(SDL_Texture*** texture_objs, size_t* amount) {
+void mplayer_realloctexture(SDL_Texture*** texture_objs, size_t* amount) {
     (*amount)++;
     (*texture_objs) = realloc(*texture_objs, (*amount) * sizeof(SDL_Texture*));
     (*texture_objs)[(*amount)-1] = NULL;
 }
 
-void mplayer_createmenu_textureobject(mplayer_t* mplayer, int texture_type, size_t amount) {
-    mplayer->menu->obj_textures[texture_type] = mplayer_createtextureobj_list(amount);
-    mplayer->menu->obj_canvases[texture_type] = calloc(amount, sizeof(SDL_Rect));
-    mplayer->menu->obj_sizes[texture_type] = amount;
+void mplayer_createmenu_texture(mplayer_t* mplayer, int texture_type, size_t amount) {
+    mplayer->menu->textures[texture_type] = mplayer_createtexture_list(amount);
+    mplayer->menu->texture_canvases[texture_type] = calloc(amount, sizeof(SDL_Rect));
+    mplayer->menu->texture_sizes[texture_type] = amount;
 }
 
-void mplayer_addmenu_textureobject(mplayer_t* mplayer, int texture_type) {
-    size_t *amount = &mplayer->menu->obj_sizes[texture_type];
-    mplayer_realloctexture_object(&mplayer->menu->obj_textures[texture_type],
+void mplayer_addmenu_texture(mplayer_t* mplayer, int texture_type) {
+    size_t *amount = &mplayer->menu->texture_sizes[texture_type];
+    mplayer_realloctexture(&mplayer->menu->textures[texture_type],
        amount);
-    mplayer->menu->obj_canvases[texture_type] = realloc(mplayer->menu->obj_canvases[texture_type],
+    mplayer->menu->texture_canvases[texture_type] = realloc(mplayer->menu->texture_canvases[texture_type],
         (*amount) * sizeof(SDL_Rect));
-    memset(mplayer->menu->obj_canvases[texture_type], 0, (*amount) * sizeof(SDL_Rect));
+    memset(mplayer->menu->texture_canvases[texture_type], 0, (*amount) * sizeof(SDL_Rect));
 }
 
-void mplayer_menuplace_textureobject(mplayer_t* mplayer, int type, SDL_Texture* texture, SDL_Rect canvas) {
-    size_t obj_size = mplayer->menu->obj_sizes[type];
-    mplayer->menu->obj_textures[type][obj_size-1] = texture;
-    mplayer->menu->obj_canvases[type][obj_size-1] = canvas;
+void mplayer_menuplace_texture(mplayer_t* mplayer, int type, SDL_Texture* texture, SDL_Rect canvas) {
+    size_t texture_size = mplayer->menu->texture_sizes[type];
+    mplayer->menu->textures[type][texture_size-1] = texture;
+    mplayer->menu->texture_canvases[type][texture_size-1] = canvas;
+}
+
+void mplayer_menuadd_canvas(mplayer_t* mplayer, SDL_Rect canvas) {
+    size_t* canvas_count = &mplayer->menu->canvas_count;
+    if(canvas_count == 0) {
+        mplayer->menu->canvases = calloc(1, sizeof(SDL_Rect));
+        mplayer->menu->canvases[(*canvas_count)++] = canvas;
+        return;
+    }
+    mplayer->menu->canvases = realloc(mplayer->menu->canvases, ((*canvas_count)+1) * sizeof(SDL_Rect));
+    mplayer->menu->canvases[*canvas_count] = canvas;
+    (*canvas_count)++;
 }
 
 void mplayer_setup_menu(mplayer_t* mplayer) {
     mplayer_menu_t* menu = &mplayer->menus[mplayer->menu_opt];
     mplayer->menu = menu;
-    if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU && menu->obj_textures[MPLAYER_TEXT_TEXTURE] == NULL) {
-        mplayer_createmenu_textureobject(mplayer, MPLAYER_TEXT_TEXTURE, text_info_size-1);
-        mplayer_createmenu_textureobject(mplayer, MPLAYER_TAB_TEXTURE, tab_info_size);
-        mplayer_createmenu_textureobject(mplayer, MPLAYER_BUTTON_TEXTURE, MTOTALBTN_COUNT);
+    if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU && menu->textures[MPLAYER_TEXT_TEXTURE] == NULL) {
+        mplayer_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_info_size-1);
+        mplayer_createmenu_texture(mplayer, MPLAYER_TAB_TEXTURE, tab_info_size);
+        mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, MTOTALBTN_COUNT);
         // Load Button Textures and Canvas's
         for(int i=0;i<MUSICBTN_COUNT;i++) {
-            menu->obj_textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, music_btns[i].imgbtn_path);
-            menu->obj_canvases[MPLAYER_BUTTON_TEXTURE][i] = music_btns[i].btn_canvas;
+            menu->textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, music_btns[i].imgbtn_path);
+            menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = music_btns[i].btn_canvas;
         }
-        menu->obj_textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT - 1] = IMG_LoadTexture(mplayer->renderer,
+        menu->textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT - 1] = IMG_LoadTexture(mplayer->renderer,
             setting_iconbtn.imgbtn_path);
-        menu->obj_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT - 1] = setting_iconbtn.btn_canvas;
-    } else if(mplayer->menu_opt == MPLAYER_SETTINGS_MENU && menu->obj_textures[MPLAYER_TEXT_TEXTURE] == NULL) {
-        mplayer_createmenu_textureobject(mplayer, MPLAYER_TEXT_TEXTURE, setting_textinfo_size);
-        mplayer_createmenu_textureobject(mplayer, MPLAYER_BUTTON_TEXTURE, SETTINGSBTN_COUNT);
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT - 1] = setting_iconbtn.btn_canvas;
+    } else if(mplayer->menu_opt == MPLAYER_SETTINGS_MENU && menu->textures[MPLAYER_TEXT_TEXTURE] == NULL) {
+        mplayer_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, setting_textinfo_size);
+        mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, SETTINGSBTN_COUNT);
         for(size_t i=0;i<SETTINGSBTN_COUNT;i++) {
-            menu->obj_textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, setting_btns[i].imgbtn_path);
-            menu->obj_canvases[MPLAYER_BUTTON_TEXTURE][i] = setting_btns[i].btn_canvas;
+            menu->textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, setting_btns[i].imgbtn_path);
+            menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = setting_btns[i].btn_canvas;
         }
     }
 }
 
 void mplayer_run(mplayer_t* mplayer) {
     mplayer_setup_menu(mplayer);
+    mplayer_loadmusics(mplayer);
+    /*for(size_t i=0;i<mplayer->musinfo.file_count;i++) {
+        printf("%s\n", mplayer->music_list[i].music_name);
+    }*/
     while(!mplayer->quit) {
         if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
             mplayer_defaultmenu(mplayer);
@@ -404,9 +423,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     }
     SDL_GetWindowSize(mplayer->window, &WIDTH, &HEIGHT);
     mplayer_set_window_color(mplayer->renderer, window_color);
-    mplayer->menu->obj_textures[MPLAYER_TEXT_TEXTURE][0] = mplayer_rendertext(mplayer, &text_info[0]);
-    mplayer->menu->obj_canvases[MPLAYER_TEXT_TEXTURE][0] = text_info[0].text_canvas;
-    SDL_RenderCopy(mplayer->renderer, mplayer->menu->obj_textures[MPLAYER_TEXT_TEXTURE][0], NULL,
+    mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0] = mplayer_rendertext(mplayer, &text_info[0]);
+    mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][0] = text_info[0].text_canvas;
+    SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0], NULL,
             &text_info[0].text_canvas);
     SDL_Rect tab_canvas = tab_info[0].text_canvas, text_canvas = text_info[0].text_canvas;
     if(tab_canvas.x != text_canvas.x + text_canvas.w + TAB_SPACING) {
@@ -416,7 +435,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         TAB_INIT = 1;
     }
     for(int i=1;i<tab_info_size+1;i++) {
-        mplayer->menu->obj_textures[MPLAYER_TAB_TEXTURE][i-1] = mplayer_rendertab(mplayer, &tab_info[i-1]);
+        mplayer->menu->textures[MPLAYER_TAB_TEXTURE][i-1] = mplayer_rendertab(mplayer, &tab_info[i-1]);
         if(i+1 > 1) {
             int tab_x = tab_info[i-1].text_canvas.x + tab_info[i-1].text_canvas.w + TAB_SPACING;
             tab_info[i].text_canvas.x = tab_x;
@@ -424,34 +443,68 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         if(tab_info[i-1].active) {
             mplayer_renderactive_tab(mplayer, &tab_info[i-1]);
         }
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->obj_textures[MPLAYER_TAB_TEXTURE][i-1], NULL,
+        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TAB_TEXTURE][i-1], NULL,
             &tab_info[i-1].text_canvas);
-        mplayer->menu->obj_canvases[MPLAYER_TAB_TEXTURE][i-1] = tab_info[i-1].text_canvas;
+        mplayer->menu->texture_canvases[MPLAYER_TAB_TEXTURE][i-1] = tab_info[i-1].text_canvas;
     }
     if(active_tab == SONGS_TAB) {
-        SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text_info[1]);
-        mplayer->menu->obj_textures[MPLAYER_TEXT_TEXTURE][1] = text_texture;
+        /*SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text_info[1]);
+        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][1] = text_texture;
         text_info[1].text_canvas.x = (WIDTH - text_info[1].text_canvas.w)/2,
         text_info[1].text_canvas.y = (HEIGHT - text_info[1].text_canvas.h)/2;
-        mplayer->menu->obj_canvases[MPLAYER_TEXT_TEXTURE][1] = text_info[1].text_canvas;
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->obj_textures[MPLAYER_TEXT_TEXTURE][1], NULL,
-            &text_info[1].text_canvas);
+        mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][1] = text_info[1].text_canvas;
+        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][1], NULL,
+            &text_info[1].text_canvas);*/
     } else if(active_tab == ALBUMS_TAB) {
-        SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text_info[2]);
-        mplayer->menu->obj_textures[MPLAYER_TEXT_TEXTURE][1] = text_texture;
+        /*SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text_info[2]);
+        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][1] = text_texture;
         text_info[2].text_canvas.x = (WIDTH - text_info[2].text_canvas.w)/2,
         text_info[2].text_canvas.y = (HEIGHT - text_info[2].text_canvas.h)/2;
-        mplayer->menu->obj_canvases[MPLAYER_TEXT_TEXTURE][1] = text_info[2].text_canvas;
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->obj_textures[MPLAYER_TEXT_TEXTURE][1], NULL,
-            &text_info[2].text_canvas);
+        mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][1] = text_info[2].text_canvas;
+        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][1], NULL,
+            &text_info[2].text_canvas);*/
     }
     prev_tab = active_tab;
 
     // Create settings button on screen
     setting_iconbtn.btn_canvas.x = WIDTH - setting_iconbtn.btn_canvas.w - 2;
-    mplayer->menu->obj_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-1] = setting_iconbtn.btn_canvas;
-    SDL_RenderCopy(mplayer->renderer, mplayer->menu->obj_textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-1], NULL,
+    mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-1] = setting_iconbtn.btn_canvas;
+    SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-1], NULL,
         &setting_iconbtn.btn_canvas);
+
+    /* Create songs box*/
+    mplayer_createsongs_box(mplayer);
+    /* Create music bar */
+    mplayer_createmusicbar(mplayer);
+
+    // TODO: Make music playable
+    text_info_t text = {20, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
+    SDL_Rect outer_canvas = text.text_canvas;
+    /*  get the size of a character so we can determine the maximum amount of textures
+        we can render with in the songs box
+    */
+    TTF_SetFontSize(mplayer->font, 20);
+    TTF_SizeText(mplayer->font, "A", &text.text_canvas.w, &text.text_canvas.h);
+    size_t max_textures = songs_box.h / (text.text_canvas.h + 25);
+    for(size_t i=0;i<max_textures;i++) {
+        text.text = mplayer->music_list[i].music_name;
+        SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text);
+        outer_canvas.h = text.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
+        text.text_canvas.x = outer_canvas.x + ((outer_canvas.h - text.text_canvas.h) / 2),
+        text.text_canvas.y = outer_canvas.y + ((outer_canvas.h - text.text_canvas.h) / 2);
+        mplayer_menuadd_canvas(mplayer, outer_canvas);
+        SDL_SetRenderDrawColor(mplayer->renderer, 0x3B, 0x35, 0x61, 0xff);
+        SDL_RenderDrawRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
+        SDL_RenderFillRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
+
+        mplayer_menu_appendtext(mplayer, text);
+        mplayer_addmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE);
+        mplayer_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_texture, text.text_canvas);
+        SDL_RenderCopy(mplayer->renderer, text_texture, NULL,
+            &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]-1]);
+        text.text_canvas.y += text.text_canvas.h + 22;
+        outer_canvas.y += text.text_canvas.h + 25;
+    }
 
     // create the scroll bar
     scrollbar.y = (HEIGHT - scrollbar.h)/2, scrollbar.x = WIDTH - (scrollbar.w+10);
@@ -459,18 +512,11 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     SDL_RenderFillRect(mplayer->renderer, &scrollbar);
     SDL_RenderDrawRect(mplayer->renderer, &scrollbar);
 
-    /* Create songs box*/
-    mplayer_createsongs_box(mplayer);
-    /* Create music bar */
-    mplayer_createmusicbar(mplayer);
-
-    // TODO: Add the ability to display textures in the songs box
-
-
     // Present all rendered objects on the screen
     SDL_RenderPresent(mplayer->renderer);
-    mplayer_destroytextures(mplayer->menu->obj_textures[MPLAYER_TEXT_TEXTURE], text_info_size-1);
-    mplayer_destroytextures(mplayer->menu->obj_textures[MPLAYER_TAB_TEXTURE], tab_info_size);
+    mplayer_destroytextures(mplayer->menu->textures[MPLAYER_TEXT_TEXTURE], text_info_size-1);
+    mplayer_destroytextures(mplayer->menu->textures[MPLAYER_TAB_TEXTURE], tab_info_size);
+    mplayer_menu_freetext(mplayer, MPLAYER_DEFAULT_MENU);
 }
 
 void mplayer_settingmenu(mplayer_t* mplayer) {
@@ -501,7 +547,7 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
 
     // create buttons, text and display on the screen
     for(size_t i=0;i<setting_textinfo_size;i++) {
-        mplayer->menu->obj_textures[MPLAYER_TEXT_TEXTURE][i] = mplayer_rendertext(mplayer, &setting_textinfo[i]);
+        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][i] = mplayer_rendertext(mplayer, &setting_textinfo[i]);
     }
 
     // set the canvas x position of the text "Go Back To Home" beside the back button 
@@ -514,18 +560,18 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
 
     // render each texture on its particular canvas
     for(size_t i=0;i<setting_textinfo_size;i++) {
-        mplayer->menu->obj_canvases[MPLAYER_TEXT_TEXTURE][i] = setting_textinfo[i].text_canvas;
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->obj_textures[MPLAYER_TEXT_TEXTURE][i], NULL,
-            &mplayer->menu->obj_canvases[MPLAYER_TEXT_TEXTURE][i]);
+        mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][i] = setting_textinfo[i].text_canvas;
+        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][i], NULL,
+            &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][i]);
     }
 
     // render buttons on screen
     for(size_t i=0;i<SETTINGSBTN_COUNT;i++) {
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->obj_textures[MPLAYER_BUTTON_TEXTURE][i], NULL,
-            &mplayer->menu->obj_canvases[MPLAYER_BUTTON_TEXTURE][i]);
+        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][i], NULL,
+            &mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i]);
     }
     SDL_RenderPresent(mplayer->renderer);
-    mplayer_destroytextures(mplayer->menu->obj_textures[MPLAYER_TEXT_TEXTURE],
-        mplayer->menu->obj_sizes[MPLAYER_TEXT_TEXTURE]);
+    mplayer_destroytextures(mplayer->menu->textures[MPLAYER_TEXT_TEXTURE],
+        mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]);
     mplayer_menu_freetext(mplayer, MPLAYER_SETTINGS_MENU);
 }

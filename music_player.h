@@ -113,9 +113,10 @@ enum texture_types {
 
 typedef struct mplayer_menu {
     text_info_t* texts;
-    SDL_Texture** obj_textures[TEXTURE_TYPECOUNT];
-    SDL_Rect* obj_canvases[TEXTURE_TYPECOUNT];
-    size_t obj_sizes[TEXTURE_TYPECOUNT], text_count;
+    SDL_Texture** textures[TEXTURE_TYPECOUNT];
+    SDL_Rect* texture_canvases[TEXTURE_TYPECOUNT];
+    SDL_Rect* canvases;
+    size_t texture_sizes[TEXTURE_TYPECOUNT], text_count, canvas_count;
 } mplayer_menu_t;
 
 enum cursor_types {
@@ -151,6 +152,7 @@ void mplayer_getmusic_locations(mplayer_t* mplayer);
 void mplayer_getmusic_filepaths(mplayer_t* mplayer);
 void mplayer_getmusicpath_info(mplayer_t* mplayer);
 char* mplayer_getmusic_namefrompath(const char* path);
+void mplayer_loadmusics(mplayer_t* mplayer);
 void mplayer_addmusic_location(mplayer_t* mplayer, char* location);
 mtime_t mplayer_music_gettime(double seconds);
 bool mplayer_musiclocation_exists(mplayer_t* mplayer, char* location);
@@ -174,12 +176,13 @@ void mplayer_centertext(mplayer_t* mplayer, text_info_t* text_info);
 void mplayer_centerx(mplayer_t* mplayer, text_info_t* text_info);
 void mplayer_centery(mplayer_t* mplayer, text_info_t* text_info);
 void mplayer_menu_appendtext(mplayer_t* mplayer, text_info_t text);
-SDL_Texture** mplayer_createtextureobj_list(size_t amount);
-void mplayer_realloctexture_object(SDL_Texture*** texture_objs, size_t* amount);
-void mplayer_createmenu_textureobject(mplayer_t* mplayer, int type, size_t amount);
-void mplayer_addmenu_textureobject(mplayer_t* mplayer, int type);
-void mplayer_menuplace_textureobject(mplayer_t* mplayer, int type, SDL_Texture* texture, SDL_Rect canvas);
-void mplayer_menus_freetexts(mplayer_t* mplayer);
+SDL_Texture** mplayer_createtexture_list(size_t amount);
+void mplayer_realloctexture(SDL_Texture*** texture_objs, size_t* amount);
+void mplayer_createmenu_texture(mplayer_t* mplayer, int type, size_t amount);
+void mplayer_addmenu_texture(mplayer_t* mplayer, int type);
+void mplayer_menuplace_texture(mplayer_t* mplayer, int type, SDL_Texture* texture, SDL_Rect canvas);
+void mplayer_menuadd_canvas(mplayer_t* mplayer, SDL_Rect canvas);
+void mplayer_menu_freetext(mplayer_t* mplayer, int menu_option);
 void mplayer_destroytextures(SDL_Texture** textures, size_t n);
 void mplayer_destroyapp(mplayer_t* mplayer);
 
