@@ -58,6 +58,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
         strcat(location, "\\Music");
         mplayer_addmusic_location(mplayer, location);
         free(location);
+        // TODO: Linux
         #endif
     }
 }
@@ -425,8 +426,10 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     mplayer_set_window_color(mplayer->renderer, window_color);
     mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0] = mplayer_rendertext(mplayer, &text_info[0]);
     mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][0] = text_info[0].text_canvas;
+    //printf("1\n");
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0], NULL,
             &text_info[0].text_canvas);
+    //printf("2\n");
     SDL_Rect tab_canvas = tab_info[0].text_canvas, text_canvas = text_info[0].text_canvas;
     if(tab_canvas.x != text_canvas.x + text_canvas.w + TAB_SPACING) {
         tab_info[0].text_canvas.x = text_canvas.x + text_canvas.w + TAB_SPACING;
@@ -447,6 +450,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             &tab_info[i-1].text_canvas);
         mplayer->menu->texture_canvases[MPLAYER_TAB_TEXTURE][i-1] = tab_info[i-1].text_canvas;
     }
+    //printf("3\n");
     if(active_tab == SONGS_TAB) {
         /*SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text_info[1]);
         mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][1] = text_texture;
@@ -471,7 +475,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-1] = setting_iconbtn.btn_canvas;
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-1], NULL,
         &setting_iconbtn.btn_canvas);
-
+    //printf("4\n");
     /* Create songs box*/
     mplayer_createsongs_box(mplayer);
     /* Create music bar */
@@ -485,9 +489,13 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     */
     TTF_SetFontSize(mplayer->font, 20);
     TTF_SizeText(mplayer->font, "A", &text.text_canvas.w, &text.text_canvas.h);
+    //TODO: FIx bug below
     size_t max_textures = songs_box.h / (text.text_canvas.h + 25);
+    //printf("5\n");
     for(size_t i=0;i<max_textures;i++) {
+        //printf("i.%d, %s\n", i, mplayer->music_list[i].music_name);
         text.text = mplayer->music_list[i].music_name;
+        if(!text.text) break;
         SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text);
         outer_canvas.h = text.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
         text.text_canvas.x = outer_canvas.x + ((outer_canvas.h - text.text_canvas.h) / 2),
@@ -496,7 +504,6 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         SDL_SetRenderDrawColor(mplayer->renderer, 0x3B, 0x35, 0x61, 0xff);
         SDL_RenderDrawRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
         SDL_RenderFillRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
-
         mplayer_menu_appendtext(mplayer, text);
         mplayer_addmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE);
         mplayer_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_texture, text.text_canvas);
@@ -511,7 +518,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(white));
     SDL_RenderFillRect(mplayer->renderer, &scrollbar);
     SDL_RenderDrawRect(mplayer->renderer, &scrollbar);
-
+    //printf("6\n");
     // Present all rendered objects on the screen
     SDL_RenderPresent(mplayer->renderer);
     mplayer_destroytextures(mplayer->menu->textures[MPLAYER_TEXT_TEXTURE], text_info_size-1);
