@@ -66,13 +66,15 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         #ifdef _WIN32
         char* path_pattern = calloc(pathpat_len, sizeof(char));
         for(int j=0;FILE_EXTENSIONS[j] != NULL;j++) {
+            printf("%d, %s\n", j, FILE_EXTENSIONS[j]);
             strcpy(path_pattern, mplayer->musinfo.locations[i].path);
             strcat(path_pattern, "\\*.");
             strcat(path_pattern, FILE_EXTENSIONS[j]);
             WIN32_FIND_DATA fd = {0};
             HANDLE hfind = FindFirstFile(path_pattern, &fd);
             if(hfind == INVALID_HANDLE_VALUE) {
-                break;
+                printf("No file extension found\n");
+                continue;
             }
             do {
                 music_files[mfile_count].path = calloc(location_len + strlen(fd.cFileName) + 7, sizeof(char));
