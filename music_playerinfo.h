@@ -18,7 +18,7 @@ songs_boxcolor = green, back_btnbg_color = {0x46, 0xB1, 0xC9, 0xFF},
 setting_wincolor = black/*{0x02, 0x3C, 0x40, 0xFF}*/,
 setting_textcolor = {0xC3, 0x97, 0x9F, 0xFF};
 int WIDTH = 900, HEIGHT = 600, TAB_INIT = 0, FONT_SIZE = 20, TAB_SPACING = 20,
-SBOXDISTANCE_X = 50, SETTING_LINESPACING = 10, UNDERLINE_THICKNESS = 10;
+SBOXDISTANCE_X = 50, SETTING_LINESPACING = 10, UNDERLINE_THICKNESS = 10, checkbox_init = 0;
 
 text_info_t text_info[] = {
         {36, "Music", text_color, {10}},
@@ -27,7 +27,7 @@ text_info_t text_info[] = {
 },
 setting_textinfo[] = {
         {45, "Go Back To Home", text2_color, {10, 0}},
-        {36, "Hello, World!", white, {0}},
+        {36, "Hello, Grandpa and Janicia!", white, {0}},
         {36, "How are you doing?", white, {0}}
 };
 
@@ -52,6 +52,7 @@ SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},
         img_border = {10, 0, 80, 70};
 SDL_Rect scrollbar = {0, 0, 10, 50}, music_status = {0, 0, 0, 150},
         songs_box = {0, 0, 0, 0};
+SDL_Rect checkbox_size = {0, 0, 30, 50};
 
 const size_t text_info_size = sizeof(text_info)/sizeof(text_info_t), tab_info_size = sizeof(tab_info)/sizeof(tabinfo_t),
 setting_textinfo_size = sizeof(setting_textinfo)/sizeof(text_info_t), MUSICBTN_COUNT = sizeof(music_btns)/sizeof(ibtn_t),

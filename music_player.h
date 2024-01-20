@@ -42,7 +42,7 @@ typedef struct music {
     mtime_t music_position;
     mtime_t music_duration;
     SDL_Rect canvas, checkbox_size;
-    int hover, clicked, checkbox_ticked;
+    int hover, clicked, checkbox_ticked, fill;
 } music_t;
 
 typedef struct music_location {
@@ -115,9 +115,10 @@ enum texture_types {
 
 typedef struct music_checkbox_info {
     SDL_Rect checkbox_canvas;
+    SDL_Color fill_color; // checkbox COlor
     SDL_Color box_color; // Checkbox Color
     SDL_Color tk_color;
-    bool tick;
+    bool tick, fill;
 } mcheckbox_t;
 
 typedef struct mplayer_menu {
@@ -184,7 +185,8 @@ bool mplayer_tbuttons_hover(mplayer_t* mplayer, tbtn_t* buttons, int* btn_id, si
 bool mplayer_music_hover(mplayer_t* mplayer);
 bool mplayer_checkbox_clicked(mplayer_t* mplayer);
 void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info);
-void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color, SDL_Color tick_color, bool check);
+void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color,
+    SDL_Color fill_color, bool fill, SDL_Color tick_color, bool check);
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, text_info_t* text_info);
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);
