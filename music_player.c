@@ -44,6 +44,9 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->menu = &mplayer->menus[mplayer->menu_opt];
     mplayer->cursors[MPLAYER_CURSOR_DEFAULT] = SDL_GetDefaultCursor();
     mplayer->cursors[MPLAYER_CURSOR_POINTER] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+    mplayer->music_hover = false;
+    mplayer->music_id = 0, mplayer->prevmusic_id = 0;
+    mplayer->tick_count = 0;
 
     // create music information
     mplayer_getmusicpath_info(mplayer);
@@ -145,6 +148,39 @@ bool mplayer_tbuttons_hover(mplayer_t* mplayer, tbtn_t* buttons, int* btn_id, si
             buttons[i].hover = true; return true;
         }
     }
+    return false;
+}
+
+bool mplayer_music_hover(mplayer_t* mplayer) {
+    SDL_Rect canvas = {0};
+    mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
+    for(size_t i=0;i<mplayer->music_count;i++) {
+            canvas = mplayer->music_list[i].canvas;
+            if((mplayer->e.motion.x <= canvas.x + canvas.w && mplayer->e.motion.x >= canvas.x)
+                && (mplayer->e.motion.y <= canvas.y + canvas.h && mplayer->e.motion.y >= canvas.y)) {
+                mplayer->prevmusic_id = mplayer->music_id;
+                mplayer->music_list[mplayer->prevmusic_id].hover = false;
+                mplayer->music_id = i; mplayer->music_list[i].hover = true; return true;
+            }
+    }
+    mplayer->music_list[mplayer->music_id].hover = false;
+    mplayer->music_hover = false;
+    return false;
+}
+bool mplayer_checkbox_clicked(mplayer_t* mplayer) {
+    int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
+    if((mouse_x <= checkbox_size.x + checkbox_size.w && mouse_x >= checkbox_size.x) &&
+        (mouse_y <= checkbox_size.y + checkbox_size.h && mouse_y >= checkbox_size.y)) {
+        if(mplayer->music_list[mplayer->music_id].clicked) {
+            mplayer->music_list[mplayer->music_id].clicked = false;
+            mplayer->music_list[mplayer->music_id].checkbox_ticked = false;
+            mplayer->tick_count++;
+        } else {
+            printf("true\n");
+            return true;
+        }
+    }
+    return false;
 }
 
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, text_info_t* text_info) {
@@ -353,6 +389,48 @@ void mplayer_menuadd_canvas(mplayer_t* mplayer, SDL_Rect canvas) {
     (*canvas_count)++;
 }
 
+void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info) {
+    int mid_x1 = checkbox_info->checkbox_canvas.x,
+        mid_y1 = checkbox_info->checkbox_canvas.y,
+        mid_x2 = checkbox_info->checkbox_canvas.x + checkbox_info->checkbox_canvas.w,
+        mid_y2 = checkbox_info->checkbox_canvas.y + checkbox_info->checkbox_canvas.h;
+    SDL_Color box_color = checkbox_info->box_color, tick_color = checkbox_info->tk_color;
+    SDL_SetRenderDrawColor(mplayer->renderer, box_color.r, box_color.g, box_color.b, box_color.a);
+    SDL_RenderDrawRect(mplayer->renderer, &checkbox_info->checkbox_canvas);
+    if(checkbox_info->tick) {
+        SDL_SetRenderDrawColor(mplayer->renderer, tick_color.r, tick_color.g, tick_color.b, tick_color.a);
+        // draw longest line for tick
+        int y = 10, y2 = 6;
+        for(int i=0;i<2;i++) {
+            int k = mid_x1+10;
+            for(int j=mid_y2-y;j>=mid_y1+5;j--) {
+                SDL_RenderDrawPoint(mplayer->renderer, k, j);
+                k++;
+            }
+            y--;
+        }
+        y = 10;
+        for(int i=0;i<2;i++) {
+            int k = mid_x1+10;
+            for(int j=mid_y2-y;j>=(mid_y2-y2)-y;j--) {
+                SDL_RenderDrawPoint(mplayer->renderer, k, j);
+                k--;
+            }
+            y--; y2--;
+        }
+    }
+}
+
+void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color, SDL_Color tick_color, bool check) {
+    size_t music_id = mplayer->music_id;
+    mcheckbox_t checkbox_info = {0};
+    checkbox_info.checkbox_canvas = checkbox_size;
+    checkbox_info.box_color = box_color;
+    checkbox_info.tk_color = tick_color;
+    checkbox_info.tick = check;
+    mplayer_drawcheckbox(mplayer, &checkbox_info);
+}
+
 void mplayer_setup_menu(mplayer_t* mplayer) {
     mplayer_menu_t* menu = &mplayer->menus[mplayer->menu_opt];
     mplayer->menu = menu;
@@ -394,7 +472,9 @@ void mplayer_run(mplayer_t* mplayer) {
 }
 
 void mplayer_defaultmenu(mplayer_t* mplayer) {
+    bool checkbox_ticked = false, music_clicked = false;
     int tab_hoverid = 0;
+    size_t music_id = 0;
     mplayer_set_window_title(mplayer, WINDOW_TITLE);
     while(SDL_PollEvent(&mplayer->e)) {
         if(mplayer->e.type == SDL_QUIT) {
@@ -405,6 +485,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 setting_iconbtn.hover = true;
             } else if(mplayer_tabs_hover(mplayer, tab_info, &tab_hoverid, tab_info_size) && TAB_INIT) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+            } else if(mplayer_music_hover(mplayer)) {
+                music_id = mplayer->music_id;
             } else {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
                 setting_iconbtn.hover = false;
@@ -419,6 +501,10 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer->menu_opt = MPLAYER_SETTINGS_MENU;
                 mplayer_setup_menu(mplayer);
                 return;
+            } else if(mplayer_music_hover(mplayer)) {
+                mplayer->mouse_x = mplayer->e.button.x;
+                mplayer->mouse_y = mplayer->e.button.y;
+                music_clicked = true;
             }
         }
     }
@@ -426,10 +512,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     mplayer_set_window_color(mplayer->renderer, window_color);
     mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0] = mplayer_rendertext(mplayer, &text_info[0]);
     mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][0] = text_info[0].text_canvas;
-    //printf("1\n");
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0], NULL,
             &text_info[0].text_canvas);
-    //printf("2\n");
     SDL_Rect tab_canvas = tab_info[0].text_canvas, text_canvas = text_info[0].text_canvas;
     if(tab_canvas.x != text_canvas.x + text_canvas.w + TAB_SPACING) {
         tab_info[0].text_canvas.x = text_canvas.x + text_canvas.w + TAB_SPACING;
@@ -450,7 +534,6 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             &tab_info[i-1].text_canvas);
         mplayer->menu->texture_canvases[MPLAYER_TAB_TEXTURE][i-1] = tab_info[i-1].text_canvas;
     }
-    //printf("3\n");
     if(active_tab == SONGS_TAB) {
         /*SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text_info[1]);
         mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][1] = text_texture;
@@ -475,32 +558,32 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-1] = setting_iconbtn.btn_canvas;
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-1], NULL,
         &setting_iconbtn.btn_canvas);
-    //printf("4\n");
     /* Create songs box*/
     mplayer_createsongs_box(mplayer);
     /* Create music bar */
     mplayer_createmusicbar(mplayer);
 
     // TODO: Make music playable
-    text_info_t text = {20, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
+    text_info_t text = {14, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
     SDL_Rect outer_canvas = text.text_canvas;
+
     /*  get the size of a character so we can determine the maximum amount of textures
         we can render with in the songs box
     */
-    TTF_SetFontSize(mplayer->font, 20);
+    TTF_SetFontSize(mplayer->font, text.font_size);
     TTF_SizeText(mplayer->font, "A", &text.text_canvas.w, &text.text_canvas.h);
-    //TODO: FIx bug below
     size_t max_textures = songs_box.h / (text.text_canvas.h + 25);
-    //printf("5\n");
     for(size_t i=0;i<max_textures;i++) {
         //printf("i.%d, %s\n", i, mplayer->music_list[i].music_name);
         text.text = mplayer->music_list[i].music_name;
         if(!text.text) break;
         SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text);
         outer_canvas.h = text.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
-        text.text_canvas.x = outer_canvas.x + ((outer_canvas.h - text.text_canvas.h) / 2),
+        text.text_canvas.x = outer_canvas.x + 50,
         text.text_canvas.y = outer_canvas.y + ((outer_canvas.h - text.text_canvas.h) / 2);
+        mplayer->music_list[i].canvas = outer_canvas;
         mplayer_menuadd_canvas(mplayer, outer_canvas);
+
         SDL_SetRenderDrawColor(mplayer->renderer, 0x3B, 0x35, 0x61, 0xff);
         SDL_RenderDrawRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
         SDL_RenderFillRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
@@ -509,6 +592,38 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_texture, text.text_canvas);
         SDL_RenderCopy(mplayer->renderer, text_texture, NULL,
             &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]-1]);
+        // Render the checkbox whenever the button is clicked
+        SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff};
+            checkbox_size.x = outer_canvas.x+5, checkbox_size.y = text.text_canvas.y-5;
+            checkbox_size.h = outer_canvas.h-10;
+        int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
+        if(music_clicked && mplayer_checkbox_clicked(mplayer)) {
+            mplayer_drawmusic_checkbox(mplayer, box_color, tick_color, true);
+        } else if(music_clicked && !mplayer_checkbox_clicked(mplayer)) {
+            music_clicked = false;
+        } else if(mplayer->music_list[i].hover && !mplayer->music_list[i].clicked) {
+            mplayer_drawmusic_checkbox(mplayer, box_color, tick_color, false);
+        }
+        /*if(music_clicked && mplayer_checkbox_clicked(mplayer)) {
+            printf("here\n");
+            mplayer_drawmusic_checkbox(mplayer, box_color, tick_color, true);
+        }*/
+        if(mplayer->tick_count && music_clicked) {
+            mplayer_drawmusic_checkbox(mplayer, box_color, tick_color, mplayer->music_list[i].clicked);
+        } else if(mplayer->tick_count && !music_clicked) {
+            mplayer_drawmusic_checkbox(mplayer, box_color, tick_color, mplayer->music_list[i].clicked);
+        }
+        /*if(mplayer->music_list[i].clicked &&
+            (mouse_x <= checkbox_size.x + checkbox_size.w && mouse_x >= checkbox_size.x) &&
+            (mouse_y <= checkbox_size.y + checkbox_size.h && mouse_y >= checkbox_size.y)) {
+            mplayer->music_list[i].clicked = true;
+            mplayer->music_list[i].checkbox_ticked = true;
+            mplayer->music_list[i].checkbox_size = checkbox_size;
+        }
+        if(mplayer->tick_count && mplayer->music_list[i].checkbox_ticked) {
+            mplayer_drawmusic_checkbox(mplayer, box_color, tick_color, mplayer->music_list[i].clicked);
+        }*/
+
         text.text_canvas.y += text.text_canvas.h + 22;
         outer_canvas.y += text.text_canvas.h + 25;
     }
@@ -518,7 +633,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(white));
     SDL_RenderFillRect(mplayer->renderer, &scrollbar);
     SDL_RenderDrawRect(mplayer->renderer, &scrollbar);
-    //printf("6\n");
+
     // Present all rendered objects on the screen
     SDL_RenderPresent(mplayer->renderer);
     mplayer_destroytextures(mplayer->menu->textures[MPLAYER_TEXT_TEXTURE], text_info_size-1);
