@@ -431,6 +431,72 @@ void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color, SDL_Col
     mplayer_drawcheckbox(mplayer, &checkbox_info);
 }
 
+void mplayer_rendersongs(mplayer_t* mplayer, int music_clicked) {
+    text_info_t text = {14, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
+    SDL_Rect outer_canvas = text.text_canvas;
+
+    /*  get the size of a character so we can determine the maximum amount of textures
+        we can render with in the songs box
+    */
+    TTF_SetFontSize(mplayer->font, text.font_size);
+    TTF_SizeText(mplayer->font, "A", &text.text_canvas.w, &text.text_canvas.h);
+    size_t max_textures = songs_box.h / (text.text_canvas.h + 25);
+    for(size_t i=0;i<max_textures;i++) {
+        //printf("i.%d, %s\n", i, mplayer->music_list[i].music_name);
+        text.text = mplayer->music_list[i].music_name;
+        if(!text.text) break;
+        SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text);
+        outer_canvas.h = text.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
+        text.text_canvas.x = outer_canvas.x + 50,
+        text.text_canvas.y = outer_canvas.y + ((outer_canvas.h - text.text_canvas.h) / 2);
+        mplayer->music_list[i].canvas = outer_canvas;
+        mplayer_menuadd_canvas(mplayer, outer_canvas);
+
+        SDL_SetRenderDrawColor(mplayer->renderer, 0x3B, 0x35, 0x61, 0xff);
+        SDL_RenderDrawRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
+        SDL_RenderFillRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
+        mplayer_menu_appendtext(mplayer, text);
+        mplayer_addmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE);
+        mplayer_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_texture, text.text_canvas);
+        SDL_RenderCopy(mplayer->renderer, text_texture, NULL,
+            &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]-1]);
+        // Render the checkbox whenever the button is clicked
+        SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
+                fill_color = {0xFF, 0xA5, 0x00, 0xff};
+        checkbox_size.x = outer_canvas.x+5, checkbox_size.y = text.text_canvas.y-5;
+        checkbox_size.h = outer_canvas.h-10;
+        int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
+        // Tests if the checkbox has been clicked
+        if(music_clicked && mplayer_checkbox_clicked(mplayer)) {
+            switch(mplayer->music_list[i].clicked) {
+                case true:
+                    mplayer->music_list[i].fill = false;
+                    mplayer->music_list[i].clicked = false;
+                    mplayer->music_list[i].checkbox_ticked = false;
+                    mplayer->tick_count--;
+                    break;
+                case false:
+                    mplayer->music_list[i].fill = true;
+                    mplayer->music_list[i].clicked = true;
+                    mplayer->music_list[i].checkbox_ticked = true;
+                    mplayer->tick_count++;
+                    break;
+            }
+        } else if(mplayer->music_list[i].hover && !mplayer->music_list[i].checkbox_ticked) {
+            mplayer->music_list[i].fill = false;
+            mplayer->music_list[i].clicked = false;
+            mplayer->music_list[i].checkbox_ticked = false;
+            mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, false, tick_color, false);
+        }
+        if(mplayer->tick_count) {
+            mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, mplayer->music_list[i].fill,
+                tick_color, mplayer->music_list[i].checkbox_ticked);
+        }
+        text.text_canvas.y += text.text_canvas.h + 22;
+        outer_canvas.y += text.text_canvas.h + 25;
+    }
+}
+
 void mplayer_setup_menu(mplayer_t* mplayer) {
     mplayer_menu_t* menu = &mplayer->menus[mplayer->menu_opt];
     mplayer->menu = menu;
@@ -534,24 +600,6 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             &tab_info[i-1].text_canvas);
         mplayer->menu->texture_canvases[MPLAYER_TAB_TEXTURE][i-1] = tab_info[i-1].text_canvas;
     }
-    if(active_tab == SONGS_TAB) {
-        /*SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text_info[1]);
-        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][1] = text_texture;
-        text_info[1].text_canvas.x = (WIDTH - text_info[1].text_canvas.w)/2,
-        text_info[1].text_canvas.y = (HEIGHT - text_info[1].text_canvas.h)/2;
-        mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][1] = text_info[1].text_canvas;
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][1], NULL,
-            &text_info[1].text_canvas);*/
-    } else if(active_tab == ALBUMS_TAB) {
-        /*SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text_info[2]);
-        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][1] = text_texture;
-        text_info[2].text_canvas.x = (WIDTH - text_info[2].text_canvas.w)/2,
-        text_info[2].text_canvas.y = (HEIGHT - text_info[2].text_canvas.h)/2;
-        mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][1] = text_info[2].text_canvas;
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][1], NULL,
-            &text_info[2].text_canvas);*/
-    }
-    prev_tab = active_tab;
 
     // Create settings button on screen
     setting_iconbtn.btn_canvas.x = WIDTH - setting_iconbtn.btn_canvas.w - 2;
@@ -562,71 +610,11 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     mplayer_createsongs_box(mplayer);
     /* Create music bar */
     mplayer_createmusicbar(mplayer);
-
-    // TODO: Make music playable
-    text_info_t text = {14, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
-    SDL_Rect outer_canvas = text.text_canvas;
-
-    /*  get the size of a character so we can determine the maximum amount of textures
-        we can render with in the songs box
-    */
-    TTF_SetFontSize(mplayer->font, text.font_size);
-    TTF_SizeText(mplayer->font, "A", &text.text_canvas.w, &text.text_canvas.h);
-    size_t max_textures = songs_box.h / (text.text_canvas.h + 25);
-    for(size_t i=0;i<max_textures;i++) {
-        //printf("i.%d, %s\n", i, mplayer->music_list[i].music_name);
-        text.text = mplayer->music_list[i].music_name;
-        if(!text.text) break;
-        SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text);
-        outer_canvas.h = text.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
-        text.text_canvas.x = outer_canvas.x + 50,
-        text.text_canvas.y = outer_canvas.y + ((outer_canvas.h - text.text_canvas.h) / 2);
-        mplayer->music_list[i].canvas = outer_canvas;
-        mplayer_menuadd_canvas(mplayer, outer_canvas);
-
-        SDL_SetRenderDrawColor(mplayer->renderer, 0x3B, 0x35, 0x61, 0xff);
-        SDL_RenderDrawRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
-        SDL_RenderFillRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
-        mplayer_menu_appendtext(mplayer, text);
-        mplayer_addmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE);
-        mplayer_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_texture, text.text_canvas);
-        SDL_RenderCopy(mplayer->renderer, text_texture, NULL,
-            &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]-1]);
-        // Render the checkbox whenever the button is clicked
-        SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
-                fill_color = {0xFF, 0xA5, 0x00, 0xff};
-        checkbox_size.x = outer_canvas.x+5, checkbox_size.y = text.text_canvas.y-5;
-        checkbox_size.h = outer_canvas.h-10;
-        int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
-        // Tests if the checkbox has been clicked
-        if(music_clicked && mplayer_checkbox_clicked(mplayer)) {
-            switch(mplayer->music_list[i].clicked) {
-                case true:
-                    mplayer->music_list[i].fill = false;
-                    mplayer->music_list[i].clicked = false;
-                    mplayer->music_list[i].checkbox_ticked = false;
-                    mplayer->tick_count--;
-                    break;
-                case false:
-                    mplayer->music_list[i].fill = true;
-                    mplayer->music_list[i].clicked = true;
-                    mplayer->music_list[i].checkbox_ticked = true;
-                    mplayer->tick_count++;
-                    break;
-            }
-        } else if(mplayer->music_list[i].hover && !mplayer->music_list[i].checkbox_ticked) {
-            mplayer->music_list[i].fill = false;
-            mplayer->music_list[i].clicked = false;
-            mplayer->music_list[i].checkbox_ticked = false;
-            mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, false, tick_color, false);
-        }
-        if(mplayer->tick_count) {
-            mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, mplayer->music_list[i].fill,
-                tick_color, mplayer->music_list[i].checkbox_ticked);
-        }
-        text.text_canvas.y += text.text_canvas.h + 22;
-        outer_canvas.y += text.text_canvas.h + 25;
+    if(active_tab == SONGS_TAB) {
+        mplayer_rendersongs(mplayer, music_clicked);
+    } else if(active_tab == ALBUMS_TAB) {
     }
+    prev_tab = active_tab;
 
     // create the scroll bar
     scrollbar.y = (HEIGHT - scrollbar.h)/2, scrollbar.x = WIDTH - (scrollbar.w+10);

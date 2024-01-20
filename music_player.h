@@ -187,6 +187,7 @@ bool mplayer_checkbox_clicked(mplayer_t* mplayer);
 void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info);
 void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color,
     SDL_Color fill_color, bool fill, SDL_Color tick_color, bool check);
+void mplayer_rendersongs(mplayer_t* mplayer, int music_clicked);
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, text_info_t* text_info);
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);
