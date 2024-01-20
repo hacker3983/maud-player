@@ -18,8 +18,8 @@
 
 extern const char* WINDOW_TITLE, *SETTING_TITLE, *FONT_FILE, *MUSIC_PATHINFO_FILE, *FILE_EXTENSIONS[];
 extern int WIDTH, HEIGHT, FONT_SIZE, TAB_INIT, active_tab, prev_tab, TAB_SPACING, SBOXDISTANCE_X,  SETTING_LINESPACING,
-UNDERLINE_THICKNESS;
-extern SDL_Rect scrollbar, music_status, songs_box;
+UNDERLINE_THICKNESS, checkbox_init;
+extern SDL_Rect scrollbar, music_status, songs_box, checkbox_size;
 extern const size_t text_info_size, tab_info_size, setting_textinfo_size, MUSICBTN_COUNT, MTOTALBTN_COUNT, SETTINGSBTN_COUNT;
 extern const SDL_Color window_color, text_color, text2_color, underline_color, white, black, music_statusbar_color,
 songs_boxcolor, setting_wincolor, setting_textcolor, back_btnbg_color, setting_underlinecolor;
@@ -41,6 +41,8 @@ typedef struct music {
     Mix_Music* music;
     mtime_t music_position;
     mtime_t music_duration;
+    SDL_Rect canvas, checkbox_size;
+    int hover, clicked, checkbox_ticked;
 } music_t;
 
 typedef struct music_location {
@@ -111,6 +113,13 @@ enum texture_types {
     MPLAYER_BUTTON_TEXTURE
 };
 
+typedef struct music_checkbox_info {
+    SDL_Rect checkbox_canvas;
+    SDL_Color box_color; // Checkbox Color
+    SDL_Color tk_color;
+    bool tick;
+} mcheckbox_t;
+
 typedef struct mplayer_menu {
     text_info_t* texts;
     SDL_Texture** textures[TEXTURE_TYPECOUNT];
@@ -138,6 +147,9 @@ typedef struct mplayer {
     // Music Informations such music name, path, duration, etc
     musinfo_t musinfo;
     music_t* music_list;
+    int music_hover;
+    size_t music_id, prevmusic_id, music_count;
+    int mouse_x, mouse_y, tick_count;
 } mplayer_t;
 
 void mplayer_init();
@@ -169,6 +181,10 @@ bool mplayer_tbutton_hover(mplayer_t* mplayer, tbtn_t button);
 bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t tab_count);
 bool mplayer_ibuttons_hover(mplayer_t* mplayer, ibtn_t* buttons, int* btn_id, size_t button_count);
 bool mplayer_tbuttons_hover(mplayer_t* mplayer, tbtn_t* buttons, int* btn_id, size_t button_count);
+bool mplayer_music_hover(mplayer_t* mplayer);
+bool mplayer_checkbox_clicked(mplayer_t* mplayer);
+void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info);
+void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color, SDL_Color tick_color, bool check);
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, text_info_t* text_info);
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);
