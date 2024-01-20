@@ -15,6 +15,7 @@ void mplayer_getroot_path(char* root_path) {
 void mplayer_getmusic_locations(mplayer_t* mplayer) {
     FILE* f = fopen(MUSIC_PATHINFO_FILE, "r");
     if(f == NULL) {
+        mplayer->music_count = 0;
         mplayer->musinfo.files = NULL;
         mplayer->musinfo.locations = NULL;
         mplayer->musinfo.file_count = 0;
@@ -55,6 +56,7 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
 
 void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
     if(mplayer->musinfo.locations == NULL) {
+        mplayer->music_count = 0;
         return;
     }
     musloc_t* music_files = calloc(1, sizeof(musloc_t));
@@ -123,6 +125,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
     }
     mplayer->musinfo.files = music_files;
     mplayer->musinfo.file_count = mfile_count;
+    mplayer->music_count = mfile_count;
 }
 
 void mplayer_getmusicpath_info(mplayer_t* mplayer) {
