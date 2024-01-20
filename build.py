@@ -10,4 +10,4 @@ print("Running music player...")
 if platform.system() != "Windows":
     os.system(f"gcc main.c music_player.o music_filemanager.o {LINK_FILES} -o mplayer && ./mplayer")
 else:
-    os.system(f"gcc main.c music_player.o music_filemanager.o -lmingw32 -lcomdlg32 {LINK_FILES} -o mplayer.exe && .\mplayer.exe")
+    os.system(f"gcc main.c music_player.o music_filemanager.o -lmingw32 -lcomdlg32 {LINK_FILES} -o mplayer.exe && .\\mplayer.exe")
