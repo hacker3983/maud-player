@@ -90,6 +90,7 @@ enum musical_buttons {
     MUSIC_SKIPBTN,
     MUSIC_PREVBTN,
     MUSIC_PAUSEBTN,
+    MUSIC_LISTPLAYBTN
 };
 
 enum setting_buttons {
@@ -183,7 +184,8 @@ bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t
 bool mplayer_ibuttons_hover(mplayer_t* mplayer, ibtn_t* buttons, int* btn_id, size_t button_count);
 bool mplayer_tbuttons_hover(mplayer_t* mplayer, tbtn_t* buttons, int* btn_id, size_t button_count);
 bool mplayer_music_hover(mplayer_t* mplayer);
-bool mplayer_checkbox_clicked(mplayer_t* mplayer);
+bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer);
+bool mplayer_checkbox_hovered(mplayer_t* mplayer);
 void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info);
 void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color,
     SDL_Color fill_color, bool fill, SDL_Color tick_color, bool check);
@@ -210,5 +212,5 @@ void mplayer_getroot_path(char* root_path);
 #endif
 extern text_info_t text_info[], setting_textinfo[];
 extern tabinfo_t tab_info[];
-extern ibtn_t music_btns[], setting_btns[], setting_iconbtn;
+extern ibtn_t music_btns[], setting_btns[], setting_iconbtn, music_listplaybtn;
 #endif

@@ -43,11 +43,11 @@ ibtn_t music_btns[] = {
         {"images/skip-track.png", MUSIC_SKIPBTN, {0, 0, 35, 35}, false},
         {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}, false}
 },
+music_listplaybtn = {"images/play-button (1).png", MUSIC_LISTPLAYBTN, {0, 0, 30, 50}},
 setting_btns[] = {
         {"images/back-button.png", BACK_BUTTON, {0, 5, 45, 45}, false}
 },
 setting_iconbtn = {"images/settings (5).png", SETTING_BUTTON, {0, 9, 45, 45}, false};
-
 SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},
         img_border = {10, 0, 80, 70};
 SDL_Rect scrollbar = {0, 0, 10, 50}, music_status = {0, 0, 0, 150},
@@ -56,5 +56,5 @@ SDL_Rect checkbox_size = {0, 0, 30, 50};
 
 const size_t text_info_size = sizeof(text_info)/sizeof(text_info_t), tab_info_size = sizeof(tab_info)/sizeof(tabinfo_t),
 setting_textinfo_size = sizeof(setting_textinfo)/sizeof(text_info_t), MUSICBTN_COUNT = sizeof(music_btns)/sizeof(ibtn_t),
-MTOTALBTN_COUNT = (sizeof(music_btns)/sizeof(ibtn_t)) + 1, SETTINGSBTN_COUNT = sizeof(setting_btns) / sizeof(ibtn_t);
+MTOTALBTN_COUNT = (sizeof(music_btns)/sizeof(ibtn_t)) + 2, SETTINGSBTN_COUNT = sizeof(setting_btns) / sizeof(ibtn_t);
 #endif
