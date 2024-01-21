@@ -39,15 +39,15 @@ tabinfo_t tab_info[] = {
 int active_tab = SONGS_TAB, prev_tab = -1;
 
 ibtn_t music_btns[] = {
-        {"images/play.png", MUSIC_PLAYBTN, {0, 0, 35, 35}, false},
-        {"images/skip-track.png", MUSIC_SKIPBTN, {0, 0, 35, 35}, false},
-        {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}, false}
+        {"images/play.png", MUSIC_PLAYBTN, {0, 0, 35, 35}, false, false},
+        {"images/skip-track.png", MUSIC_SKIPBTN, {0, 0, 35, 35}, false, false},
+        {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}, false, false}
 },
-music_listplaybtn = {"images/play-button (1).png", MUSIC_LISTPLAYBTN, {0, 0, 30, 50}},
+music_listplaybtn = {"images/play-button (1).png", MUSIC_LISTPLAYBTN, {0, 0, 30, 50}, false, false},
 setting_btns[] = {
         {"images/back-button.png", BACK_BUTTON, {0, 5, 45, 45}, false}
 },
-setting_iconbtn = {"images/settings (5).png", SETTING_BUTTON, {0, 9, 45, 45}, false};
+setting_iconbtn = {"images/settings (5).png", SETTING_BUTTON, {0, 9, 45, 45}, false, false};
 SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},
         img_border = {10, 0, 80, 70};
 SDL_Rect scrollbar = {0, 0, 10, 50}, music_status = {0, 0, 0, 150},
