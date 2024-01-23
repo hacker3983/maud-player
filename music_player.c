@@ -6,6 +6,8 @@ void mplayer_init() {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     TTF_Init();
     IMG_Init(IMG_INIT_PNG);
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+    setlocale(LC_CTYPE,"it_IT.UTF-16"); 
 }
 
 SDL_Window* mplayer_createwindow(const char* title, int width, int height) {
@@ -48,6 +50,8 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->music_hover = false;
     mplayer->music_id = 0, mplayer->prevmusic_id = 0;
     mplayer->tick_count = 0;
+    mplayer->music_playing = 0;
+    mplayer->current_music = NULL;
 
     // create music information
     mplayer_getmusicpath_info(mplayer);
@@ -61,6 +65,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
         strcat(location, username);
         strcat(location, "\\Music");
         mplayer_addmusic_location(mplayer, location);
+        mplayer_getmusicpath_info(mplayer);
         free(location);
         // TODO: Linux
         #endif
@@ -449,6 +454,14 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     playbtn_listcanvas = &music_btns[MUSIC_LISTPLAYBTN].btn_canvas;
     text_info_t text = {14, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
     SDL_Rect outer_canvas = text.text_canvas;
+    if(Mix_PlayingMusic()) {
+        mtime_t full_duration = mplayer->current_music->music_duration;
+        double curr_duration = Mix_GetMusicPosition(mplayer->current_music->music);
+        mtime_t curr_time = mplayer_music_gettime(curr_duration);
+        printf("Playing %s %d:%d:%d of %d:%d:%d\n", mplayer->current_music->music_name,
+            curr_time.hrs, curr_time.mins, curr_time.secs,
+            full_duration.hrs, full_duration.mins, full_duration.secs);
+    }
 
     /*  get the size of a character so we can determine the maximum amount of textures
         we can render with in the songs box
@@ -493,6 +506,21 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                 }
                 mplayer->music_list[i].clicked = false;
             } else if(mplayer_musiclist_playbutton_hover(mplayer)) {
+                if(Mix_PlayingMusic() && mplayer->music_list[i].music_playing) {
+                    Mix_SetMusicPosition(0);
+                } else {
+                    printf("%s\n", mplayer->music_list[i].music_path);
+                    mplayer->music_list[i].music = Mix_LoadMUS(mplayer->music_list[i].music_path);
+                    mplayer->music_playing = true;
+                    printf("%s\n", Mix_GetError());
+                    mplayer->current_music = &mplayer->music_list[i];
+                    if(mplayer->current_music) {
+                        mplayer->music_playing = true;
+                    } else {
+                        mplayer->music_playing = false;
+                    }
+                    Mix_PlayMusic(mplayer->current_music->music, 1);
+                }
                 mplayer->music_list[i].clicked = false;
             }
         } else if(mplayer->music_list[i].hover) {

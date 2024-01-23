@@ -6,6 +6,7 @@
 #include <SDL2/SDL_mixer.h>
 #include <string.h>
 #include <stdbool.h>
+#include <locale.h>
 #ifdef _WIN32
 #include <windows.h>
 #include <shlwapi.h>
@@ -42,7 +43,7 @@ typedef struct music {
     mtime_t music_position;
     mtime_t music_duration;
     SDL_Rect canvas, checkbox_size;
-    bool hover, clicked, checkbox_ticked, fill;
+    bool hover, clicked, checkbox_ticked, fill, music_playing;
 } music_t;
 
 typedef struct music_location {
@@ -149,9 +150,10 @@ typedef struct mplayer {
     // Music Informations such music name, path, duration, etc
     musinfo_t musinfo;
     music_t* music_list;
+    music_t* current_music;
     size_t music_id, prevmusic_id, music_count;
     int mouse_x, mouse_y, tick_count;
-    bool music_clicked, music_hover;
+    bool music_clicked, music_hover, music_playing;
 } mplayer_t;
 
 void mplayer_init();
