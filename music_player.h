@@ -42,6 +42,7 @@ typedef struct music {
     Mix_Music* music;
     mtime_t music_position;
     mtime_t music_duration;
+    double music_durationsecs;
     SDL_Rect canvas, checkbox_size;
     bool hover, clicked, checkbox_ticked, fill, music_playing;
 } music_t;
@@ -150,10 +151,12 @@ typedef struct mplayer {
     // Music Informations such music name, path, duration, etc
     musinfo_t musinfo;
     music_t* music_list;
-    music_t* current_music;
-    size_t music_id, prevmusic_id, music_count;
+    music_t* current_music, *prev_music;
+    int music_id, prevmusic_id, playid, music_count;
     int mouse_x, mouse_y, tick_count;
-    bool music_clicked, music_hover, music_playing;
+    bool music_clicked, music_hover, music_playing,
+        scroll;
+    SDL_Rect progress_bar, progress_count;
 } mplayer_t;
 
 void mplayer_init();
@@ -192,8 +195,10 @@ void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info);
 void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color,
     SDL_Color fill_color, bool fill, SDL_Color tick_color, bool check);
 void mplayer_rendersongs(mplayer_t* mplayer);
+void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color color);
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, text_info_t* text_info);
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
+void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration);
 void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_centertext(mplayer_t* mplayer, text_info_t* text_info);
 void mplayer_centerx(mplayer_t* mplayer, text_info_t* text_info);
