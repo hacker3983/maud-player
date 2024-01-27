@@ -27,8 +27,6 @@ text_info_t text_info[] = {
 },
 setting_textinfo[] = {
         {45, "Go Back To Home", text2_color, {10, 0}},
-        {36, "Hello, Grandpa and Janicia!", white, {0}},
-        {36, "How are you doing?", white, {0}}
 };
 
 tabinfo_t tab_info[] = {
@@ -41,7 +39,8 @@ int active_tab = SONGS_TAB, prev_tab = -1;
 ibtn_t music_btns[] = {
         {"images/play.png", MUSIC_PLAYBTN, {0, 0, 35, 35}, false, false},
         {"images/skip-track.png", MUSIC_SKIPBTN, {0, 0, 35, 35}, false, false},
-        {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}, false, false}
+        {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}, false, false},
+        {"images/pause-button.png", MUSIC_PAUSEBTN, {0, 0, 35, 35}, false, false}
 },
 music_listplaybtn = {"images/play-button (1).png", MUSIC_LISTPLAYBTN, {0, 0, 30, 50}, false, false},
 setting_btns[] = {
