@@ -597,7 +597,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
 
         int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
         SDL_Rect hoverbg_canvas = {0};
-        if(mplayer_musiclist_playbutton_hover(mplayer)) {
+        // check if we hover over the play button and we haven't ticked any checkbox
+        if(mplayer_musiclist_playbutton_hover(mplayer) && !mplayer->tick_count) {
                 hoverbg_canvas = music_listplaybtn.btn_canvas;
                 hoverbg_canvas.x -= 5, hoverbg_canvas.w += 5;
                 hoverbg_canvas.h = outer_canvas.h, hoverbg_canvas.y = outer_canvas.y;
@@ -653,7 +654,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                 }
                 cursor = MPLAYER_CURSOR_POINTER;
                 mplayer_setcursor(mplayer, cursor);
-            } else if(mplayer_musiclist_playbutton_hover(mplayer)) {
+            } else if(mplayer_musiclist_playbutton_hover(mplayer) && !mplayer->tick_count) {
                 if(mplayer->music_list[i].clicked) {
                     /* whenever we hover over the playbutton on the music
                        we determine if we should restart the current playing music or play a new music
@@ -673,15 +674,18 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                 }
                 cursor = MPLAYER_CURSOR_POINTER;
                 mplayer_setcursor(mplayer, cursor);
+            } else if(mplayer->music_list[i].clicked) {
+                // whenever we click the music without clicking any of its elements
+                // we set clicked equal to false to prevent it from performing any action that we do not want
+                mplayer->music_list[i].clicked = false;
             }
-            /*if(!mplayer->music_list[i].checkbox_ticked) {
-                // if the current checkbox isn't ticked then we just draw it to the screen
-                mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, mplayer->music_list[i].fill, tick_color, mplayer->music_list[i].checkbox_ticked);
-            }*/
-            text.text_canvas.x += music_listplaybtn.btn_canvas.w + 20;
             mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT - 2] = music_listplaybtn.btn_canvas;
-            SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-2],
+            if(!mplayer->tick_count) {
+                // if we haven't ticked any checkbox then we render the music list play button to the screen
+                text.text_canvas.x += music_listplaybtn.btn_canvas.w + 20;
+                SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-2],
                     NULL, &music_listplaybtn.btn_canvas);
+            }
             mplayer_setcursor(mplayer, cursor);
         }
 
@@ -692,9 +696,14 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, mplayer->music_list[i].fill, tick_color,
                 mplayer->music_list[i].checkbox_ticked);
         } else if (mplayer->music_list[i].hover) {
-            mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, mplayer->music_list[i].fill, tick_color,
-                mplayer->music_list[i].checkbox_ticked);
+            if(mplayer_checkbox_hovered(mplayer)) {
+                mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, mplayer->music_list[i].fill, tick_color,
+                    mplayer->music_list[i].checkbox_ticked);
+            } else if(!mplayer_checkbox_hovered(mplayer)) {
+                mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, false, tick_color, false);
+            }
         }
+
         // TODO: Reimplement checkbox
         mplayer_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_texture, text.text_canvas);
         SDL_RenderCopy(mplayer->renderer, text_texture, NULL,
