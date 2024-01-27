@@ -162,7 +162,6 @@ void mplayer_addmusic_location(mplayer_t* mplayer, char* location) {
     fwrite(location, sizeof(char), strlen(location), f);
     fclose(f);
     mplayer_freemusic_info(mplayer);
-    printf("Line 164\n");
     mplayer_getmusicpath_info(mplayer);
 }
 
@@ -180,6 +179,7 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
         music_list[i].music_position.hrs = 0, music_list[i].music_position.mins = 0,
         music_list[i].music_position.secs = 0;
         music_list[i].music_playing = 0;
+        music_list[i].music_durationsecs = music_durationsecs;
         music_list[i].music_duration = mplayer_music_gettime(music_durationsecs);
     }
     mplayer->music_list = music_list;
@@ -231,17 +231,13 @@ void mplayer_freemusic_info(mplayer_t* mplayer) {
         free(mplayer->music_list[i].music_name);
         Mix_FreeMusic(mplayer->music_list[i].music);
     }
-    printf("Freeing my memory\n");
     for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
         free(mplayer->musinfo.locations[i].path);
     }
 
     free(mplayer->musinfo.files); mplayer->musinfo.files = NULL;
-    printf("Line 239\n");
     free(mplayer->musinfo.locations); mplayer->musinfo.locations = NULL;
-    printf("Line 241\n");
-    //free(mplayer->music_list); mplayer->music_list = NULL;
-    printf("Line 243\n");
+    free(mplayer->music_list); mplayer->music_list = NULL;
     mplayer->musinfo.file_count = 0;
     mplayer->musinfo.location_count = 0;
 }
