@@ -51,7 +51,6 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
         free(music_loclist);
         music_loclist = NULL;
     }
-    printf("LINE 54\n for mplayer_getmusic_location\n");
     mplayer->musinfo.locations = music_loclist;
     mplayer->musinfo.location_count = muslist_count;
 }
