@@ -71,9 +71,16 @@ void mplayer_createapp(mplayer_t* mplayer) {
         strcat(location, username);
         strcat(location, "\\Music");
         mplayer_addmusic_location(mplayer, location);
-        mplayer_getmusicpath_info(mplayer);
-        free(location);
+        //mplayer_getmusicpath_info(mplayer);
+        free(location); location = NULL;
         // TODO: Linux
+        #else
+        char* home = getenv("HOME"), *location = NULL;
+        location = calloc(strlen(home) + 7, sizeof(char));
+        strcpy(location, home);
+        strcat(location, "/Music");
+        mplayer_addmusic_location(mplayer, location);
+        free(location); location = NULL;
         #endif
     }
 }

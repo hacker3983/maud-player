@@ -51,7 +51,7 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
         free(music_loclist);
         music_loclist = NULL;
     }
-
+    printf("LINE 54\n for mplayer_getmusic_location\n");
     mplayer->musinfo.locations = music_loclist;
     mplayer->musinfo.location_count = muslist_count;
 }
@@ -84,7 +84,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
                 strcpy(music_files[mfile_count].path, mplayer->musinfo.locations[i].path);
                 strcat(music_files[mfile_count].path, "\\");
                 strcat(music_files[mfile_count].path, fd.cFileName);
-                printf("%d %s\n", i, fd.cFileName);
+                printf("%d %s, %s\n", i, fd.cFileName, fd.cAlternateFileName);
                 mfile_count++;
                 music_files = realloc(music_files, (mfile_count + 1) * sizeof(musloc_t));
                 music_files[mfile_count].path = NULL;
@@ -99,26 +99,24 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         struct stat sb = {0};
         while(entry) {
             bool valid_musicfile = false;
-            char* ext = strrchr(entry->d_name, '.');
+            char* ext = strrchr(entry->d_name, '.') + 1;
             size_t total_mpath_size = location_len + strlen(entry->d_name) + 2;
             // use stat instead of d_type to make more filesystem independent
             stat(entry->d_name, &sb);
-            if(strcmp(ext, entry->d_name) != 0 && S_ISREG(sb.st_mode)) {
-                for(size_t j=0;FILE_EXTENSIONS[j] != NULL;j++) {
-                    if(strcmp(ext, FILE_EXTENSIONS[j]) == 0) {
-                        valid_musicfile = true;
-                        break;
-                    }
+            for(size_t j=0;FILE_EXTENSIONS[j] != NULL;j++) {
+                if(strcmp(FILE_EXTENSIONS[j], ext) == 0) {
+                    valid_musicfile = true;
+                    break;
                 }
-                if(valid_musicfile) {
-                    music_files[mfile_count].path = calloc(total_mpath_size, sizeof(char));
-                    strcpy(music_files[mfile_count].path, mplayer->musinfo.locations[i].path);
-                    strcat(music_files[mfile_count].path, "/");
-                    strcat(music_files[mfile_count].path, entry->d_name);
-                    mfile_count++;
-                    music_files = realloc(music_files, (mfile_count+1) * sizeof(musloc_t));
-                    music_files[mfile_count].path = NULL;
-                }
+            }
+            if(valid_musicfile) {
+                music_files[mfile_count].path = calloc(total_mpath_size, sizeof(char));
+                strcpy(music_files[mfile_count].path, mplayer->musinfo.locations[i].path);
+                strcat(music_files[mfile_count].path, "/");
+                strcat(music_files[mfile_count].path, entry->d_name);
+                mfile_count++;
+                music_files = realloc(music_files, (mfile_count+1) * sizeof(musloc_t));
+                music_files[mfile_count].path = NULL;
             }
             entry = readdir(dirp);
         }
