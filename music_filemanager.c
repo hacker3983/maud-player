@@ -83,7 +83,6 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
                 strcpy(music_files[mfile_count].path, mplayer->musinfo.locations[i].path);
                 strcat(music_files[mfile_count].path, "\\");
                 strcat(music_files[mfile_count].path, fd.cFileName);
-                printf("%d %s, %s\n", i, fd.cFileName, fd.cAlternateFileName);
                 mfile_count++;
                 music_files = realloc(music_files, (mfile_count + 1) * sizeof(musloc_t));
                 music_files[mfile_count].path = NULL;
