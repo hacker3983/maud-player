@@ -2,7 +2,9 @@
 
 SDL_Rect *playbtn_canvas = NULL, *playbtn_listcanvas = NULL,
         *prevbtn_canvas = NULL, *skipbtn_canvas = NULL,
-        *pausebtn_canvas = NULL;
+        *pausebtn_canvas = NULL, *repeatoffbtn_canvas = NULL,
+        *repeatallbtn_canvas = NULL, *repeatonebtn_canvas = NULL,
+        *shufflebtn_canvas = NULL;
 void mplayer_init() {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     TTF_Init();
@@ -49,7 +51,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->cursors[MPLAYER_CURSOR_DEFAULT] = SDL_GetDefaultCursor();
     mplayer->cursors[MPLAYER_CURSOR_POINTER] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
     mplayer->music_hover = false;
-    mplayer->music_id = 0, mplayer->prevmusic_id = 0, mplayer->playid = 0;
+    mplayer->music_id = 0, mplayer->prevmusic_id = 0, mplayer->playid = 0, mplayer->repeat_id = MUSIC_REPEATALLBTN;
     mplayer->tick_count = 0;
     mplayer->music_playing = 0;
     mplayer->scroll = false;
@@ -329,7 +331,12 @@ void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures
     playbtn_canvas = &music_btns[MUSIC_PLAYBTN].btn_canvas,
     skipbtn_canvas = &music_btns[MUSIC_SKIPBTN].btn_canvas,
     prevbtn_canvas = &music_btns[MUSIC_PREVBTN].btn_canvas;
+    shufflebtn_canvas = &music_btns[MUSIC_SHUFFLEBTN].btn_canvas;
     pausebtn_canvas = &music_btns[MUSIC_PAUSEBTN].btn_canvas;
+    repeatoffbtn_canvas = &music_btns[MUSIC_REPEATOFFBTN].btn_canvas;
+    repeatallbtn_canvas = &music_btns[MUSIC_REPEATALLBTN].btn_canvas;
+    repeatonebtn_canvas = &music_btns[MUSIC_REPEATONEBTN].btn_canvas;
+    
     // create music bar
     music_status.y = HEIGHT - music_status.h, music_status.w = WIDTH;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(music_statusbar_color));
@@ -337,50 +344,54 @@ void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures
     SDL_RenderDrawRect(mplayer->renderer, &music_status);
 
     // place the play, previous and skip button in the middle of the music status
-    if(!music_btns[MUSIC_PLAYBTN].clicked && Mix_PlayingMusic() && !Mix_PausedMusic()) {
-        pausebtn_canvas->x = (WIDTH - pausebtn_canvas->w) / 2,
-        pausebtn_canvas->y = HEIGHT - (playbtn_canvas->h +
-            (playbtn_canvas->h/2));
-    } else if(!music_btns[MUSIC_PLAYBTN].clicked || Mix_PausedMusic()) {
-        playbtn_canvas->x = (WIDTH - playbtn_canvas->w)/2, playbtn_canvas->y = HEIGHT - (playbtn_canvas->h +
-            (playbtn_canvas->h/2));
-    } else {
-        (pausebtn_canvas->x) = (WIDTH - pausebtn_canvas->w)/2, pausebtn_canvas->y = HEIGHT - (pausebtn_canvas->h +
-            (pausebtn_canvas->h/2));
-    }
+    playbtn_canvas->x = (WIDTH - playbtn_canvas->w)/2, playbtn_canvas->y = HEIGHT -
+        (playbtn_canvas->h + (playbtn_canvas->h/2));
+    
+    pausebtn_canvas->x = playbtn_canvas->x, pausebtn_canvas->y = playbtn_canvas->y;
+
     /*prevbtn_canvas->x = ((WIDTH - prevbtn_canvas->w)/4), prevbtn_canvas->y = HEIGHT - (prevbtn_canvas->h +
        (prevbtn_canvas->h/2));*/
+    shufflebtn_canvas->x = ((WIDTH - shufflebtn_canvas->w)/2) - shufflebtn_canvas->w - 60,
+    shufflebtn_canvas->y = HEIGHT - (shufflebtn_canvas->h + (shufflebtn_canvas->h/2));
     prevbtn_canvas->x = ((WIDTH - prevbtn_canvas->w)/2) - prevbtn_canvas->w - 10, prevbtn_canvas->y = HEIGHT - (prevbtn_canvas->h +
        (prevbtn_canvas->h/2));
+
     /*skipbtn_canvas->x = (WIDTH - (skipbtn_canvas->w))/2 + (WIDTH - skipbtn_canvas->w)/4, skipbtn_canvas->y = HEIGHT -
         (skipbtn_canvas->h + (skipbtn_canvas->h/2));*/
     skipbtn_canvas->x = ((WIDTH - (skipbtn_canvas->w))/2) + skipbtn_canvas->w + 10, skipbtn_canvas->y = HEIGHT -
         (skipbtn_canvas->h + (skipbtn_canvas->h/2));
 
+    // TODO: Fix here
+    repeatallbtn_canvas->x = skipbtn_canvas->x + skipbtn_canvas->w + 10,
+    repeatallbtn_canvas->y = skipbtn_canvas->y;
+
+    repeatonebtn_canvas->x = repeatallbtn_canvas->x,
+    repeatonebtn_canvas->y = repeatallbtn_canvas->y;
+
+    repeatoffbtn_canvas->x = repeatonebtn_canvas->x,
+    repeatoffbtn_canvas->y = repeatonebtn_canvas->y;
+    SDL_Texture* target_texture = NULL;
     // render all buttons on music status bar
-    for(int i=0;i<MUSICBTN_COUNT-1;i++) {
+    for(int i=0;i<MUSICBTN_COUNT;i++) {
         mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = music_btns[i].btn_canvas;
-        if(i == MUSIC_PLAYBTN && !music_btns[i].clicked && Mix_PlayingMusic() && !Mix_PausedMusic()) {
-            SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MUSIC_PAUSEBTN],
-                NULL, &music_btns[MUSIC_PAUSEBTN].btn_canvas);
+        if(i == MUSIC_PLAYBTN || i == MUSIC_PAUSEBTN) {
+            target_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MUSIC_PLAYBTN];
+            if(Mix_PlayingMusic() && !Mix_PausedMusic()) {
+                target_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MUSIC_PAUSEBTN];
+            }
+            if(music_btns[i].clicked) {
+                if(Mix_PlayingMusic() && Mix_PausedMusic() && music_btns[MUSIC_PLAYBTN].clicked) {
+                    Mix_ResumeMusic();
+                } else if(Mix_PlayingMusic() && !Mix_PausedMusic() && music_btns[MUSIC_PLAYBTN].clicked) {
+                    Mix_PauseMusic();
+                }
+                music_btns[i].clicked = false;
+            }
+            SDL_RenderCopy(mplayer->renderer, target_texture, NULL, &music_btns[i].btn_canvas);
             continue;
-        } else if(i == MUSIC_PLAYBTN && music_btns[i].clicked && !Mix_PausedMusic()) {
-            music_btns[i].clicked = false;
-            music_btns[MUSIC_PAUSEBTN].clicked = false;
-            Mix_PauseMusic();
-            SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][i],
-                NULL, &music_btns[MUSIC_PLAYBTN].btn_canvas);
-            continue;
-        } else if(i == MUSIC_PLAYBTN && music_btns[i].clicked && Mix_PausedMusic()) {
-            music_btns[i].clicked = false;
-            music_btns[MUSIC_PAUSEBTN].clicked = true;
-            Mix_ResumeMusic();
-            SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MUSIC_PAUSEBTN],
-                NULL, &music_btns[MUSIC_PAUSEBTN].btn_canvas);
-            continue;
-        } else if(i == MUSIC_PLAYBTN && music_btns[MUSIC_PAUSEBTN].clicked) {
-            SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MUSIC_PAUSEBTN],
-                NULL, &music_btns[MUSIC_PAUSEBTN].btn_canvas);
+        } else if(i == MUSIC_REPEATALLBTN || i == MUSIC_REPEATONEBTN || i == MUSIC_REPEATOFFBTN) {
+            target_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][mplayer->repeat_id];
+            SDL_RenderCopy(mplayer->renderer, target_texture, NULL, &music_btns[mplayer->repeat_id].btn_canvas);
             continue;
         }
         SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][i],
@@ -537,12 +548,26 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
     }
 }
 
-void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color color) {
-    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(color));
+void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Color line_color, 
+    double curr_durationsecs, double full_durationsecs) {
+    int percentage = (double)(curr_durationsecs) / (double)(full_durationsecs) * (double)100;
+    int percentageof = (int)((double)percentage / (double)100 * (double)mplayer->progress_bar.w);
+
+    mplayer->progress_count.x = mplayer->progress_bar.x;
+    mplayer->progress_count.y = mplayer->progress_bar.y;
+    
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bar_color));
     SDL_RenderDrawRect(mplayer->renderer, &mplayer->progress_bar);
     SDL_RenderFillRect(mplayer->renderer, &mplayer->progress_bar);
-}
 
+    if(Mix_PlayingMusic()) {
+        mplayer->progress_count.w = percentageof;
+        mplayer->progress_count.h = mplayer->progress_bar.h;
+        SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(line_color));
+        SDL_RenderDrawRect(mplayer->renderer, &mplayer->progress_count);
+        SDL_RenderFillRect(mplayer->renderer, &mplayer->progress_count);
+    }
+}
 
 void mplayer_rendersongs(mplayer_t* mplayer) {
     int cursor = MPLAYER_CURSOR_DEFAULT;
@@ -564,9 +589,38 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
             full_duration.hrs, full_duration.mins, full_duration.secs, progress);
     }
+    if(mplayer->current_music && !Mix_PlayingMusic()) {
+        switch(mplayer->repeat_id) {
+            case MUSIC_REPEATALLBTN:
+                if(mplayer->playid < mplayer->music_count) {
+                    // play the next music whenever one is completed
+                    mplayer->playid++;
+                    mplayer->current_music = &mplayer->music_list[mplayer->playid];
+                    Mix_PlayMusic(mplayer->current_music->music, 1);
+                    break;
+                }
+                mplayer->playid %= MUSIC_REPEATOFFBTN;
+                mplayer->current_music = &mplayer->music_list[mplayer->playid];
+                Mix_PlayMusic(mplayer->current_music->music, 1);
+                break;
+            case MUSIC_REPEATONEBTN:
+                Mix_PlayMusic(mplayer->current_music->music, -1);
+                break;
+            case MUSIC_REPEATOFFBTN:
+                if(mplayer->playid < mplayer->music_count) {
+                    // play the next music whenever one is completed
+                    mplayer->playid++;
+                    mplayer->current_music = &mplayer->music_list[mplayer->playid];
+                    Mix_PlayMusic(mplayer->current_music->music, 1);
+                    break;
+                }
+                mplayer->playid %= MUSIC_REPEATOFFBTN;
+                break;
+        }
+    }
     mplayer_displaymusic_status(mplayer, curr_duration, full_duration);
-    SDL_Color progressbar_color = {0x00, 0x00, 0x00, 0x00};
-    mplayer_renderprogress_bar(mplayer, progressbar_color);
+    SDL_Color progressbar_color = {0x00, 0x00, 0x00, 0x00}, progress_linecolor = {0xFF, 0xFF, 0x00, 0xFF};
+    mplayer_renderprogress_bar(mplayer, progressbar_color, progress_linecolor, curr_durationsecs, full_durationsecs);
 
     /*  get the size of a character so we can determine the maximum amount of textures
         we can render with in the songs box
@@ -729,6 +783,8 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
         mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, MTOTALBTN_COUNT);
         // Load Button Textures and Canvas's
         for(int i=0;i<MUSICBTN_COUNT;i++) {
+            /*printf("music_btns[i].imgbtn_path: %s, x: %d, y: %d\n", music_btns[i].imgbtn_path,
+                music_btns[i].btn_canvas.x, music_btns[i].btn_canvas.y);*/
             menu->textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, music_btns[i].imgbtn_path);
             menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = music_btns[i].btn_canvas;
         }
@@ -795,11 +851,32 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer_setup_menu(mplayer);
                 return;
             } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_PLAYBTN])) {
-                music_btns[MUSIC_PLAYBTN].clicked = true;
+                // since the pause and play button will be in the same position we
+                // can just check if we clicked in the position for the play button
+                switch(music_btns[MUSIC_PLAYBTN].clicked) {
+                    case true:
+                        // if we clicked in the position for the play button already
+                        // that means we clicked on the pause btn
+                        music_btns[MUSIC_PLAYBTN].clicked = false;
+                        music_btns[MUSIC_PAUSEBTN].clicked = true;
+                        break;
+                    case false:
+                        // if play button wasn't already clicked then that means we clicked on the play button
+                        music_btns[MUSIC_PAUSEBTN].clicked = false;
+                        music_btns[MUSIC_PLAYBTN].clicked = true;
+                        break;
+
+                }
             } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_PREVBTN])) {
                 music_btns[MUSIC_PREVBTN].clicked = true;
             } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_SKIPBTN])) {
                 music_btns[MUSIC_SKIPBTN].clicked = true;
+            } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_REPEATALLBTN])) {
+                if(mplayer->repeat_id == MUSIC_REPEATOFFBTN) {
+                    mplayer->repeat_id = MUSIC_REPEATALLBTN;
+                    break;
+                }
+                music_btns[mplayer->repeat_id++].clicked = true;
             } else if(mplayer_music_hover(mplayer)) {
                 mplayer->mouse_x = mplayer->e.button.x;
                 mplayer->mouse_y = mplayer->e.button.y;

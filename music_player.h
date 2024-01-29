@@ -89,9 +89,13 @@ typedef struct text_buttons {
 
 enum musical_buttons {
     MUSIC_PLAYBTN,
+    MUSIC_SHUFFLEBTN,
     MUSIC_SKIPBTN,
     MUSIC_PREVBTN,
     MUSIC_PAUSEBTN,
+    MUSIC_REPEATALLBTN,
+    MUSIC_REPEATONEBTN,
+    MUSIC_REPEATOFFBTN,
     MUSIC_LISTPLAYBTN
 };
 
@@ -152,10 +156,9 @@ typedef struct mplayer {
     musinfo_t musinfo;
     music_t* music_list;
     music_t* current_music, *prev_music;
-    int music_id, prevmusic_id, playid, music_count;
+    int music_id, prevmusic_id, playid, music_count, repeat_id;
     int mouse_x, mouse_y, tick_count;
-    bool music_clicked, music_hover, music_playing,
-        scroll;
+    bool music_clicked, music_hover, music_playing, scroll;
     SDL_Rect progress_bar, progress_count;
 } mplayer_t;
 
@@ -195,7 +198,8 @@ void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info);
 void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color,
     SDL_Color fill_color, bool fill, SDL_Color tick_color, bool check);
 void mplayer_rendersongs(mplayer_t* mplayer);
-void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color color);
+void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Color line_color,
+    double curr_durationsecs, double full_durationsecs);
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, text_info_t* text_info);
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration);
