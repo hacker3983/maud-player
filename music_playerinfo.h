@@ -38,9 +38,13 @@ int active_tab = SONGS_TAB, prev_tab = -1;
 
 ibtn_t music_btns[] = {
         {"images/play.png", MUSIC_PLAYBTN, {0, 0, 35, 35}, false, false},
+        {"images/shuffle-arrows (1).png", MUSIC_SHUFFLEBTN, {0, 0, 35, 35}, false, false},
         {"images/skip-track.png", MUSIC_SKIPBTN, {0, 0, 35, 35}, false, false},
         {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}, false, false},
-        {"images/pause-button.png", MUSIC_PAUSEBTN, {0, 0, 35, 35}, false, false}
+        {"images/pause-button.png", MUSIC_PAUSEBTN, {0, 0, 35, 35}, false, false},
+        {"images/repeat-all (1).png", MUSIC_REPEATALLBTN, {0, 0, 35, 35}, false, false},
+        {"images/repeat-one (1).png", MUSIC_REPEATONEBTN, {0, 0, 35, 35}, false, false},
+        {"images/repeat-off (1).png", MUSIC_REPEATOFFBTN, {0, 0, 35, 35}, false, false}
 },
 music_listplaybtn = {"images/play-button (1).png", MUSIC_LISTPLAYBTN, {0, 0, 30, 50}, false, false},
 setting_btns[] = {
