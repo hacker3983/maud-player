@@ -603,7 +603,6 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                     Mix_PlayMusic(mplayer->current_music->music, 1);
                     break;
                 }
-                printf("mplayer->playid = %s\n", mplayer->music_count);
                 mplayer->playid %= mplayer->music_count;
                 mplayer->current_music = &mplayer->music_list[mplayer->playid];
                 Mix_PlayMusic(mplayer->current_music->music, 1);
