@@ -35,6 +35,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->window = mplayer_createwindow(WINDOW_TITLE, WIDTH, HEIGHT);
     mplayer->renderer = mplayer_createrenderer(mplayer->window);
     mplayer->font = mplayer_openfont(FONT_FILE, FONT_SIZE);
+    mplayer->music_font = mplayer_openfont(MUSIC_FONTFILE, MUSIC_FONTSIZE);
     mplayer->quit = 0;
     for(size_t i=0;i<MENU_COUNT;i++) {
         for(size_t j=0;j<TEXTURE_TYPECOUNT;j++) {
@@ -209,11 +210,11 @@ bool mplayer_checkbox_hovered(mplayer_t* mplayer) {
     return false;
 }
 
-SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, text_info_t* text_info) {
+SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t* text_info) {
     SDL_Rect text_canvas = text_info->text_canvas;
-    TTF_SetFontSize(mplayer->font, text_info->font_size);
-    TTF_SizeText(mplayer->font, text_info->text, &text_canvas.w, &text_canvas.h);
-    SDL_Surface* surface = TTF_RenderText_Blended(mplayer->font, text_info->text, text_info->text_color);
+    TTF_SetFontSize(font, text_info->font_size);
+    TTF_SizeText(font, text_info->text, &text_canvas.w, &text_canvas.h);
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text_info->text, text_info->text_color);
     SDL_Texture* texture = SDL_CreateTextureFromSurface(mplayer->renderer, surface);
     SDL_FreeSurface(surface);
     text_info->text_canvas = text_canvas;
@@ -528,7 +529,7 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
     sprintf(duration_texts[1].text, "%02d:%02d:%02d", full_duration.hrs, full_duration.mins, full_duration.secs);
     for(int i=0;i<2;i++) {
         duration_texts[i].font_size = 14;
-        textures[i] = mplayer_rendertext(mplayer, &duration_texts[i]);
+        textures[i] = mplayer_rendertext(mplayer, mplayer->music_font, &duration_texts[i]);
     }
     mplayer->progress_bar.w = WIDTH - (duration_texts[0].text_canvas.w * 2) - 20,
     mplayer->progress_bar.x = duration_texts[0].text_canvas.x + duration_texts[0].text_canvas.w + 6;
@@ -543,7 +544,7 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
         text_info_t music_name = {18, NULL, white, {20, 0, 0, 0}};
         music_name.text_canvas.y = prevbtn_canvas->y - 10;
         music_name.text = mplayer->current_music->music_name;
-        SDL_Texture* texture = mplayer_rendertext(mplayer, &music_name);
+        SDL_Texture* texture = mplayer_rendertext(mplayer, mplayer->music_font, &music_name);
         SDL_RenderCopy(mplayer->renderer, texture, NULL, &music_name.text_canvas);
     }
 }
@@ -592,6 +593,9 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     if(mplayer->current_music && !Mix_PlayingMusic()) {
         switch(mplayer->repeat_id) {
             case MUSIC_REPEATALLBTN:
+                if(!mplayer->current_music->music) {
+                    break;
+                }
                 if(mplayer->playid < mplayer->music_count) {
                     // play the next music whenever one is completed
                     mplayer->playid++;
@@ -599,7 +603,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                     Mix_PlayMusic(mplayer->current_music->music, 1);
                     break;
                 }
-                mplayer->playid %= MUSIC_REPEATOFFBTN;
+                printf("mplayer->playid = %s\n", mplayer->music_count);
+                mplayer->playid %= mplayer->music_count;
                 mplayer->current_music = &mplayer->music_list[mplayer->playid];
                 Mix_PlayMusic(mplayer->current_music->music, 1);
                 break;
@@ -614,7 +619,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                     Mix_PlayMusic(mplayer->current_music->music, 1);
                     break;
                 }
-                mplayer->playid %= MUSIC_REPEATOFFBTN;
+                mplayer->playid %= mplayer->music_count;
                 break;
         }
     }
@@ -625,8 +630,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     /*  get the size of a character so we can determine the maximum amount of textures
         we can render with in the songs box
     */
-    TTF_SetFontSize(mplayer->font, text.font_size);
-    TTF_SizeText(mplayer->font, "A", &text.text_canvas.w, &text.text_canvas.h);
+    TTF_SetFontSize(mplayer->music_font, text.font_size);
+    TTF_SizeText(mplayer->music_font, "A", &text.text_canvas.w, &text.text_canvas.h);
     size_t max_textures = songs_box.h / (text.text_canvas.h + 25); // calculation for the scrollability
     for(int i=0;i<mplayer->music_count;i++) {
         text.text = mplayer->music_list[i].music_name;
@@ -635,7 +640,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             break;
         }
         outer_canvas.h = text.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
-        SDL_Texture* text_texture = mplayer_rendertext(mplayer, &text);
+        SDL_Texture* text_texture = mplayer_rendertext(mplayer, mplayer->music_font, &text);
         text.text_canvas.x = outer_canvas.x + 50,
         text.text_canvas.y = outer_canvas.y + ((outer_canvas.h - text.text_canvas.h) / 2);
         mplayer->music_list[i].canvas = outer_canvas;
@@ -676,13 +681,15 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             Mix_HaltMusic();
             Mix_PlayMusic(mplayer->current_music->music, 1);
             music_btns[MUSIC_PREVBTN].clicked = false;
-        } else if(music_btns[MUSIC_SKIPBTN].clicked && mplayer->playid < mplayer->music_count) {
-            // 
+        } else if(music_btns[MUSIC_SKIPBTN].clicked && mplayer->playid <= mplayer->music_count) {
             mplayer->playid++;
+            printf("mplayer->playid: %d\n", mplayer->playid);
+            mplayer->playid %= mplayer->music_count;
             mplayer->current_music = &mplayer->music_list[mplayer->playid];
             Mix_HaltMusic();
             Mix_PlayMusic(mplayer->current_music->music, 1);
             music_btns[MUSIC_SKIPBTN].clicked = false;
+            mplayer->playid %= mplayer->music_count;
         } else if(mplayer->music_list[i].hover) {
             // check if the mouse is hovered over the music
             if(mplayer_checkbox_hovered(mplayer)) {
@@ -740,12 +747,13 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                 // we set clicked equal to false to prevent it from performing any action that we do not want
                 mplayer->music_list[i].clicked = false;
             }
-            mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT - 2] = music_listplaybtn.btn_canvas;
+            mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_listplaybtn.texture_idx] =
+                music_listplaybtn.btn_canvas;
             if(!mplayer->tick_count) {
                 // if we haven't ticked any checkbox then we render the music list play button to the screen
                 text.text_canvas.x += music_listplaybtn.btn_canvas.w + 20;
-                SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-2],
-                    NULL, &music_listplaybtn.btn_canvas);
+                SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE]
+                    [music_listplaybtn.texture_idx], NULL, &music_listplaybtn.btn_canvas);
             }
             mplayer_setcursor(mplayer, cursor);
         }
@@ -780,21 +788,39 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
     if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU && menu->textures[MPLAYER_TEXT_TEXTURE] == NULL) {
         mplayer_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_info_size-1);
         mplayer_createmenu_texture(mplayer, MPLAYER_TAB_TEXTURE, tab_info_size);
-        mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, MTOTALBTN_COUNT);
+        mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, MUSICBTN_COUNT/*MTOTALBTN_COUNT*/);
         // Load Button Textures and Canvas's
         for(int i=0;i<MUSICBTN_COUNT;i++) {
             /*printf("music_btns[i].imgbtn_path: %s, x: %d, y: %d\n", music_btns[i].imgbtn_path,
                 music_btns[i].btn_canvas.x, music_btns[i].btn_canvas.y);*/
             menu->textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, music_btns[i].imgbtn_path);
             menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = music_btns[i].btn_canvas;
+            music_btns[i].texture_idx = i;
         }
-        menu->textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT - 1] = IMG_LoadTexture(mplayer->renderer,
-            setting_iconbtn.imgbtn_path);
-        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT - 1] = setting_iconbtn.btn_canvas;
 
-        menu->textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT - 2] = IMG_LoadTexture(mplayer->renderer,
+
+        // TODO: REPLACE WITH mplayer_menuplacetexture function
+
+        // Add a texture for the add folder icon button
+        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
+        music_addfolderbtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
+        menu->textures[MPLAYER_BUTTON_TEXTURE][music_addfolderbtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
+            music_addfolderbtn.imgbtn_path);
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_addfolderbtn.texture_idx] = music_addfolderbtn.btn_canvas;
+
+        // Add a texture for settings icon button
+        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
+        setting_iconbtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
+        menu->textures[MPLAYER_BUTTON_TEXTURE][setting_iconbtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
+            setting_iconbtn.imgbtn_path);
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][setting_iconbtn.texture_idx] = setting_iconbtn.btn_canvas;
+
+        // music list play button icon
+        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
+        music_listplaybtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
+        menu->textures[MPLAYER_BUTTON_TEXTURE][music_listplaybtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
             music_listplaybtn.imgbtn_path);
-        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT - 2] = music_listplaybtn.btn_canvas; 
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_listplaybtn.texture_idx] = music_listplaybtn.btn_canvas; 
     } else if(mplayer->menu_opt == MPLAYER_SETTINGS_MENU && menu->textures[MPLAYER_TEXT_TEXTURE] == NULL) {
         mplayer_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, setting_textinfo_size);
         mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, SETTINGSBTN_COUNT);
@@ -830,6 +856,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             if(mplayer_ibutton_hover(mplayer, setting_iconbtn)) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
                 setting_iconbtn.hover = true;
+            } else if(mplayer_ibutton_hover(mplayer, music_addfolderbtn)) {
+                mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+                music_addfolderbtn.hover = true;
             } else if(mplayer_tabs_hover(mplayer, tab_info, &tab_hoverid, tab_info_size) && TAB_INIT) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
             } else if(mplayer_music_hover(mplayer)) {
@@ -840,6 +869,13 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             }
         } else if(mplayer->e.type == SDL_MOUSEWHEEL) {
             mplayer->scroll = true;
+        } else if(Mix_PlayingMusic() && mplayer->e.type == SDL_KEYUP) {
+            if(mplayer->e.key.keysym.sym == SDLK_SPACE)
+                if(Mix_PausedMusic()) {
+                    Mix_ResumeMusic();
+                } else {
+                    Mix_PauseMusic();
+                }
         } else if(mplayer->e.type == SDL_MOUSEBUTTONUP) {
             if(mplayer_tabs_hover(mplayer, tab_info, &tab_hoverid, tab_info_size) && TAB_INIT) {
                 tab_info[prev_tab].active = false;
@@ -850,6 +886,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer->menu_opt = MPLAYER_SETTINGS_MENU;
                 mplayer_setup_menu(mplayer);
                 return;
+            } else if(mplayer_ibutton_hover(mplayer, music_addfolderbtn)) {
+                mplayer_browsefolder(mplayer);
             } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_PLAYBTN])) {
                 // since the pause and play button will be in the same position we
                 // can just check if we clicked in the position for the play button
@@ -888,7 +926,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     }
     SDL_GetWindowSize(mplayer->window, &WIDTH, &HEIGHT);
     mplayer_set_window_color(mplayer->renderer, window_color);
-    mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0] = mplayer_rendertext(mplayer, &text_info[0]);
+    mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0] = mplayer_rendertext(mplayer, mplayer->font, &text_info[0]);
     mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][0] = text_info[0].text_canvas;
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0], NULL,
             &text_info[0].text_canvas);
@@ -913,11 +951,19 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer->menu->texture_canvases[MPLAYER_TAB_TEXTURE][i-1] = tab_info[i-1].text_canvas;
     }
 
+    // Create add folder button on screen
+    music_addfolderbtn.btn_canvas.x = WIDTH - (setting_iconbtn.btn_canvas.w * 2) - 4;
+    mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_addfolderbtn.texture_idx] =
+        music_addfolderbtn.btn_canvas;
+    SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][music_addfolderbtn.texture_idx],
+        NULL, &music_addfolderbtn.btn_canvas);
+
     // Create settings button on screen
     setting_iconbtn.btn_canvas.x = WIDTH - setting_iconbtn.btn_canvas.w - 2;
-    mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-1] = setting_iconbtn.btn_canvas;
-    SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MTOTALBTN_COUNT-1], NULL,
-        &setting_iconbtn.btn_canvas);
+    mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][setting_iconbtn.texture_idx] =
+        setting_iconbtn.btn_canvas;
+    SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][setting_iconbtn.texture_idx],
+        NULL, &setting_iconbtn.btn_canvas);
     /* Create songs box*/
     mplayer_createsongs_box(mplayer);
     /* Create music bar */
@@ -969,7 +1015,7 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
 
     // create buttons, text and display on the screen
     for(size_t i=0;i<setting_textinfo_size;i++) {
-        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][i] = mplayer_rendertext(mplayer, &setting_textinfo[i]);
+        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][i] = mplayer_rendertext(mplayer, mplayer->font, &setting_textinfo[i]);
     }
 
     // set the canvas x position of the text "Go Back To Home" beside the back button 

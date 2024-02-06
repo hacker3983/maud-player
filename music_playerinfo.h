@@ -2,7 +2,7 @@
 #define _MUSIC_PLAYERINFO
 #include "music_player.h"
 const char* WINDOW_TITLE = "Maud Player (Music Audio Player)", *SETTING_TITLE = "Maud Player Settings",
-        *FONT_FILE = "SF-Pro-Display-Black.otf", *MUSIC_PATHINFO_FILE = "MUSICPATHS.info",
+        *FONT_FILE = "SF-Pro-Display-Black.otf", *MUSIC_FONTFILE = "sf-unicode.ttf", *MUSIC_PATHINFO_FILE = "MUSICPATHS.info",
         *FILE_EXTENSIONS[] = {"mp3", "flac", "ogg", "opus", "wav", "m4a", NULL};
 
 const SDL_Color window_color = {0, 0, 0, 0}/*{0x2c, 0x36, 0x5e, 0xff}/*{0x3C, 0x16, 0x42, 0xff}*/,
@@ -17,7 +17,7 @@ songs_boxcolor = green, back_btnbg_color = {0x46, 0xB1, 0xC9, 0xFF},
 /* Reference: https://coolors.co/023c40-c3979f-0ad3ff-78ffd6-e1faf9 */
 setting_wincolor = black/*{0x02, 0x3C, 0x40, 0xFF}*/,
 setting_textcolor = {0xC3, 0x97, 0x9F, 0xFF};
-int WIDTH = 900, HEIGHT = 600, TAB_INIT = 0, FONT_SIZE = 20, TAB_SPACING = 20,
+int WIDTH = 900, HEIGHT = 600, TAB_INIT = 0, FONT_SIZE = 20, MUSIC_FONTSIZE = 14, TAB_SPACING = 20,
 SBOXDISTANCE_X = 50, SETTING_LINESPACING = 10, UNDERLINE_THICKNESS = 10, checkbox_init = 0;
 
 text_info_t text_info[] = {
@@ -37,20 +37,21 @@ tabinfo_t tab_info[] = {
 int active_tab = SONGS_TAB, prev_tab = -1;
 
 ibtn_t music_btns[] = {
-        {"images/play.png", MUSIC_PLAYBTN, {0, 0, 35, 35}, false, false},
-        {"images/shuffle-arrows (1).png", MUSIC_SHUFFLEBTN, {0, 0, 35, 35}, false, false},
-        {"images/skip-track.png", MUSIC_SKIPBTN, {0, 0, 35, 35}, false, false},
-        {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}, false, false},
-        {"images/pause-button.png", MUSIC_PAUSEBTN, {0, 0, 35, 35}, false, false},
-        {"images/repeat-all (1).png", MUSIC_REPEATALLBTN, {0, 0, 35, 35}, false, false},
-        {"images/repeat-one (1).png", MUSIC_REPEATONEBTN, {0, 0, 35, 35}, false, false},
-        {"images/repeat-off (1).png", MUSIC_REPEATOFFBTN, {0, 0, 35, 35}, false, false}
+        {"images/play.png", MUSIC_PLAYBTN, {0, 0, 35, 35}, false, false, 0},
+        {"images/shuffle-arrows (1).png", MUSIC_SHUFFLEBTN, {0, 0, 35, 35}, false, false, 0},
+        {"images/skip-track.png", MUSIC_SKIPBTN, {0, 0, 35, 35}, false, false, 0},
+        {"images/previous.png", MUSIC_PREVBTN, {0, 0, 35, 35}, false, false, 0},
+        {"images/pause-button.png", MUSIC_PAUSEBTN, {0, 0, 35, 35}, false, false, 0},
+        {"images/repeat-all (1).png", MUSIC_REPEATALLBTN, {0, 0, 35, 35}, false, false, },
+        {"images/repeat-one (1).png", MUSIC_REPEATONEBTN, {0, 0, 35, 35}, false, false, 0},
+        {"images/repeat-off (1).png", MUSIC_REPEATOFFBTN, {0, 0, 35, 35}, false, false, 0}
 },
-music_listplaybtn = {"images/play-button (1).png", MUSIC_LISTPLAYBTN, {0, 0, 30, 50}, false, false},
+music_listplaybtn = {"images/play-button (1).png", MUSIC_LISTPLAYBTN, {0, 0, 30, 50}, false, false, 0},
+music_addfolderbtn = {"images/add-folder.png", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0},
 setting_btns[] = {
-        {"images/back-button.png", BACK_BUTTON, {0, 5, 45, 45}, false}
+        {"images/back-button.png", BACK_BUTTON, {0, 5, 45, 45}, false, false, 0}
 },
-setting_iconbtn = {"images/settings (5).png", SETTING_BUTTON, {0, 9, 45, 45}, false, false};
+setting_iconbtn = {"images/settings (5).png", SETTING_BUTTON, {0, 9, 45, 45}, false, false, 0};
 SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},
         img_border = {10, 0, 80, 70};
 SDL_Rect scrollbar = {0, 0, 10, 50}, music_status = {0, 0, 0, 150},

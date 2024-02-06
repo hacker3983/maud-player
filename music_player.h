@@ -4,6 +4,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
+#include <SDL2/SDL_syswm.h>
 #include <string.h>
 #include <stdbool.h>
 #include <locale.h>
@@ -11,14 +12,15 @@
 #include <windows.h>
 #include <shlwapi.h>
 #include <commdlg.h>
+#include <shlobj.h>
 #else
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
 #endif
 
-extern const char* WINDOW_TITLE, *SETTING_TITLE, *FONT_FILE, *MUSIC_PATHINFO_FILE, *FILE_EXTENSIONS[];
-extern int WIDTH, HEIGHT, FONT_SIZE, TAB_INIT, active_tab, prev_tab, TAB_SPACING, SBOXDISTANCE_X,  SETTING_LINESPACING,
+extern const char* WINDOW_TITLE, *SETTING_TITLE, *FONT_FILE, *MUSIC_FONTFILE, *MUSIC_PATHINFO_FILE, *FILE_EXTENSIONS[];
+extern int WIDTH, HEIGHT, FONT_SIZE, MUSIC_FONTSIZE, TAB_INIT, active_tab, prev_tab, TAB_SPACING, SBOXDISTANCE_X,  SETTING_LINESPACING,
 UNDERLINE_THICKNESS, checkbox_init;
 extern SDL_Rect scrollbar, music_status, songs_box, checkbox_size;
 extern const size_t text_info_size, tab_info_size, setting_textinfo_size, MUSICBTN_COUNT, MTOTALBTN_COUNT, SETTINGSBTN_COUNT;
@@ -77,6 +79,7 @@ typedef struct image_buttons {
     int id;
     SDL_Rect btn_canvas;
     bool hover, clicked;
+    int texture_idx;
 } ibtn_t;
 
 typedef struct text_buttons {
@@ -96,7 +99,8 @@ enum musical_buttons {
     MUSIC_REPEATALLBTN,
     MUSIC_REPEATONEBTN,
     MUSIC_REPEATOFFBTN,
-    MUSIC_LISTPLAYBTN
+    MUSIC_LISTPLAYBTN,
+    MUSIC_ADDFOLDERBTN
 };
 
 enum setting_buttons {
@@ -146,7 +150,7 @@ typedef struct mplayer {
     // Music Player Graphical Utilities
     SDL_Window* window; // window
     SDL_Renderer* renderer; // renderer
-    TTF_Font* font; // font
+    TTF_Font* font, *music_font; // fonts
     SDL_Event e; // event
     int menu_opt, quit;
     mplayer_menu_t menus[MENU_COUNT], *menu;
@@ -175,6 +179,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer);
 void mplayer_getmusicpath_info(mplayer_t* mplayer);
 char* mplayer_getmusic_namefrompath(const char* path);
 void mplayer_loadmusics(mplayer_t* mplayer);
+void mplayer_browsefolder(mplayer_t* mplayer);
 void mplayer_addmusic_location(mplayer_t* mplayer, char* location);
 mtime_t mplayer_music_gettime(double seconds);
 bool mplayer_musiclocation_exists(mplayer_t* mplayer, char* location);
@@ -200,7 +205,7 @@ void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color,
 void mplayer_rendersongs(mplayer_t* mplayer);
 void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Color line_color,
     double curr_durationsecs, double full_durationsecs);
-SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, text_info_t* text_info);
+SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t* text_info);
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration);
 void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);
@@ -223,5 +228,5 @@ void mplayer_getroot_path(char* root_path);
 #endif
 extern text_info_t text_info[], setting_textinfo[];
 extern tabinfo_t tab_info[];
-extern ibtn_t music_btns[], setting_btns[], setting_iconbtn, music_listplaybtn;
+extern ibtn_t music_btns[], setting_btns[], setting_iconbtn, music_listplaybtn, music_addfolderbtn;
 #endif

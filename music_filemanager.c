@@ -72,6 +72,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
             strcpy(path_pattern, mplayer->musinfo.locations[i].path);
             strcat(path_pattern, "\\*.");
             strcat(path_pattern, FILE_EXTENSIONS[j]);
+
             WIN32_FIND_DATA fd = {0};
             HANDLE hfind = FindFirstFile(path_pattern, &fd);
             if(hfind == INVALID_HANDLE_VALUE) {
@@ -82,7 +83,8 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
                 music_files[mfile_count].path = calloc(location_len + strlen(fd.cFileName) + 7, sizeof(char));
                 strcpy(music_files[mfile_count].path, mplayer->musinfo.locations[i].path);
                 strcat(music_files[mfile_count].path, "\\");
-                strcat(music_files[mfile_count].path, fd.cFileName);
+                printf("%s\n", fd.cFileName);
+                strcat(music_files[mfile_count].path, (char*)fd.cFileName);
                 mfile_count++;
                 music_files = realloc(music_files, (mfile_count + 1) * sizeof(musloc_t));
                 music_files[mfile_count].path = NULL;
@@ -179,6 +181,37 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
         music_list[i].music_duration = mplayer_music_gettime(music_durationsecs);
     }
     mplayer->music_list = music_list;
+}
+int CALLBACK set_browsertitle(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData) {
+    if (uMsg == BFFM_INITIALIZED)
+      SetWindowTextA(hwnd, "Select Folder");
+    return 0;
+}
+
+void mplayer_browsefolder(mplayer_t* mplayer) {
+    #ifdef _WIN32
+    SDL_SysWMinfo info;
+    SDL_GetVersion(&info.version);
+    SDL_GetWindowWMInfo(mplayer->window, &info);
+    char foldername[1000] = {0}, folder_path[10000] = {0};
+    int img = 0;
+    HWND hWnd = info.info.win.window;
+    BROWSEINFOA folder_browser;
+    folder_browser.hwndOwner = hWnd;
+    folder_browser.pidlRoot = NULL;
+    folder_browser.pszDisplayName = foldername;
+    folder_browser.lpszTitle = "Choose the folder to search for music";
+    folder_browser.ulFlags = BIF_USENEWUI | BIF_RETURNFSANCESTORS;
+    folder_browser.lpfn = set_browsertitle;
+    folder_browser.lParam = 0;
+    folder_browser.iImage = img;
+    PIDLIST_ABSOLUTE item_info = SHBrowseForFolderA(&folder_browser);
+    if(item_info) {
+        if(SHGetPathFromIDListA(item_info, folder_path) == TRUE) {
+            mplayer_addmusic_location(mplayer, folder_path);
+        }
+    }
+    #endif
 }
 
 char* mplayer_getmusic_namefrompath(const char* path) {
