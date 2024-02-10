@@ -67,15 +67,18 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer_getmusicpath_info(mplayer);
     if(mplayer->musinfo.locations == NULL) {
         #ifdef _WIN32
-        char* username = getenv("USERNAME"), *location = NULL, root_path[4] = {0};
-        location = calloc(16+strlen(username), sizeof(char));
+        wchar_t* location = NULL;
+        char* username = getenv("USERNAME"), *location_str = NULL, root_path[4] = {0};
+        location_str = calloc(16+strlen(username), sizeof(char));
         mplayer_getroot_path(root_path);
-        strcpy(location, root_path);
-        strcat(location, "Users\\");
-        strcat(location, username);
-        strcat(location, "\\Music");
+        strcpy(location_str, root_path);
+        strcat(location_str, "Users\\");
+        strcat(location_str, username);
+        strcat(location_str, "\\Music");
+        location = mplayer_stringtowide(location_str);
         mplayer_addmusic_location(mplayer, location);
         //mplayer_getmusicpath_info(mplayer);
+        free(location_str); location_str = NULL;
         free(location); location = NULL;
         // TODO: Linux
         #else
@@ -220,7 +223,7 @@ wchar_t* mplayer_stringtowide(const char* string) {
 
 char* mplayer_widetostring(wchar_t* wstring) {
     size_t len_wstr = wcstombs(NULL, wstring, 0);
-    wprintf(L"len_wstr: %ld\n", len_wstr);
+    //wprintf(L"len_wstr: %ld\n", len_wstr);
     char* string = calloc(len_wstr+1, sizeof(char));
     wcstombs(string, wstring, len_wstr);
     return string;
@@ -234,6 +237,17 @@ SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t*
     SDL_Texture* texture = SDL_CreateTextureFromSurface(mplayer->renderer, surface);
     SDL_FreeSurface(surface);
     text_info->text_canvas = text_canvas;
+    return texture;
+}
+
+SDL_Texture* mplayer_renderunicode_text(mplayer_t* mplayer, TTF_Font* font, text_info_t* utext_info) {
+    SDL_Rect utext_canvas = utext_info->text_canvas;
+    TTF_SetFontSize(font, utext_info->font_size);
+    TTF_SizeUNICODE(font, utext_info->utext, &utext_canvas.w, &utext_canvas.h);
+    SDL_Surface* surface = TTF_RenderUNICODE_Blended(font, utext_info->utext, utext_info->text_color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(mplayer->renderer, surface);
+    SDL_FreeSurface(surface);
+    utext_info->text_canvas = utext_canvas;
     return texture;
 }
 
@@ -557,10 +571,10 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
     }
 
     if(Mix_PlayingMusic()) {
-        text_info_t music_name = {18, NULL, white, {20, 0, 0, 0}};
+        text_info_t music_name = {18, NULL, NULL, white, {20, 0, 0, 0}};
         music_name.text_canvas.y = prevbtn_canvas->y - 10;
-        music_name.text = mplayer->current_music->music_name;
-        SDL_Texture* texture = mplayer_rendertext(mplayer, mplayer->music_font, &music_name);
+        music_name.utext = mplayer->current_music->music_name;
+        SDL_Texture* texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &music_name);
         SDL_RenderCopy(mplayer->renderer, texture, NULL, &music_name.text_canvas);
     }
 }
@@ -589,8 +603,8 @@ void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Col
 void mplayer_rendersongs(mplayer_t* mplayer) {
     int cursor = MPLAYER_CURSOR_DEFAULT;
     playbtn_listcanvas = &music_btns[MUSIC_LISTPLAYBTN].btn_canvas;
-    text_info_t text = {14, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
-    SDL_Rect outer_canvas = text.text_canvas;
+    text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
+    SDL_Rect outer_canvas = utext.text_canvas;
     mtime_t curr_duration = {0}, full_duration = {0};
     double full_durationsecs = 0, curr_durationsecs = 0;
     int progress = 0, music_id = 0;
@@ -645,31 +659,31 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     /*  get the size of a character so we can determine the maximum amount of textures
         we can render with in the songs box
     */
-    TTF_SetFontSize(mplayer->music_font, text.font_size);
-    TTF_SizeText(mplayer->music_font, "A", &text.text_canvas.w, &text.text_canvas.h);
-    size_t max_textures = songs_box.h / (text.text_canvas.h + 25); // calculation for the scrollability
+    TTF_SetFontSize(mplayer->music_font, utext.font_size);
+    TTF_SizeUNICODE(mplayer->music_font, L"A", &utext.text_canvas.w, &utext.text_canvas.h);
+    size_t max_textures = songs_box.h / (utext.text_canvas.h + 25); // calculation for the scrollability
     for(int i=0;i<mplayer->music_count;i++) {
-        text.text = mplayer->music_list[i].music_name;
-        if(!text.text) break;
+        utext.utext = mplayer->music_list[i].music_name;
+        if(!utext.utext) break;
         if((outer_canvas.y + outer_canvas.h) > songs_box.y + songs_box.h) {
             break;
         }
-        outer_canvas.h = text.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
-        SDL_Texture* text_texture = mplayer_rendertext(mplayer, mplayer->music_font, &text);
-        text.text_canvas.x = outer_canvas.x + 50,
-        text.text_canvas.y = outer_canvas.y + ((outer_canvas.h - text.text_canvas.h) / 2);
+        outer_canvas.h = utext.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
+        SDL_Texture* text_texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &utext);
+        utext.text_canvas.x = outer_canvas.x + 50,
+        utext.text_canvas.y = outer_canvas.y + ((outer_canvas.h - utext.text_canvas.h) / 2);
         mplayer->music_list[i].canvas = outer_canvas;
         mplayer_menuadd_canvas(mplayer, outer_canvas);
 
         SDL_SetRenderDrawColor(mplayer->renderer, 0x3B, 0x35, 0x61, 0xff);
         SDL_RenderDrawRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
         SDL_RenderFillRect(mplayer->renderer, &mplayer->menu->canvases[mplayer->menu->canvas_count-1]);
-        mplayer_menu_appendtext(mplayer, text);
+        mplayer_menu_appendtext(mplayer, utext);
         mplayer_addmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE);
         // Render the checkbox whenever the button is clicked
         SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
                 fill_color = {0xFF, 0xA5, 0x00, 0xff};
-        checkbox_size.x = outer_canvas.x+5, checkbox_size.y = text.text_canvas.y-5;
+        checkbox_size.x = outer_canvas.x+5, checkbox_size.y = utext.text_canvas.y-5;
         checkbox_size.h = outer_canvas.h-10;
 
         music_listplaybtn.btn_canvas.w = 30, music_listplaybtn.btn_canvas.h = outer_canvas.h - 10;
@@ -770,7 +784,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                 music_listplaybtn.btn_canvas;
             if(!mplayer->tick_count) {
                 // if we haven't ticked any checkbox then we render the music list play button to the screen
-                text.text_canvas.x += music_listplaybtn.btn_canvas.w + 20;
+                utext.text_canvas.x += music_listplaybtn.btn_canvas.w + 20;
                 SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE]
                     [music_listplaybtn.texture_idx], NULL, &music_listplaybtn.btn_canvas);
             }
@@ -793,11 +807,11 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         }
 
         // TODO: Reimplement checkbox
-        mplayer_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_texture, text.text_canvas);
+        mplayer_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_texture, utext.text_canvas);
         SDL_RenderCopy(mplayer->renderer, text_texture, NULL,
             &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]-1]);
-        text.text_canvas.y += text.text_canvas.h + 22;
-        outer_canvas.y += text.text_canvas.h + 25;
+        utext.text_canvas.y += utext.text_canvas.h + 22;
+        outer_canvas.y += utext.text_canvas.h + 25;
     }
 }
 

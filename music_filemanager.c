@@ -25,21 +25,21 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
         return;
     }
     musloc_t* music_loclist = calloc(1, sizeof(musloc_t));
-    char* music_loc = calloc(2, sizeof(char)), c = '\0';
+    wchar_t *music_loc = calloc(2, sizeof(wchar_t)), c = L'\0';
     size_t mloc_len = 0, muslist_count = 0;
-    while((c = fgetc(f)) != EOF) {
+    while((c = fgetwc(f)) != WEOF) {
         if(c == '\n') {
             music_loclist[muslist_count++].path = music_loc;
             music_loclist = realloc(music_loclist, (muslist_count + 1) * sizeof(musloc_t));
             music_loclist[muslist_count].path = NULL;
-            music_loc = calloc(2, sizeof(char));
+            music_loc = calloc(2, sizeof(wchar_t));
             mloc_len = 0;
             continue;
         } 
         music_loc[mloc_len++] = c;
-        char* temp = music_loc;
-        music_loc = calloc(mloc_len + 1, sizeof(char));
-        strncpy(music_loc, temp, mloc_len);
+        wchar_t* temp = music_loc;
+        music_loc = calloc(mloc_len + 1, sizeof(wchar_t));
+        wcsncpy(music_loc, temp, mloc_len);
         free(temp);
     }
     (mloc_len == 0) ? free(music_loc) : (music_loclist[muslist_count++].path = music_loc);
@@ -64,19 +64,17 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
     size_t mfile_count = 0;
 
     for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
-        size_t location_len = strlen(mplayer->musinfo.locations[i].path);
+        size_t location_len = wcslen(mplayer->musinfo.locations[i].path);
         size_t pathpat_len = location_len + 8;
         #ifdef _WIN32
         _setmode(_fileno(stdout), _O_U16TEXT);
         wchar_t* path_pattern = calloc(pathpat_len, sizeof(wchar_t));
         for(int j=0;FILE_EXTENSIONS[j] != NULL;j++) {
-            wchar_t *wstr = mplayer_stringtowide(mplayer->musinfo.locations[i].path),
-                    *wstr2 = mplayer_stringtowide(FILE_EXTENSIONS[j]);
-            wcscpy(path_pattern, wstr);
+            wchar_t *wstr = mplayer_stringtowide(FILE_EXTENSIONS[j]);
+            wcscpy(path_pattern, mplayer->musinfo.locations[i].path);
             wcscat(path_pattern, L"\\*.");
-            wcscat(path_pattern, wstr2);
+            wcscat(path_pattern, wstr);
             free(wstr); wstr = NULL;
-            free(wstr2); wstr2 = NULL;
 
             WIN32_FIND_DATAW fd = {0};
             HANDLE hfind = FindFirstFileW(path_pattern, &fd);
@@ -86,32 +84,33 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
             }
             do {
                 wprintf(L"%ls: %ld\n", fd.cFileName, wcslen(fd.cFileName));
-                char* str = mplayer_widetostring(fd.cFileName),
-                    *altstr = mplayer_widetostring(fd.cAlternateFileName);
-                //wprintf(L"%ls\n", fd.cFileName);
+                char *altstr = mplayer_widetostring(fd.cAlternateFileName),
+                    *altpathstr = mplayer_widetostring(mplayer->musinfo.locations[i].path);
                 size_t length_str = wcslen(fd.cFileName), length_altstr = wcslen(fd.cAlternateFileName);
-                size_t path_dlen = location_len + length_str + 7,
-                    altpath_dlen = location_len + length_altstr + 7;
-                music_files[mfile_count].path = calloc(path_dlen, sizeof(char));
-                strcpy(music_files[mfile_count].path, mplayer->musinfo.locations[i].path);
-                strcat(music_files[mfile_count].path, "\\");
-                strncat(music_files[mfile_count].path, str, length_str);
+                size_t path_len = location_len + length_str + 7,
+                    altpath_len = location_len + length_altstr + 7;
 
-                music_files[mfile_count].altpath = calloc(altpath_dlen, sizeof(char));
-                strcpy(music_files[mfile_count].altpath, mplayer->musinfo.locations[i].path);
+                music_files[mfile_count].path = calloc(path_len, sizeof(wchar_t));
+                wcscpy(music_files[mfile_count].path, mplayer->musinfo.locations[i].path);
+                wcscat(music_files[mfile_count].path, L"\\");
+                wcsncat(music_files[mfile_count].path, fd.cFileName, length_str);
+
+                music_files[mfile_count].altpath = calloc(altpath_len, sizeof(char));
+                strcpy(music_files[mfile_count].altpath, altpathstr);
                 strcat(music_files[mfile_count].altpath, "\\");
                 strncat(music_files[mfile_count].altpath, altstr, length_altstr);
-                free(str); str = NULL;
                 free(altstr); altstr = NULL;
+                free(altpathstr); altpathstr = NULL;
+
                 mfile_count++;
                 music_files = realloc(music_files, (mfile_count + 1) * sizeof(musloc_t));
                 music_files[mfile_count].path = NULL;
+                music_files[mfile_count].altpath = NULL;
             } while(FindNextFileW(hfind, &fd));
             FindClose(hfind);
             memset(path_pattern, 0, pathpat_len);
         }
         free(path_pattern);
-        printf("I'm here\n");
         #else
         DIR* dirp = opendir(mplayer->musinfo.locations[i].path);
         struct dirent* entry = readdir(dirp);
@@ -153,19 +152,19 @@ void mplayer_getmusicpath_info(mplayer_t* mplayer) {
     mplayer_getmusic_filepaths(mplayer);
 }
 
-bool mplayer_musiclocation_exists(mplayer_t* mplayer, char* location) {
+bool mplayer_musiclocation_exists(mplayer_t* mplayer, wchar_t* location) {
     if(mplayer->musinfo.location_count == 0) {
         mplayer_getmusic_locations(mplayer);
     }
     for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
-        if(strcmp(mplayer->musinfo.locations[i].path, location) == 0) {
+        if(wcscmp(mplayer->musinfo.locations[i].path, location) == 0) {
             return true;
         }
     }
     return false;
 }
 
-void mplayer_addmusic_location(mplayer_t* mplayer, char* location) {
+void mplayer_addmusic_location(mplayer_t* mplayer, wchar_t* location) {
     FILE* f = fopen(MUSIC_PATHINFO_FILE, "a+");
     fseek(f, 0, SEEK_END);
     size_t size = ftell(f);
@@ -177,7 +176,7 @@ void mplayer_addmusic_location(mplayer_t* mplayer, char* location) {
         }
         fputs("\n", f);
     }
-    fwrite(location, sizeof(char), strlen(location), f);
+    fwrite(location, sizeof(wchar_t), wcslen(location), f);
     fclose(f);
     mplayer_freemusic_info(mplayer);
     mplayer_getmusicpath_info(mplayer);
@@ -188,15 +187,17 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
     Mix_Music* music = NULL;
     double music_durationsecs = 0;
     for(size_t i=0;i<mplayer->musinfo.file_count;i++) {
-        music = Mix_LoadMUS(mplayer->musinfo.files[i].path);
+        char* music_path = mplayer_widetostring(mplayer->musinfo.files[i].path);
+        music = Mix_LoadMUS(music_path);
         if(music == NULL) {
             music = Mix_LoadMUS(mplayer->musinfo.files[i].altpath);
             if(music == NULL) {
                 printf("Failed to load music %s\n", mplayer->musinfo.files[i].path);
             }
         }
-        music_durationsecs = Mix_MusicDuration(music);
+        free(music_path); music_path = NULL;
 
+        music_durationsecs = Mix_MusicDuration(music);
         music_list[i].music = music;
         if(music) {
             music_list[i].music_name = mplayer_getmusic_namefrompath(music, mplayer->musinfo.files[i].path);
@@ -222,30 +223,30 @@ void mplayer_browsefolder(mplayer_t* mplayer) {
     SDL_SysWMinfo info;
     SDL_GetVersion(&info.version);
     SDL_GetWindowWMInfo(mplayer->window, &info);
-    char foldername[1000] = {0}, folder_path[10000] = {0};
+    wchar_t foldername[1000] = {0}, folder_path[10000] = {0};
     int img = 0;
     HWND hWnd = info.info.win.window;
-    BROWSEINFOA folder_browser;
+    BROWSEINFOW folder_browser;
     folder_browser.hwndOwner = hWnd;
     folder_browser.pidlRoot = NULL;
     folder_browser.pszDisplayName = foldername;
-    folder_browser.lpszTitle = "Choose the folder to search for music";
+    folder_browser.lpszTitle = L"Choose the folder to search for music";
     folder_browser.ulFlags = BIF_USENEWUI | BIF_RETURNFSANCESTORS;
     folder_browser.lpfn = set_browsertitle;
     folder_browser.lParam = 0;
     folder_browser.iImage = img;
-    PIDLIST_ABSOLUTE item_info = SHBrowseForFolderA(&folder_browser);
+    PIDLIST_ABSOLUTE item_info = SHBrowseForFolderW(&folder_browser);
     if(item_info) {
-        if(SHGetPathFromIDListA(item_info, folder_path) == TRUE) {
+        if(SHGetPathFromIDListW(item_info, folder_path) == TRUE) {
             mplayer_addmusic_location(mplayer, folder_path);
         }
     }
     #endif
 }
 
-char* mplayer_getmusic_namefrompath(Mix_Music* music, const char* path) {
-    char* music_name = NULL, *filename = NULL, *ext = NULL;
-    wchar_t* wpath = mplayer_stringtowide(path), *wfilename = NULL, *wext = NULL;
+wchar_t* mplayer_getmusic_namefrompath(Mix_Music* music, wchar_t* path) {
+    wchar_t* music_name = NULL, *filename = NULL, *ext = NULL,
+        *wpath = path, *wfilename = NULL, *wext = NULL;
     int music_type = Mix_GetMusicType(music);
     _setmode(_fileno(stdout), _O_U16TEXT);
     switch(music_type) {
@@ -278,7 +279,7 @@ char* mplayer_getmusic_namefrompath(Mix_Music* music, const char* path) {
     
     //printf("%ls, %ls\n", wfilename, wpath);
     size_t name_len = wcslen(wfilename);
-    filename = calloc(name_len, sizeof(char));
+    filename = calloc(name_len, sizeof(wchar_t));
     size_t ext_index = 0;
     for(size_t i=0;i<name_len;i++) {
         wfilename++;
@@ -305,7 +306,6 @@ char* mplayer_getmusic_namefrompath(Mix_Music* music, const char* path) {
     //strncpy(music_name, filename, name_len);
 
     wfilename--;*/
-    free(wpath);
     return music_name;
 }
 

@@ -2,7 +2,7 @@
 #define _MUSIC_PLAYERINFO
 #include "music_player.h"
 const char* WINDOW_TITLE = "Maud Player (Music Audio Player)", *SETTING_TITLE = "Maud Player Settings",
-        *FONT_FILE = "SF-Pro-Display-Black.otf", *MUSIC_FONTFILE = "sf-unicode.ttf", *MUSIC_PATHINFO_FILE = "MUSICPATHS.info",
+        *FONT_FILE = "SF-Pro-Display-Black.otf", *MUSIC_FONTFILE = "Mechanical-g5Y5.otf", *MUSIC_PATHINFO_FILE = "MUSICPATHS.info",
         *FILE_EXTENSIONS[] = {"mp3", "flac", "ogg", "opus", "wav", "m4a", NULL};
 
 const SDL_Color window_color = {0, 0, 0, 0}/*{0x2c, 0x36, 0x5e, 0xff}/*{0x3C, 0x16, 0x42, 0xff}*/,
@@ -21,12 +21,12 @@ int WIDTH = 900, HEIGHT = 600, TAB_INIT = 0, FONT_SIZE = 20, MUSIC_FONTSIZE = 14
 SBOXDISTANCE_X = 50, SETTING_LINESPACING = 10, UNDERLINE_THICKNESS = 10, checkbox_init = 0;
 
 text_info_t text_info[] = {
-        {36, "Music", text_color, {10}},
-        {36, "You're in the Songs tab.", text_color, {0}},
-        {36, "You're in the Albums tab.", text_color, {0}}
+        {36, "Music", NULL, text_color, {10}},
+        {36, "You're in the Songs tab.", NULL, text_color, {0}},
+        {36, "You're in the Albums tab.", NULL, text_color, {0}}
 },
 setting_textinfo[] = {
-        {45, "Go Back To Home", text2_color, {10, 0}},
+        {45, "Go Back To Home", NULL, text2_color, {10, 0}},
 };
 
 tabinfo_t tab_info[] = {

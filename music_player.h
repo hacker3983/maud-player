@@ -42,7 +42,8 @@ typedef struct music_time {
 
 // structure representing music
 typedef struct music {
-    char* music_name, *music_path, *music_alternatepath;
+    char *music_alternatepath;
+    wchar_t* music_name, *music_path;
     Mix_Music* music;
     mtime_t music_position;
     mtime_t music_duration;
@@ -52,7 +53,7 @@ typedef struct music {
 } music_t;
 
 typedef struct music_location {
-    char* path;
+    wchar_t* path;
     #ifdef _WIN32
     char* altpath;
     #endif
@@ -66,6 +67,7 @@ typedef struct music_info {
 typedef struct text_info {
     int font_size;
     char* text;
+    wchar_t* utext;
     SDL_Color text_color;
     SDL_Rect text_canvas;
 } text_info_t;
@@ -172,7 +174,6 @@ typedef struct mplayer {
 } mplayer_t;
 
 void mplayer_init();
-
 SDL_Window* mplayer_createwindow(const char* title, int width, int height);
 SDL_Renderer* mplayer_createrenderer(SDL_Window* window);
 TTF_Font* mplayer_openfont(const char* file, int size);
@@ -182,12 +183,12 @@ void mplayer_createapp(mplayer_t* mplayer);
 void mplayer_getmusic_locations(mplayer_t* mplayer);
 void mplayer_getmusic_filepaths(mplayer_t* mplayer);
 void mplayer_getmusicpath_info(mplayer_t* mplayer);
-char* mplayer_getmusic_namefrompath(Mix_Music* music, const char* path);
+wchar_t* mplayer_getmusic_namefrompath(Mix_Music* music, wchar_t* path);
 void mplayer_loadmusics(mplayer_t* mplayer);
 void mplayer_browsefolder(mplayer_t* mplayer);
-void mplayer_addmusic_location(mplayer_t* mplayer, char* location);
+void mplayer_addmusic_location(mplayer_t* mplayer, wchar_t* location);
 mtime_t mplayer_music_gettime(double seconds);
-bool mplayer_musiclocation_exists(mplayer_t* mplayer, char* location);
+bool mplayer_musiclocation_exists(mplayer_t* mplayer, wchar_t* location);
 void mplayer_freemusic_info(mplayer_t* mplayer);
 void mplayer_run(mplayer_t* mplayer);
 void mplayer_defaultmenu(mplayer_t* mplayer);
@@ -213,6 +214,7 @@ void mplayer_rendersongs(mplayer_t* mplayer);
 void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Color line_color,
     double curr_durationsecs, double full_durationsecs);
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t* text_info);
+SDL_Texture* mplayer_renderunicode_text(mplayer_t* mplayer, TTF_Font* font, text_info_t* utext_info);
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration);
 void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);
