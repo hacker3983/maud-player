@@ -13,6 +13,8 @@
 #include <shlwapi.h>
 #include <commdlg.h>
 #include <shlobj.h>
+#include <io.h>
+#include <fcntl.h>
 #else
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -40,7 +42,7 @@ typedef struct music_time {
 
 // structure representing music
 typedef struct music {
-    char* music_name, *music_path;
+    char* music_name, *music_path, *music_alternatepath;
     Mix_Music* music;
     mtime_t music_position;
     mtime_t music_duration;
@@ -51,6 +53,9 @@ typedef struct music {
 
 typedef struct music_location {
     char* path;
+    #ifdef _WIN32
+    char* altpath;
+    #endif
 } musloc_t;
 
 typedef struct music_info {
@@ -177,7 +182,7 @@ void mplayer_createapp(mplayer_t* mplayer);
 void mplayer_getmusic_locations(mplayer_t* mplayer);
 void mplayer_getmusic_filepaths(mplayer_t* mplayer);
 void mplayer_getmusicpath_info(mplayer_t* mplayer);
-char* mplayer_getmusic_namefrompath(const char* path);
+char* mplayer_getmusic_namefrompath(Mix_Music* music, const char* path);
 void mplayer_loadmusics(mplayer_t* mplayer);
 void mplayer_browsefolder(mplayer_t* mplayer);
 void mplayer_addmusic_location(mplayer_t* mplayer, char* location);
@@ -199,6 +204,8 @@ bool mplayer_tbuttons_hover(mplayer_t* mplayer, tbtn_t* buttons, int* btn_id, si
 bool mplayer_music_hover(mplayer_t* mplayer);
 bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer);
 bool mplayer_checkbox_hovered(mplayer_t* mplayer);
+wchar_t* mplayer_stringtowide(const char* string);
+char* mplayer_widetostring(wchar_t* wstring);
 void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info);
 void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color,
     SDL_Color fill_color, bool fill, SDL_Color tick_color, bool check);

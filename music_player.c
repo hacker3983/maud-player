@@ -60,7 +60,8 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->progress_bar.h = 0, mplayer->progress_bar.y = 0;
     mplayer->progress_count.w = 0, mplayer->progress_count.h = 0;
     mplayer->progress_count.x = 0, mplayer->progress_count.y = 0;
-    mplayer->current_music = NULL, mplayer->prev_music = NULL;
+    mplayer->current_music = NULL, mplayer->prev_music = NULL,
+    mplayer->music_list = NULL;
 
     // create music information
     mplayer_getmusicpath_info(mplayer);
@@ -208,6 +209,21 @@ bool mplayer_checkbox_hovered(mplayer_t* mplayer) {
             return true;
     }
     return false;
+}
+
+wchar_t* mplayer_stringtowide(const char* string) {
+    size_t len_str = mbstowcs(NULL, string, 0); // get the length of the string in wide characters
+    wchar_t* wstring = calloc(len_str+1, sizeof(wchar_t));
+    mbstowcs(wstring, string, len_str);
+    return wstring;
+}
+
+char* mplayer_widetostring(wchar_t* wstring) {
+    size_t len_wstr = wcstombs(NULL, wstring, 0);
+    wprintf(L"len_wstr: %ld\n", len_wstr);
+    char* string = calloc(len_wstr+1, sizeof(char));
+    wcstombs(string, wstring, len_wstr);
+    return string;
 }
 
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t* text_info) {
@@ -590,22 +606,22 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
             full_duration.hrs, full_duration.mins, full_duration.secs, progress);
     }
-    if(mplayer->current_music && !Mix_PlayingMusic()) {
+    if(!Mix_PlayingMusic()) {
         switch(mplayer->repeat_id) {
             case MUSIC_REPEATALLBTN:
-                if(!mplayer->current_music->music) {
+                if(!mplayer->current_music) {
                     break;
                 }
                 if(mplayer->playid < mplayer->music_count) {
                     // play the next music whenever one is completed
                     mplayer->playid++;
+                    mplayer->playid %= mplayer->music_count;
                     mplayer->current_music = &mplayer->music_list[mplayer->playid];
-                    Mix_PlayMusic(mplayer->current_music->music, 1);
+                    if(Mix_PlayMusic(mplayer->current_music->music, 1) == 0) {
+                        printf("Playing music was successful\n");
+                    }
                     break;
                 }
-                mplayer->playid %= mplayer->music_count;
-                mplayer->current_music = &mplayer->music_list[mplayer->playid];
-                Mix_PlayMusic(mplayer->current_music->music, 1);
                 break;
             case MUSIC_REPEATONEBTN:
                 Mix_PlayMusic(mplayer->current_music->music, -1);
@@ -673,22 +689,26 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         }
 
         if(music_btns[MUSIC_PREVBTN].clicked && mplayer->playid >= 0) {
-            if(mplayer->playid) {
-                mplayer->playid--;
+            // This prevents a music from going to the previous music when none was playing before
+            if(Mix_PlayingMusic()) {
+                if(mplayer->playid) {
+                    mplayer->playid--;
+                }
+                mplayer->current_music = &mplayer->music_list[mplayer->playid];
+                Mix_HaltMusic();
+                Mix_PlayMusic(mplayer->current_music->music, 1);
             }
-            mplayer->current_music = &mplayer->music_list[mplayer->playid];
-            Mix_HaltMusic();
-            Mix_PlayMusic(mplayer->current_music->music, 1);
             music_btns[MUSIC_PREVBTN].clicked = false;
         } else if(music_btns[MUSIC_SKIPBTN].clicked && mplayer->playid <= mplayer->music_count) {
-            mplayer->playid++;
-            printf("mplayer->playid: %d\n", mplayer->playid);
-            mplayer->playid %= mplayer->music_count;
-            mplayer->current_music = &mplayer->music_list[mplayer->playid];
-            Mix_HaltMusic();
-            Mix_PlayMusic(mplayer->current_music->music, 1);
+            // This prevents a music from skipping to another when none was being played before
+            if(Mix_PlayingMusic()) {
+                mplayer->playid++;
+                mplayer->playid %= mplayer->music_count;
+                mplayer->current_music = &mplayer->music_list[mplayer->playid];
+                Mix_HaltMusic();
+                Mix_PlayMusic(mplayer->current_music->music, 1);
+            }
             music_btns[MUSIC_SKIPBTN].clicked = false;
-            mplayer->playid %= mplayer->music_count;
         } else if(mplayer->music_list[i].hover) {
             // check if the mouse is hovered over the music
             if(mplayer_checkbox_hovered(mplayer)) {
@@ -919,6 +939,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer->mouse_y = mplayer->e.button.y;
                 mplayer->music_list[mplayer->music_id].clicked = true;
             } else {
+                printf("mplayer->mouse_x: %d, mplayer->mouse_y: %d\n", mplayer->mouse_x, mplayer->mouse_y);
                 *music_clicked = false;
             }
         }
