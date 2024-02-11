@@ -631,9 +631,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                     mplayer->playid++;
                     mplayer->playid %= mplayer->music_count;
                     mplayer->current_music = &mplayer->music_list[mplayer->playid];
-                    if(Mix_PlayMusic(mplayer->current_music->music, 1) == 0) {
-                        printf("Playing music was successful\n");
-                    }
+                    Mix_PlayMusic(mplayer->current_music->music, 1);
                     break;
                 }
                 break;
