@@ -604,14 +604,14 @@ void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Col
         mplayer->progress_count.w = percentageof;
         mplayer->progress_count.h = mplayer->progress_bar.h;
         if(mplayer->progressbar_clicked) {
+            // Determine what percentage of the widtth of the progress bar was clicked
             int seek_position = mplayer->mouse_x - mplayer->progress_bar.x;
-            printf("Seek_position: %d\n", seek_position);
-            // determine what percentage of the full duration we clicked on the progress bar
             percentage = round((double)seek_position / (double)mplayer->progress_bar.w * (double)100);
             mplayer->progress_count.w = seek_position;
+            /* Calculate the new duration based on the portion of the progress bar that was clicked
+               and then set the new music position
+            */
             curr_durationsecs = round(((double)percentage / (double)100) * (double)full_durationsecs);
-            printf("Percentage: %d, Percentage of: %d\n", percentage, percentageof);
-            printf("curr_duration: %f\n", curr_durationsecs);
             Mix_SetMusicPosition(curr_durationsecs);
             mplayer->progressbar_clicked = false;
         }
@@ -637,35 +637,35 @@ void mplayer_displayprogression_control(mplayer_t* mplayer) {
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
             full_duration.hrs, full_duration.mins, full_duration.secs, progress);
     }
-    if(!Mix_PlayingMusic()) {
-        switch(mplayer->repeat_id) {
-            case MUSIC_REPEATALLBTN:
-                if(!mplayer->current_music) {
-                    break;
-                }
-                if(mplayer->playid < mplayer->music_count) {
-                    // play the next music whenever one is completed
-                    mplayer->playid++;
-                    mplayer->playid %= mplayer->music_count;
-                    mplayer->current_music = &mplayer->music_list[mplayer->playid];
-                    Mix_PlayMusic(mplayer->current_music->music, 1);
-                    break;
-                }
+    switch(mplayer->repeat_id) {
+        case MUSIC_REPEATALLBTN:
+            if(!mplayer->current_music) {
                 break;
-            case MUSIC_REPEATONEBTN:
-                Mix_PlayMusic(mplayer->current_music->music, -1);
-                break;
-            case MUSIC_REPEATOFFBTN:
-                if(mplayer->playid < mplayer->music_count) {
-                    // play the next music whenever one is completed
-                    mplayer->playid++;
-                    mplayer->current_music = &mplayer->music_list[mplayer->playid];
-                    Mix_PlayMusic(mplayer->current_music->music, 1);
-                    break;
-                }
+            }
+            if(mplayer->playid < mplayer->music_count && !Mix_PlayingMusic()) {
+                // play the next music whenever one is completed
+                mplayer->playid++;
                 mplayer->playid %= mplayer->music_count;
+                mplayer->current_music = &mplayer->music_list[mplayer->playid];
+                Mix_PlayMusic(mplayer->current_music->music, 1);
                 break;
-        }
+            }
+            break;
+        case MUSIC_REPEATONEBTN:
+            if(!Mix_PlayingMusic()) {
+                Mix_PlayMusic(mplayer->current_music->music, 1);
+            }
+            break;
+        case MUSIC_REPEATOFFBTN:
+            if(mplayer->playid < mplayer->music_count && !Mix_PlayingMusic()) {
+                // play the next music whenever one is completed
+                mplayer->playid++;
+                mplayer->playid %= mplayer->music_count;
+                mplayer->current_music = &mplayer->music_list[mplayer->playid];
+                Mix_PlayMusic(mplayer->current_music->music, 1);
+                break;
+            }
+            break;
     }
     mplayer_displaymusic_status(mplayer, curr_duration, full_duration);
     SDL_Color progressbar_color = {0x00, 0x00, 0x00, 0x00}, progress_linecolor = {0xFF, 0xFF, 0x00, 0xFF};
@@ -830,7 +830,6 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             }
         }
 
-        // TODO: Reimplement checkbox
         mplayer_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_texture, utext.text_canvas);
         SDL_RenderCopy(mplayer->renderer, text_texture, NULL,
             &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]-1]);
