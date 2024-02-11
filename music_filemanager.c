@@ -13,7 +13,7 @@ void mplayer_getroot_path(char* root_path) {
 #endif
 
 void mplayer_getmusic_locations(mplayer_t* mplayer) {
-    FILE* f = fopen(MUSIC_PATHINFO_FILE, "rb");
+    FILE* f = fopen(MUSIC_PATHINFO_FILE, "r");
     if(f == NULL) {
         printf("PATH DOES NOT EXIST\n");
         mplayer->music_count = 0;
@@ -25,10 +25,12 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
         return;
     }
     musloc_t* music_loclist = calloc(1, sizeof(musloc_t));
-    wchar_t *music_loc = calloc(2, sizeof(wchar_t)), c = L'\0';
+    char c = '\0';
+    wchar_t *music_loc = calloc(2, sizeof(wchar_t)), wc = L'\0';
     size_t mloc_len = 0, muslist_count = 0;
-    while((c = fgetwc(f)) != WEOF) {
-        if(c == L'\n') {
+    while((c = fgetc(f)) != EOF) {
+        mbtowc(&wc, &c, 1);
+        if(wc == L'\n') {
             music_loclist[muslist_count++].path = music_loc;
             music_loclist = realloc(music_loclist, (muslist_count + 1) * sizeof(musloc_t));
             music_loclist[muslist_count].path = NULL;
@@ -36,7 +38,7 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
             mloc_len = 0;
             continue;
         }
-        music_loc[mloc_len++] = c;
+        music_loc[mloc_len++] = wc;
         wchar_t* temp = music_loc;
         music_loc = calloc(mloc_len + 1, sizeof(wchar_t));
         wcsncpy(music_loc, temp, mloc_len);
@@ -171,10 +173,12 @@ void mplayer_addmusic_location(mplayer_t* mplayer, wchar_t* location) {
             fclose(f);
             return;
         }
-        wchar_t* newline = L"\n";
-        fwrite(newline, sizeof(wchar_t), wcslen(newline), f);
+        fputc('\n', f);
+        //wchar_t* newline = L"\n";
+        //fwrite(newline, sizeof(wchar_t), wcslen(newline), f);
     }
-    fwrite(location, sizeof(wchar_t), wcslen(location), f);
+    char* string = mplayer_widetostring(location);
+    fwrite(string, sizeof(char), wcslen(location), f);
     fclose(f);
     mplayer_freemusic_info(mplayer);
     mplayer_getmusicpath_info(mplayer);
