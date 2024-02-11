@@ -13,7 +13,7 @@ void mplayer_getroot_path(char* root_path) {
 #endif
 
 void mplayer_getmusic_locations(mplayer_t* mplayer) {
-    FILE* f = fopen(MUSIC_PATHINFO_FILE, "r");
+    FILE* f = fopen(MUSIC_PATHINFO_FILE, "rb");
     if(f == NULL) {
         printf("PATH DOES NOT EXIST\n");
         mplayer->music_count = 0;
@@ -28,14 +28,14 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
     wchar_t *music_loc = calloc(2, sizeof(wchar_t)), c = L'\0';
     size_t mloc_len = 0, muslist_count = 0;
     while((c = fgetwc(f)) != WEOF) {
-        if(c == '\n') {
+        if(c == L'\n') {
             music_loclist[muslist_count++].path = music_loc;
             music_loclist = realloc(music_loclist, (muslist_count + 1) * sizeof(musloc_t));
             music_loclist[muslist_count].path = NULL;
             music_loc = calloc(2, sizeof(wchar_t));
             mloc_len = 0;
             continue;
-        } 
+        }
         music_loc[mloc_len++] = c;
         wchar_t* temp = music_loc;
         music_loc = calloc(mloc_len + 1, sizeof(wchar_t));
@@ -67,7 +67,6 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         size_t location_len = wcslen(mplayer->musinfo.locations[i].path);
         size_t pathpat_len = location_len + 8;
         #ifdef _WIN32
-        _setmode(_fileno(stdout), _O_U16TEXT);
         wchar_t* path_pattern = calloc(pathpat_len, sizeof(wchar_t));
         for(int j=0;FILE_EXTENSIONS[j] != NULL;j++) {
             wchar_t *wstr = mplayer_stringtowide(FILE_EXTENSIONS[j]);
@@ -83,7 +82,6 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
                 continue;
             }
             do {
-                wprintf(L"%ls: %ld\n", fd.cFileName, wcslen(fd.cFileName));
                 char *altstr = mplayer_widetostring(fd.cAlternateFileName),
                     *altpathstr = mplayer_widetostring(mplayer->musinfo.locations[i].path);
                 size_t length_str = wcslen(fd.cFileName), length_altstr = wcslen(fd.cAlternateFileName);
@@ -141,7 +139,6 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         closedir(dirp);
         #endif
     }
-    printf("Here\n");
     mplayer->musinfo.files = music_files;
     mplayer->musinfo.file_count = mfile_count;
     mplayer->music_count = mfile_count;
@@ -174,7 +171,8 @@ void mplayer_addmusic_location(mplayer_t* mplayer, wchar_t* location) {
             fclose(f);
             return;
         }
-        fputs("\n", f);
+        wchar_t* newline = L"\n";
+        fwrite(newline, sizeof(wchar_t), wcslen(newline), f);
     }
     fwrite(location, sizeof(wchar_t), wcslen(location), f);
     fclose(f);
@@ -293,7 +291,6 @@ wchar_t* mplayer_getmusic_namefrompath(Mix_Music* music, wchar_t* path) {
         filename[i] = wfilename[i];
     }
     if(ext_index == 0) {
-        printf("No extension found!\n");
         wfilename -= name_len;
         wfilename++;
         for(size_t i=0;i<name_len;i++) {
