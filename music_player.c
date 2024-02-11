@@ -10,7 +10,7 @@ void mplayer_init() {
     TTF_Init();
     IMG_Init(IMG_INIT_PNG);
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
-    setlocale(LC_CTYPE,"it_IT.UTF-16"); 
+    setlocale(LC_ALL,"it_IT.UTF-16"); 
 }
 
 SDL_Window* mplayer_createwindow(const char* title, int width, int height) {
@@ -60,6 +60,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->progress_bar.h = 0, mplayer->progress_bar.y = 0;
     mplayer->progress_count.w = 0, mplayer->progress_count.h = 0;
     mplayer->progress_count.x = 0, mplayer->progress_count.y = 0;
+    mplayer->progressbar_clicked = false;
     mplayer->current_music = NULL, mplayer->prev_music = NULL,
     mplayer->music_list = NULL;
 
@@ -214,6 +215,15 @@ bool mplayer_checkbox_hovered(mplayer_t* mplayer) {
     return false;
 }
 
+bool mplayer_progressbar_hover(mplayer_t* mplayer) {
+    int mouse_x = mplayer->e.motion.x, mouse_y = mplayer->e.motion.y;
+    if((mouse_x <= mplayer->progress_bar.x + mplayer->progress_bar.w && mouse_x >= mplayer->progress_bar.x) &&
+        (mouse_y <= mplayer->progress_bar.y + mplayer->progress_bar.h && mouse_y >= mplayer->progress_bar.y)) {
+            return true;
+    }
+    return false;
+}
+
 wchar_t* mplayer_stringtowide(const char* string) {
     size_t len_str = mbstowcs(NULL, string, 0); // get the length of the string in wide characters
     wchar_t* wstring = calloc(len_str+1, sizeof(wchar_t));
@@ -223,7 +233,6 @@ wchar_t* mplayer_stringtowide(const char* string) {
 
 char* mplayer_widetostring(wchar_t* wstring) {
     size_t len_wstr = wcstombs(NULL, wstring, 0);
-    //wprintf(L"len_wstr: %ld\n", len_wstr);
     char* string = calloc(len_wstr+1, sizeof(char));
     wcstombs(string, wstring, len_wstr);
     return string;
@@ -581,8 +590,8 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
 
 void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Color line_color, 
     double curr_durationsecs, double full_durationsecs) {
-    int percentage = (double)(curr_durationsecs) / (double)(full_durationsecs) * (double)100;
-    int percentageof = (int)((double)percentage / (double)100 * (double)mplayer->progress_bar.w);
+    int percentage = round((double)(curr_durationsecs) / (double)(full_durationsecs) * (double)100);
+    int percentageof = (int)round(((double)percentage / (double)100 * (double)mplayer->progress_bar.w));
 
     mplayer->progress_count.x = mplayer->progress_bar.x;
     mplayer->progress_count.y = mplayer->progress_bar.y;
@@ -594,20 +603,28 @@ void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Col
     if(Mix_PlayingMusic()) {
         mplayer->progress_count.w = percentageof;
         mplayer->progress_count.h = mplayer->progress_bar.h;
+        if(mplayer->progressbar_clicked) {
+            int seek_position = mplayer->mouse_x - mplayer->progress_bar.x;
+            printf("Seek_position: %d\n", seek_position);
+            // determine what percentage of the full duration we clicked on the progress bar
+            percentage = round((double)seek_position / (double)mplayer->progress_bar.w * (double)100);
+            mplayer->progress_count.w = seek_position;
+            curr_durationsecs = round(((double)percentage / (double)100) * (double)full_durationsecs);
+            printf("Percentage: %d, Percentage of: %d\n", percentage, percentageof);
+            printf("curr_duration: %f\n", curr_durationsecs);
+            Mix_SetMusicPosition(curr_durationsecs);
+            mplayer->progressbar_clicked = false;
+        }
         SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(line_color));
         SDL_RenderDrawRect(mplayer->renderer, &mplayer->progress_count);
         SDL_RenderFillRect(mplayer->renderer, &mplayer->progress_count);
     }
 }
 
-void mplayer_rendersongs(mplayer_t* mplayer) {
-    int cursor = MPLAYER_CURSOR_DEFAULT;
-    playbtn_listcanvas = &music_btns[MUSIC_LISTPLAYBTN].btn_canvas;
-    text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
-    SDL_Rect outer_canvas = utext.text_canvas;
+void mplayer_displayprogression_control(mplayer_t* mplayer) {
     mtime_t curr_duration = {0}, full_duration = {0};
     double full_durationsecs = 0, curr_durationsecs = 0;
-    int progress = 0, music_id = 0;
+    int progress = 0;
     if(Mix_PlayingMusic()) {
         curr_durationsecs = Mix_GetMusicPosition(mplayer->current_music->music);
         full_durationsecs = mplayer->current_music->music_durationsecs;
@@ -616,7 +633,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         progress = curr_durationsecs / full_durationsecs * 100;
     }
     if(Mix_PlayingMusic() && !Mix_PausedMusic()) {
-        printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
+        printf("Playing %ls %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
             full_duration.hrs, full_duration.mins, full_duration.secs, progress);
     }
@@ -653,7 +670,16 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     mplayer_displaymusic_status(mplayer, curr_duration, full_duration);
     SDL_Color progressbar_color = {0x00, 0x00, 0x00, 0x00}, progress_linecolor = {0xFF, 0xFF, 0x00, 0xFF};
     mplayer_renderprogress_bar(mplayer, progressbar_color, progress_linecolor, curr_durationsecs, full_durationsecs);
+}
 
+void mplayer_rendersongs(mplayer_t* mplayer) {
+    int cursor = MPLAYER_CURSOR_DEFAULT;
+    playbtn_listcanvas = &music_btns[MUSIC_LISTPLAYBTN].btn_canvas;
+    text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
+    SDL_Rect outer_canvas = utext.text_canvas;
+    mtime_t curr_duration = {0}, full_duration = {0};
+    double full_durationsecs = 0, curr_durationsecs = 0;
+    int progress = 0, music_id = 0;
     /*  get the size of a character so we can determine the maximum amount of textures
         we can render with in the songs box
     */
@@ -894,11 +920,14 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
             } else if(mplayer_music_hover(mplayer)) {
                 music_id = mplayer->music_id;
+            } else if(mplayer_progressbar_hover(mplayer) && Mix_PlayingMusic()) {
+                mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
             } else {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
                 setting_iconbtn.hover = false;
             }
         } else if(mplayer->e.type == SDL_MOUSEWHEEL) {
+            printf("Scroll detected\n");
             mplayer->scroll = true;
         } else if(Mix_PlayingMusic() && mplayer->e.type == SDL_KEYUP) {
             if(mplayer->e.key.keysym.sym == SDLK_SPACE)
@@ -950,8 +979,12 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer->mouse_x = mplayer->e.button.x;
                 mplayer->mouse_y = mplayer->e.button.y;
                 mplayer->music_list[mplayer->music_id].clicked = true;
+            } else if(mplayer_progressbar_hover(mplayer)) {
+                if(Mix_PlayingMusic()) {
+                    mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
+                    mplayer->progressbar_clicked = true;
+                }
             } else {
-                printf("mplayer->mouse_x: %d, mplayer->mouse_y: %d\n", mplayer->mouse_x, mplayer->mouse_y);
                 *music_clicked = false;
             }
         }
@@ -1001,6 +1034,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     /* Create music bar */
     mplayer_createmusicbar(mplayer);
     if(active_tab == SONGS_TAB) {
+        mplayer_displayprogression_control(mplayer);
         mplayer_rendersongs(mplayer);
     } else if(active_tab == ALBUMS_TAB) {
     }

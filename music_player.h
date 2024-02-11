@@ -169,7 +169,8 @@ typedef struct mplayer {
     music_t* current_music, *prev_music;
     int music_id, prevmusic_id, playid, music_count, repeat_id;
     int mouse_x, mouse_y, tick_count;
-    bool music_clicked, music_hover, music_playing, scroll;
+    bool music_clicked, music_hover, music_playing, scroll,
+        progressbar_clicked;
     SDL_Rect progress_bar, progress_count;
 } mplayer_t;
 
@@ -203,6 +204,7 @@ bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t
 bool mplayer_ibuttons_hover(mplayer_t* mplayer, ibtn_t* buttons, int* btn_id, size_t button_count);
 bool mplayer_tbuttons_hover(mplayer_t* mplayer, tbtn_t* buttons, int* btn_id, size_t button_count);
 bool mplayer_music_hover(mplayer_t* mplayer);
+bool mplayer_progressbar_hover(mplayer_t* mplayer);
 bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer);
 bool mplayer_checkbox_hovered(mplayer_t* mplayer);
 wchar_t* mplayer_stringtowide(const char* string);

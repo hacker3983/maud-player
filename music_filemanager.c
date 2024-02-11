@@ -246,7 +246,6 @@ wchar_t* mplayer_getmusic_namefrompath(Mix_Music* music, wchar_t* path) {
     wchar_t* music_name = NULL, *filename = NULL, *ext = NULL,
         *wpath = path, *wfilename = NULL, *wext = NULL;
     int music_type = Mix_GetMusicType(music);
-    _setmode(_fileno(stdout), _O_U16TEXT);
     switch(music_type) {
         case MUS_MP3:
             wext = L".mp3";
@@ -272,7 +271,6 @@ wchar_t* mplayer_getmusic_namefrompath(Mix_Music* music, wchar_t* path) {
     #else
     filename = strrchr(path, '/');
     #endif
-    //wprintf(L"extension: %ls\n", wext);
     wfilename++;
     
     //printf("%ls, %ls\n", wfilename, wpath);
@@ -286,7 +284,6 @@ wchar_t* mplayer_getmusic_namefrompath(Mix_Music* music, wchar_t* path) {
         }
     }
     wfilename -= (ext_index+1);
-    //wprintf(L"%ld\n", ext_index);
     for(size_t i=0;i<ext_index+1;i++) {
         filename[i] = wfilename[i];
     }
@@ -297,7 +294,6 @@ wchar_t* mplayer_getmusic_namefrompath(Mix_Music* music, wchar_t* path) {
             filename[i] = wfilename[i];
         }
     }
-    //wprintf(L"%ls\n", wfilename);
     music_name = filename;
     /*printf("musicname_length: %ld\n", name_len);
     //strncpy(music_name, filename, name_len);
