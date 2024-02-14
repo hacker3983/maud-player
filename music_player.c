@@ -85,9 +85,10 @@ void mplayer_createapp(mplayer_t* mplayer) {
         #else
         char* home = getenv("HOME"), *location = NULL;
         location = calloc(strlen(home) + 7, sizeof(char));
-        strcpy(location, home);
+        strcat(location, home);
         strcat(location, "/Music");
         mplayer_addmusic_location(mplayer, location);
+        free(home); home = NULL;
         free(location); location = NULL;
         #endif
     }
@@ -225,9 +226,20 @@ bool mplayer_progressbar_hover(mplayer_t* mplayer) {
 }
 
 wchar_t* mplayer_stringtowide(const char* string) {
-    size_t len_str = mbstowcs(NULL, string, 0); // get the length of the string in wide characters
-    wchar_t* wstring = calloc(len_str+1, sizeof(wchar_t));
-    mbstowcs(wstring, string, len_str);
+    size_t wstr_len = mbstowcs(NULL, string, 0)+1; // get the length of the string in wide characters
+    size_t str_len = strlen(string);
+    if(wstr_len == -1) {
+        wstr_len = str_len;
+    }
+    wchar_t* wstring = calloc(wstr_len+1, sizeof(wchar_t));
+    size_t ret = mbstowcs(wstring, string, wstr_len);
+    if(ret == -1) {
+        wchar_t wc = 0;
+        for(size_t i=0;i<wstr_len;i++) {
+            mbtowc(&wc, &string[i], 1);
+            wstring[i] = wc;
+        }
+    }
     return wstring;
 }
 
@@ -236,6 +248,24 @@ char* mplayer_widetostring(wchar_t* wstring) {
     char* string = calloc(len_wstr+1, sizeof(char));
     wcstombs(string, wstring, len_wstr);
     return string;
+}
+
+Uint16* mplayer_widetouint16(wchar_t* wstring) {
+    size_t wstring_length = wcslen(wstring);
+    Uint16* uint_string = calloc(wstring_length+1, sizeof(Uint16));
+    for(size_t i=0;i<wstring_length;i++) {
+        uint_string[i] = (Uint16)wstring[i];
+    }
+    return uint_string;
+}
+
+Uint16* mplayer_stringtouint16(char* string) {
+    size_t strsize = strlen(string);
+    Uint16* uint16_string = calloc(strsize, sizeof(Uint16));
+    for(size_t i = 0; i < strsize; i++) {
+        uint16_string[i] = string[i];
+    }
+    return uint16_string;
 }
 
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t* text_info) {
@@ -252,10 +282,16 @@ SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t*
 SDL_Texture* mplayer_renderunicode_text(mplayer_t* mplayer, TTF_Font* font, text_info_t* utext_info) {
     SDL_Rect utext_canvas = utext_info->text_canvas;
     TTF_SetFontSize(font, utext_info->font_size);
-    TTF_SizeUNICODE(font, utext_info->utext, &utext_canvas.w, &utext_canvas.h);
-    SDL_Surface* surface = TTF_RenderUNICODE_Blended(font, utext_info->utext, utext_info->text_color);
+    #ifdef _WIN32
+    Uint16* uint16_string = mplayer_widetouint16(utext_info->utext);
+    #else
+    Uint16* uint16_string = mplayer_stringtouint16(utext_info->utext);
+    #endif
+    TTF_SizeUNICODE(font, uint16_string, &utext_canvas.w, &utext_canvas.h);
+    SDL_Surface* surface = TTF_RenderUNICODE_Blended(font, uint16_string, utext_info->text_color);
     SDL_Texture* texture = SDL_CreateTextureFromSurface(mplayer->renderer, surface);
     SDL_FreeSurface(surface);
+    free(uint16_string); uint16_string = NULL;
     utext_info->text_canvas = utext_canvas;
     return texture;
 }
@@ -322,7 +358,6 @@ void mplayer_destroyapp(mplayer_t* mplayer) {
     SDL_DestroyRenderer(mplayer->renderer);
     SDL_DestroyWindow(mplayer->window);
     TTF_CloseFont(mplayer->font);
-
     // Free resources used by program
     mplayer_freemusic_info(mplayer);
 
@@ -337,6 +372,7 @@ void mplayer_destroyapp(mplayer_t* mplayer) {
     // free texture objects for setting menu
     mplayer_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].textures[MPLAYER_TEXT_TEXTURE],
         mplayer->menus[MPLAYER_SETTINGS_MENU].texture_sizes[MPLAYER_TEXT_TEXTURE]);
+
     mplayer_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].textures[MPLAYER_BUTTON_TEXTURE],
         mplayer->menus[MPLAYER_SETTINGS_MENU].texture_sizes[MPLAYER_BUTTON_TEXTURE]);
 
@@ -633,16 +669,19 @@ void mplayer_displayprogression_control(mplayer_t* mplayer) {
         progress = curr_durationsecs / full_durationsecs * 100;
     }
     if(Mix_PlayingMusic() && !Mix_PausedMusic()) {
+        #ifdef _WIN32
         printf("Playing %ls %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
             full_duration.hrs, full_duration.mins, full_duration.secs, progress);
+        #else
+        printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
+            curr_duration.hrs, curr_duration.mins, curr_duration.secs,
+            full_duration.hrs, full_duration.mins, full_duration.secs, progress);
+        #endif
     }
     switch(mplayer->repeat_id) {
         case MUSIC_REPEATALLBTN:
-            if(!mplayer->current_music) {
-                break;
-            }
-            if(mplayer->playid < mplayer->music_count && !Mix_PlayingMusic()) {
+            if(mplayer->playid < mplayer->music_count && mplayer->current_music && !Mix_PlayingMusic()) {
                 // play the next music whenever one is completed
                 mplayer->playid++;
                 mplayer->playid %= mplayer->music_count;
@@ -652,17 +691,21 @@ void mplayer_displayprogression_control(mplayer_t* mplayer) {
             }
             break;
         case MUSIC_REPEATONEBTN:
-            if(!Mix_PlayingMusic()) {
+            if(!Mix_PlayingMusic() && mplayer->current_music) {
                 Mix_PlayMusic(mplayer->current_music->music, 1);
             }
             break;
         case MUSIC_REPEATOFFBTN:
-            if(mplayer->playid < mplayer->music_count && !Mix_PlayingMusic()) {
+            if(mplayer->playid < mplayer->music_count && mplayer->current_music && !Mix_PlayingMusic()) {
                 // play the next music whenever one is completed
                 mplayer->playid++;
                 mplayer->playid %= mplayer->music_count;
                 mplayer->current_music = &mplayer->music_list[mplayer->playid];
                 Mix_PlayMusic(mplayer->current_music->music, 1);
+                if(mplayer->playid == 0) {
+                    // This prevents the music from playing automatically whenever we reach the end of the music list
+                    Mix_PauseMusic();
+                }
                 break;
             }
             break;
@@ -684,11 +727,15 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         we can render with in the songs box
     */
     TTF_SetFontSize(mplayer->music_font, utext.font_size);
-    TTF_SizeUNICODE(mplayer->music_font, L"A", &utext.text_canvas.w, &utext.text_canvas.h);
+    #ifdef _WIN32
+    TTF_SizeUNICODE(mplayer->music_font, (Uint16*)L"A", &utext.text_canvas.w, &utext.text_canvas.h);
+    #else
+    TTF_SizeUNICODE(mplayer->music_font, (Uint16*)"A", &utext.text_canvas.w, &utext.text_canvas.h);
+    #endif
     size_t max_textures = songs_box.h / (utext.text_canvas.h + 25); // calculation for the scrollability
     for(int i=0;i<mplayer->music_count;i++) {
         utext.utext = mplayer->music_list[i].music_name;
-        if(!utext.utext) break;
+        if(!utext.utext) continue;
         if((outer_canvas.y + outer_canvas.h) > songs_box.y + songs_box.h) {
             break;
         }

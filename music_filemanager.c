@@ -26,9 +26,14 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
     }
     musloc_t* music_loclist = calloc(1, sizeof(musloc_t));
     char c = '\0';
+    #ifdef _WIN32
     wchar_t *music_loc = calloc(2, sizeof(wchar_t)), wc = L'\0';
+    #else
+    char *music_loc = calloc(2, sizeof(char));
+    #endif
     size_t mloc_len = 0, muslist_count = 0;
     while((c = fgetc(f)) != EOF) {
+        #ifdef _WIN32
         mbtowc(&wc, &c, 1);
         if(wc == L'\n') {
             music_loclist[muslist_count++].path = music_loc;
@@ -42,17 +47,25 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
         wchar_t* temp = music_loc;
         music_loc = calloc(mloc_len + 1, sizeof(wchar_t));
         wcsncpy(music_loc, temp, mloc_len);
-        free(temp);
+        free(temp); temp = NULL;
+        #else
+        if(c == '\n') {
+            music_loclist[muslist_count++].path = music_loc;
+            music_loclist = realloc(music_loclist, (muslist_count + 1) * sizeof(musloc_t));
+            music_loclist[muslist_count].path = NULL;
+            music_loc = calloc(2, sizeof(char));
+            mloc_len = 0;
+            continue;
+        }
+        music_loc[mloc_len++] = c;
+        char* temp = music_loc;
+        music_loc = calloc(mloc_len + 1, sizeof(char));
+        strcpy(music_loc, temp);
+        free(temp); temp = NULL;
+        #endif
     }
     (mloc_len == 0) ? free(music_loc) : (music_loclist[muslist_count++].path = music_loc);
-    music_loc = NULL;
     fclose(f);
-
-    // in case the file is empty we free the pointers and set them to NULL
-    if(mloc_len == 0) {
-        free(music_loclist);
-        music_loclist = NULL;
-    }
     mplayer->musinfo.locations = music_loclist;
     mplayer->musinfo.location_count = muslist_count;
 }
@@ -66,7 +79,11 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
     size_t mfile_count = 0;
 
     for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
+        #ifdef _WIN32
         size_t location_len = wcslen(mplayer->musinfo.locations[i].path);
+        #else
+        size_t location_len = strlen(mplayer->musinfo.locations[i].path);
+        #endif
         size_t pathpat_len = location_len + 8;
         #ifdef _WIN32
         wchar_t* path_pattern = calloc(pathpat_len, sizeof(wchar_t));
@@ -90,12 +107,12 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
                 size_t path_len = location_len + length_str + 7,
                     altpath_len = location_len + length_altstr + 7;
 
-                music_files[mfile_count].path = calloc(path_len, sizeof(wchar_t));
+                music_files[mfile_count].path = calloc(path_len+1, sizeof(wchar_t));
                 wcscpy(music_files[mfile_count].path, mplayer->musinfo.locations[i].path);
                 wcscat(music_files[mfile_count].path, L"\\");
                 wcsncat(music_files[mfile_count].path, fd.cFileName, length_str);
 
-                music_files[mfile_count].altpath = calloc(altpath_len, sizeof(char));
+                music_files[mfile_count].altpath = calloc(altpath_len+1, sizeof(char));
                 strcpy(music_files[mfile_count].altpath, altpathstr);
                 strcat(music_files[mfile_count].altpath, "\\");
                 strncat(music_files[mfile_count].altpath, altstr, length_altstr);
@@ -112,29 +129,24 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         }
         free(path_pattern);
         #else
-        DIR* dirp = opendir(mplayer->musinfo.locations[i].path);
+        char* path = mplayer->musinfo.locations[i].path;
+        DIR* dirp = opendir(path);
         struct dirent* entry = readdir(dirp);
         struct stat sb = {0};
         while(entry) {
-            bool valid_musicfile = false;
             char* ext = strrchr(entry->d_name, '.') + 1;
             size_t total_mpath_size = location_len + strlen(entry->d_name) + 2;
-            // use stat instead of d_type to make more filesystem independent
-            stat(entry->d_name, &sb);
             for(size_t j=0;FILE_EXTENSIONS[j] != NULL;j++) {
                 if(strcmp(FILE_EXTENSIONS[j], ext) == 0) {
-                    valid_musicfile = true;
+                    music_files[mfile_count].path = calloc(total_mpath_size, sizeof(char));
+                    strcpy(music_files[mfile_count].path, path);
+                    strcat(music_files[mfile_count].path, "/");
+                    strcat(music_files[mfile_count].path, entry->d_name);
+                    mfile_count++;
+                    music_files = realloc(music_files, (mfile_count+1) * sizeof(musloc_t));
+                    music_files[mfile_count].path = NULL;
                     break;
                 }
-            }
-            if(valid_musicfile) {
-                music_files[mfile_count].path = calloc(total_mpath_size, sizeof(char));
-                strcpy(music_files[mfile_count].path, mplayer->musinfo.locations[i].path);
-                strcat(music_files[mfile_count].path, "/");
-                strcat(music_files[mfile_count].path, entry->d_name);
-                mfile_count++;
-                music_files = realloc(music_files, (mfile_count+1) * sizeof(musloc_t));
-                music_files[mfile_count].path = NULL;
             }
             entry = readdir(dirp);
         }
@@ -151,6 +163,7 @@ void mplayer_getmusicpath_info(mplayer_t* mplayer) {
     mplayer_getmusic_filepaths(mplayer);
 }
 
+#ifdef _WIN32
 bool mplayer_musiclocation_exists(mplayer_t* mplayer, wchar_t* location) {
     if(mplayer->musinfo.location_count == 0) {
         mplayer_getmusic_locations(mplayer);
@@ -162,7 +175,21 @@ bool mplayer_musiclocation_exists(mplayer_t* mplayer, wchar_t* location) {
     }
     return false;
 }
+#else
+bool mplayer_musiclocation_exists(mplayer_t* mplayer, char* location) {
+    if(mplayer->musinfo.location_count == 0) {
+        mplayer_getmusic_locations(mplayer);
+    }
+    for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
+        if(strcmp(mplayer->musinfo.locations[i].path, location) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+#endif
 
+#ifdef _WIN32
 void mplayer_addmusic_location(mplayer_t* mplayer, wchar_t* location) {
     FILE* f = fopen(MUSIC_PATHINFO_FILE, "a+");
     fseek(f, 0, SEEK_END);
@@ -183,21 +210,46 @@ void mplayer_addmusic_location(mplayer_t* mplayer, wchar_t* location) {
     mplayer_freemusic_info(mplayer);
     mplayer_getmusicpath_info(mplayer);
 }
+#else
+void mplayer_addmusic_location(mplayer_t* mplayer, char* location) {
+    FILE* f = fopen(MUSIC_PATHINFO_FILE, "a+");
+    fseek(f, 0, SEEK_END);
+    size_t size = ftell(f);
+    rewind(f);
+    if(size > 0) {
+        if(mplayer_musiclocation_exists(mplayer, location)) {
+            fclose(f);
+            return;
+        }
+        fputc('\n', f);
+    }
+    fwrite(location, sizeof(char), strlen(location), f);
+    fclose(f);
+    mplayer_freemusic_info(mplayer);
+    mplayer_getmusicpath_info(mplayer);
+}
+#endif
 
 void mplayer_loadmusics(mplayer_t* mplayer) {
     music_t* music_list = calloc(mplayer->musinfo.file_count, sizeof(music_t));
     Mix_Music* music = NULL;
     double music_durationsecs = 0;
     for(size_t i=0;i<mplayer->musinfo.file_count;i++) {
+        #ifdef _WIN32
         char* music_path = mplayer_widetostring(mplayer->musinfo.files[i].path);
+        #else
+        char* music_path = mplayer->musinfo.files[i].path;
+        #endif
+
         music = Mix_LoadMUS(music_path);
         if(music == NULL) {
+            #ifdef _WIN32
             music = Mix_LoadMUS(mplayer->musinfo.files[i].altpath);
+            #endif
             if(music == NULL) {
-                printf("Failed to load music %s\n", mplayer->musinfo.files[i].path);
+                printf("Failed to load music %ls\n", mplayer->musinfo.files[i].path);
             }
         }
-        free(music_path); music_path = NULL;
 
         music_durationsecs = Mix_MusicDuration(music);
         music_list[i].music = music;
@@ -205,20 +257,27 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
             music_list[i].music_name = mplayer_getmusic_namefrompath(music, mplayer->musinfo.files[i].path);
         }
         music_list[i].music_path = mplayer->musinfo.files[i].path;
+        #ifdef _WIN32
         music_list[i].music_alternatepath = mplayer->musinfo.files[i].altpath;
+        #endif
         music_list[i].music_position.hrs = 0, music_list[i].music_position.mins = 0,
         music_list[i].music_position.secs = 0;
         music_list[i].music_playing = 0;
         music_list[i].music_durationsecs = music_durationsecs;
         music_list[i].music_duration = mplayer_music_gettime(music_durationsecs);
+        #ifdef _WIN32
+        free(music_path); music_path = NULL;
+        #endif
     }
     mplayer->music_list = music_list;
 }
+#ifdef _WIN32
 int CALLBACK set_browsertitle(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData) {
     if (uMsg == BFFM_INITIALIZED)
       SetWindowTextA(hwnd, "Select Folder");
     return 0;
 }
+#endif
 
 void mplayer_browsefolder(mplayer_t* mplayer) {
     #ifdef _WIN32
@@ -246,65 +305,71 @@ void mplayer_browsefolder(mplayer_t* mplayer) {
     #endif
 }
 
+#ifdef _WIN32
 wchar_t* mplayer_getmusic_namefrompath(Mix_Music* music, wchar_t* path) {
-    wchar_t* music_name = NULL, *filename = NULL, *ext = NULL,
-        *wpath = path, *wfilename = NULL, *wext = NULL;
+    wchar_t *music_name, *wpath = path, *wfilename = NULL, *wfilename_cp, *wext = NULL;
     int music_type = Mix_GetMusicType(music);
     switch(music_type) {
-        case MUS_MP3:
-            wext = L".mp3";
-            break;
-        case MUS_FLAC:
-            wext = L".flac";
-            break;
-        case MUS_OGG:
-            wext = L".ogg";
-            break;
-        case MUS_OPUS:
-            wext = L".opus";
-            break;
-        case MUS_WAV:
-            wext = L".wav";
-            break;
-        default:
-            wext = L".m4a";
-    }
-    
-    #ifdef _WIN32
+        case MUS_MP3: wext = L".mp3"; break;
+        case MUS_FLAC: wext = L".flac"; break;
+        case MUS_OGG: wext = L".ogg"; break;
+        case MUS_OPUS: wext = L".opus"; break;
+        case MUS_WAV: wext = L".wav"; break;
+        default: wext = L".m4a";
+    }    
     wfilename = wcsrchr(wpath, L'\\');
-    #else
-    filename = strrchr(path, '/');
-    #endif
     wfilename++;
     
-    //printf("%ls, %ls\n", wfilename, wpath);
     size_t name_len = wcslen(wfilename);
-    filename = calloc(name_len, sizeof(wchar_t));
     size_t ext_index = 0;
     for(size_t i=0;i<name_len;i++) {
         wfilename++;
-        if(wcscmp(wfilename, wext) == 0) {
-            ext_index = i; break;
-        }
-    }
-    wfilename -= (ext_index+1);
-    for(size_t i=0;i<ext_index+1;i++) {
-        filename[i] = wfilename[i];
+        if(wcscmp(wfilename, wext) == 0) { ext_index = i; break; }
     }
     if(ext_index == 0) {
-        wfilename -= name_len;
-        wfilename++;
-        for(size_t i=0;i<name_len;i++) {
-            filename[i] = wfilename[i];
-        }
+        wfilename -= name_len, wfilename_cp = calloc(name_len+1, sizeof(wchar_t));
+    } else {
+        name_len = ext_index+1, wfilename -= name_len,
+        wfilename_cp = calloc(name_len+1, sizeof(wchar_t));
     }
-    music_name = filename;
-    /*printf("musicname_length: %ld\n", name_len);
-    //strncpy(music_name, filename, name_len);
-
-    wfilename--;*/
+    for(size_t i=0;i<name_len;i++) {
+        wfilename_cp[i] = wfilename[i];
+    }
+    music_name = wfilename_cp;
     return music_name;
 }
+#else
+char* mplayer_getmusic_namefrompath(Mix_Music* music, char* path) {
+    char* music_name = NULL, *filename = NULL, *filename_cp, *ext = NULL;
+    int music_type = Mix_GetMusicType(music);
+    switch(music_type) {
+        case MUS_MP3: ext = ".mp3"; break;
+        case MUS_FLAC: ext = ".flac"; break;
+        case MUS_OGG: ext = ".ogg"; break;
+        case MUS_OPUS: ext = ".opus"; break;
+        case MUS_WAV: ext = ".wav"; break;
+        default: ext = ".m4a";
+    }
+    filename = strrchr(path, '/');  filename++;
+    size_t name_len = strlen(filename);
+    size_t ext_index = 0;
+    for(size_t i=0;i<name_len;i++) {
+        filename++;
+        if(strcmp(filename, ext) == 0) { ext_index = i; break; }
+    }
+    if(ext_index == 0) {
+        filename -= name_len, filename_cp = calloc(name_len+1, sizeof(char));
+    } else {
+        name_len = ext_index+1, filename -= name_len,
+        filename_cp = calloc(name_len+1, sizeof(char));
+    }
+    for(size_t i=0;i<name_len;i++) {
+        filename_cp[i] = filename[i];
+    }
+    music_name = filename_cp;
+    return music_name;
+}
+#endif
 
 mtime_t mplayer_music_gettime(double seconds) {
     mtime_t music_time = {0};
@@ -332,15 +397,19 @@ void mplayer_freecurrmusic(mplayer_t* mplayer) {
 
 void mplayer_freemusic_info(mplayer_t* mplayer) {
     for(size_t i=0;i<mplayer->musinfo.file_count;i++) {
-        free(mplayer->musinfo.files[i].path);
         if(mplayer->music_list) {
-            free(mplayer->music_list[i].music_name);
-            mplayer->music_list[i].music_name = NULL;
+            free(mplayer->music_list[i].music_path); mplayer->music_list[i].music_path = NULL;
+            free(mplayer->music_list[i].music_name); mplayer->music_list[i].music_name = NULL;
+            mplayer->musinfo.files[i].path = NULL;
+            #ifdef _WIN32
+            free(mplayer->music_list[i].music_alternatepath); mplayer->music_list[i].music_alternatepath = NULL;
+            mplayer->musinfo.files[i].altpath = NULL;
+            #endif
             Mix_FreeMusic(mplayer->music_list[i].music);
         }
     }
     for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
-        free(mplayer->musinfo.locations[i].path);
+        free(mplayer->musinfo.locations[i].path); mplayer->musinfo.locations[i].path = NULL;
     }
 
     free(mplayer->musinfo.files); mplayer->musinfo.files = NULL;

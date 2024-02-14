@@ -42,8 +42,14 @@ typedef struct music_time {
 
 // structure representing music
 typedef struct music {
+    #ifdef _WIN32
     char *music_alternatepath;
+    #endif
+    #ifdef _WIN32
     wchar_t* music_name, *music_path;
+    #else
+    char* music_name, *music_path;
+    #endif
     Mix_Music* music;
     mtime_t music_position;
     mtime_t music_duration;
@@ -53,9 +59,11 @@ typedef struct music {
 } music_t;
 
 typedef struct music_location {
-    wchar_t* path;
     #ifdef _WIN32
+    wchar_t* path;
     char* altpath;
+    #else
+    char* path;
     #endif
 } musloc_t;
 
@@ -67,7 +75,11 @@ typedef struct music_info {
 typedef struct text_info {
     int font_size;
     char* text;
+    #ifdef _WIN32
     wchar_t* utext;
+    #else
+    char* utext;
+    #endif
     SDL_Color text_color;
     SDL_Rect text_canvas;
 } text_info_t;
@@ -184,12 +196,24 @@ void mplayer_createapp(mplayer_t* mplayer);
 void mplayer_getmusic_locations(mplayer_t* mplayer);
 void mplayer_getmusic_filepaths(mplayer_t* mplayer);
 void mplayer_getmusicpath_info(mplayer_t* mplayer);
+#ifdef _WIN32
 wchar_t* mplayer_getmusic_namefrompath(Mix_Music* music, wchar_t* path);
+#else
+char* mplayer_getmusic_namefrompath(Mix_Music* music, char* path);
+#endif
 void mplayer_loadmusics(mplayer_t* mplayer);
 void mplayer_browsefolder(mplayer_t* mplayer);
+#ifdef _WIN32
 void mplayer_addmusic_location(mplayer_t* mplayer, wchar_t* location);
+#else
+void mplayer_addmusic_location(mplayer_t* mplayer, char* location);
+#endif
 mtime_t mplayer_music_gettime(double seconds);
+#ifdef _WIN32
 bool mplayer_musiclocation_exists(mplayer_t* mplayer, wchar_t* location);
+#else
+bool mplayer_musiclocation_exists(mplayer_t* mplayer, char* location);
+#endif
 void mplayer_freemusic_info(mplayer_t* mplayer);
 void mplayer_run(mplayer_t* mplayer);
 void mplayer_defaultmenu(mplayer_t* mplayer);
@@ -207,8 +231,13 @@ bool mplayer_music_hover(mplayer_t* mplayer);
 bool mplayer_progressbar_hover(mplayer_t* mplayer);
 bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer);
 bool mplayer_checkbox_hovered(mplayer_t* mplayer);
+#ifdef _WIN32
 wchar_t* mplayer_stringtowide(const char* string);
 char* mplayer_widetostring(wchar_t* wstring);
+Uint16* mplayer_widetouint16(wchar_t* wstring);
+#else
+Uint16* mplayer_stringtouint16(char* string);
+#endif
 void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info);
 void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color,
     SDL_Color fill_color, bool fill, SDL_Color tick_color, bool check);
@@ -219,6 +248,7 @@ SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t*
 SDL_Texture* mplayer_renderunicode_text(mplayer_t* mplayer, TTF_Font* font, text_info_t* utext_info);
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration);
+void mplayer_displayprogression_control(mplayer_t* mplayer);
 void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_centertext(mplayer_t* mplayer, text_info_t* text_info);
 void mplayer_centerx(mplayer_t* mplayer, text_info_t* text_info);
