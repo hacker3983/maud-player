@@ -56,6 +56,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->tick_count = 0;
     mplayer->music_playing = 0;
     mplayer->scroll = false;
+    mplayer->scroll_type = 0;
     mplayer->progress_bar.w = 0, mplayer->progress_bar.x = 0;
     mplayer->progress_bar.h = 0, mplayer->progress_bar.y = 0;
     mplayer->progress_count.w = 0, mplayer->progress_count.h = 0;
@@ -197,6 +198,15 @@ bool mplayer_music_hover(mplayer_t* mplayer) {
     mplayer->music_hover = false;
     return false;
 }
+
+bool mplayer_songsbox_hover(mplayer_t* mplayer) {
+    if((mplayer->mouse_x <= songs_box.x + songs_box.w && mplayer->mouse_x >= songs_box.x) &&
+        (mplayer->mouse_y <= songs_box.y + songs_box.h && mplayer->mouse_y >= songs_box.y)) {
+            return true;
+    }
+    return false;
+}
+
 bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer) {
     int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
     SDL_Rect canvas = music_listplaybtn.btn_canvas;
@@ -719,6 +729,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     int cursor = MPLAYER_CURSOR_DEFAULT;
     playbtn_listcanvas = &music_btns[MUSIC_LISTPLAYBTN].btn_canvas;
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
+    int default_w = 0, default_h = 0;
+
     SDL_Rect outer_canvas = utext.text_canvas;
     mtime_t curr_duration = {0}, full_duration = {0};
     double full_durationsecs = 0, curr_durationsecs = 0;
@@ -732,7 +744,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     #else
     TTF_SizeUNICODE(mplayer->music_font, (Uint16*)"A", &utext.text_canvas.w, &utext.text_canvas.h);
     #endif
-    size_t max_textures = songs_box.h / (utext.text_canvas.h + 25); // calculation for the scrollability
+    default_w = utext.text_canvas.w, default_h = utext.text_canvas.h;
+    int max_textures = (int)roundf((float)songs_box.h / ((float)utext.text_canvas.h + (float)25)); // calculation for the scrollability
     for(int i=0;i<mplayer->music_count;i++) {
         utext.utext = mplayer->music_list[i].music_name;
         if(!utext.utext) continue;
@@ -741,6 +754,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         }
         outer_canvas.h = utext.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
         SDL_Texture* text_texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &utext);
+
         utext.text_canvas.x = outer_canvas.x + 50,
         utext.text_canvas.y = outer_canvas.y + ((outer_canvas.h - utext.text_canvas.h) / 2);
         mplayer->music_list[i].canvas = outer_canvas;
@@ -901,7 +915,6 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
             music_btns[i].texture_idx = i;
         }
 
-
         // TODO: REPLACE WITH mplayer_menuplacetexture function
 
         // Add a texture for the add folder icon button
@@ -972,8 +985,17 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
                 setting_iconbtn.hover = false;
             }
+            mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
         } else if(mplayer->e.type == SDL_MOUSEWHEEL) {
-            printf("Scroll detected\n");
+            if(mplayer->e.wheel.y > 0) {
+                mplayer->scroll_type = MPLAYERSCROLL_UP;
+            } else if(mplayer->e.wheel.y < 0) {
+                mplayer->scroll_type = MPLAYERSCROLL_DOWN;
+            } else if(mplayer->e.wheel.x > 0) {
+                mplayer->scroll_type = MPLAYERSCROLL_RIGHT;
+            } else if(mplayer->e.wheel.x < 0) {
+                mplayer->scroll_type = MPLAYERSCROLL_LEFT;
+            }
             mplayer->scroll = true;
         } else if(Mix_PlayingMusic() && mplayer->e.type == SDL_KEYUP) {
             if(mplayer->e.key.keysym.sym == SDLK_SPACE)
@@ -1079,8 +1101,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     mplayer_createsongs_box(mplayer);
     /* Create music bar */
     mplayer_createmusicbar(mplayer);
+    mplayer_displayprogression_control(mplayer);
     if(active_tab == SONGS_TAB) {
-        mplayer_displayprogression_control(mplayer);
         mplayer_rendersongs(mplayer);
     } else if(active_tab == ALBUMS_TAB) {
     }
