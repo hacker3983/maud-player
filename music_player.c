@@ -730,11 +730,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     playbtn_listcanvas = &music_btns[MUSIC_LISTPLAYBTN].btn_canvas;
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
     int default_w = 0, default_h = 0;
-
     SDL_Rect outer_canvas = utext.text_canvas;
-    mtime_t curr_duration = {0}, full_duration = {0};
-    double full_durationsecs = 0, curr_durationsecs = 0;
-    int progress = 0, music_id = 0;
+ 
     /*  get the size of a character so we can determine the maximum amount of textures
         we can render with in the songs box
     */
@@ -745,8 +742,9 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     TTF_SizeUNICODE(mplayer->music_font, (Uint16*)"A", &utext.text_canvas.w, &utext.text_canvas.h);
     #endif
     default_w = utext.text_canvas.w, default_h = utext.text_canvas.h;
-    int max_textures = (int)roundf((float)songs_box.h / ((float)utext.text_canvas.h + (float)25)); // calculation for the scrollability
-    for(int i=0;i<mplayer->music_count;i++) {
+    // calculation for the scrollability
+    size_t max_textures = (size_t)roundf((float)songs_box.h / ((float)utext.text_canvas.h + (float)25));
+    for(size_t i=0;i<mplayer->music_count;i++) {
         utext.utext = mplayer->music_list[i].music_name;
         if(!utext.utext) continue;
         if((outer_canvas.y + outer_canvas.h) > songs_box.y + songs_box.h) {

@@ -186,8 +186,8 @@ typedef struct mplayer {
     musinfo_t musinfo;
     music_t* music_list;
     music_t* current_music, *prev_music;
-    int music_id, prevmusic_id, playid, music_count, repeat_id;
-    int mouse_x, mouse_y, tick_count, scroll_type;
+    size_t music_id, prevmusic_id, playid, music_count;
+    int repeat_id, mouse_x, mouse_y, tick_count, scroll_type;
     bool music_clicked, music_hover, music_playing, scroll,
         progressbar_clicked;
     SDL_Rect progress_bar, progress_count;
