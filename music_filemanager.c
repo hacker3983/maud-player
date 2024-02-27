@@ -233,7 +233,16 @@ void mplayer_addmusic_location(mplayer_t* mplayer, char* location) {
 void mplayer_loadmusics(mplayer_t* mplayer) {
     music_t* music_list = calloc(mplayer->musinfo.file_count, sizeof(music_t));
     Mix_Music* music = NULL;
+    text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
+    SDL_Rect outer_canvas = utext.text_canvas;
     double music_durationsecs = 0;
+    TTF_SetFontSize(mplayer->music_font, utext.font_size);
+    #ifdef _WIN32
+    TTF_SizeUNICODE(mplayer->music_font, (Uint16*)L"A", &utext.text_canvas.w, &utext.text_canvas.h);
+    #else
+    TTF_SizeUNICODE(mplayer->music_font, (Uint16*)"A", &utext.text_canvas.w, &utext.text_canvas.h);
+    #endif
+    
     for(size_t i=0;i<mplayer->musinfo.file_count;i++) {
         #ifdef _WIN32
         char* music_path = mplayer_widetostring(mplayer->musinfo.files[i].path);
@@ -250,11 +259,28 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
                 printf("Failed to load music %ls\n", mplayer->musinfo.files[i].path);
             }
         }
-
         music_durationsecs = Mix_MusicDuration(music);
         music_list[i].music = music;
         if(music) {
             music_list[i].music_name = mplayer_getmusic_namefrompath(music, mplayer->musinfo.files[i].path);
+            #ifdef _WIN32
+                utext.utext = music_list[i].music_name;
+            #else
+                utext.text = music_list[i].music_name;
+            #endif
+            if(!mplayer->music_renderinit) {
+                mplayer->music_renderpos = i;
+                mplayer->music_renderinit = true;
+            }
+            music_list[i].render = true;
+            music_list[i].text_texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &utext);
+            outer_canvas.h = utext.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
+            utext.text_canvas.x = outer_canvas.x + 50,
+            utext.text_canvas.y = outer_canvas.y + ((outer_canvas.h - utext.text_canvas.h) / 2);
+            music_list[i].text_info = utext;
+            music_list[i].outer_canvas = outer_canvas;
+            utext.text_canvas.y += utext.text_canvas.h + 22;
+            outer_canvas.y += utext.text_canvas.h + 25;
         }
         music_list[i].music_path = mplayer->musinfo.files[i].path;
         #ifdef _WIN32
@@ -400,6 +426,7 @@ void mplayer_freemusic_info(mplayer_t* mplayer) {
         if(mplayer->music_list) {
             free(mplayer->music_list[i].music_path); mplayer->music_list[i].music_path = NULL;
             free(mplayer->music_list[i].music_name); mplayer->music_list[i].music_name = NULL;
+            free(mplayer->music_list[i].text_texture); mplayer->music_list[i].text_texture = NULL;
             mplayer->musinfo.files[i].path = NULL;
             #ifdef _WIN32
             free(mplayer->music_list[i].music_alternatepath); mplayer->music_list[i].music_alternatepath = NULL;
