@@ -35,6 +35,18 @@ songs_boxcolor, setting_wincolor, setting_textcolor, back_btnbg_color, setting_u
 #define TEXTURE_TYPECOUNT 3
 #define CURSOR_COUNT 2
 
+typedef struct text_info {
+    int font_size;
+    char* text;
+    #ifdef _WIN32
+    wchar_t* utext;
+    #else
+    char* utext;
+    #endif
+    SDL_Color text_color;
+    SDL_Rect text_canvas;
+} text_info_t;
+
 // Music time
 typedef struct music_time {
     int hrs, mins, secs;
@@ -50,12 +62,14 @@ typedef struct music {
     #else
     char* music_name, *music_path;
     #endif
+    text_info_t text_info;
+    SDL_Texture* text_texture;
     Mix_Music* music;
     mtime_t music_position;
     mtime_t music_duration;
     double music_durationsecs;
-    SDL_Rect canvas, checkbox_size;
-    bool hover, clicked, checkbox_ticked, fill, music_playing;
+    SDL_Rect outer_canvas, checkbox_size;
+    bool hover, clicked, checkbox_ticked, fill, music_playing, render;
 } music_t;
 
 typedef struct music_location {
@@ -71,18 +85,6 @@ typedef struct music_info {
     musloc_t* locations, *files;
     size_t location_count, file_count;
 } musinfo_t;
-
-typedef struct text_info {
-    int font_size;
-    char* text;
-    #ifdef _WIN32
-    wchar_t* utext;
-    #else
-    char* utext;
-    #endif
-    SDL_Color text_color;
-    SDL_Rect text_canvas;
-} text_info_t;
 
 typedef struct tab_info {
     int font_size;
@@ -186,10 +188,10 @@ typedef struct mplayer {
     musinfo_t musinfo;
     music_t* music_list;
     music_t* current_music, *prev_music;
-    size_t music_id, prevmusic_id, playid, music_count;
+    size_t music_id, prevmusic_id, playid, music_count, music_renderpos;
     int repeat_id, mouse_x, mouse_y, tick_count, scroll_type;
     bool music_clicked, music_hover, music_playing, scroll,
-        progressbar_clicked;
+        progressbar_clicked, music_renderinit;
     SDL_Rect progress_bar, progress_count;
 } mplayer_t;
 
