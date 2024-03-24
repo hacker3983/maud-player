@@ -73,7 +73,6 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->current_music = NULL, mplayer->prev_music = NULL,
     mplayer->music_list = NULL;
 
-
     // create music information
     mplayer_getmusicpath_info(mplayer);
     if(mplayer->musinfo.locations == NULL) {
@@ -396,7 +395,7 @@ void mplayer_destroyapp(mplayer_t* mplayer) {
     // free whatever data the user types into the searchbar
     free(mplayer->musicsearchbar_data); mplayer->musicsearchbar_data = NULL;
     mplayer->musicsearchbar_datalen = 0;
-    
+
     // Free resources used by program
     mplayer_freemusic_info(mplayer);
      // destroys music player graphical utilities
@@ -717,6 +716,7 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
     for(int i=0;i<2;i++) {
         free(duration_texts[i].text); duration_texts[i].text = NULL;
         SDL_RenderCopy(mplayer->renderer, textures[i], NULL, &duration_texts[i].text_canvas);
+        SDL_DestroyTexture(textures[i]);
     }
 
     if(Mix_PlayingMusic()) {
@@ -1299,24 +1299,18 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0], NULL,
             &text_info[0].text_canvas);
     SDL_Rect tab_canvas = tab_info[0].text_canvas, text_canvas = text_info[0].text_canvas;
-    if(tab_canvas.x != text_canvas.x + text_canvas.w + TAB_SPACING) {
-        tab_info[0].text_canvas.x = text_canvas.x + text_canvas.w + TAB_SPACING;
-    }
-    if(!TAB_INIT) {
-        TAB_INIT = 1;
-    }
-    for(int i=1;i<tab_info_size+1;i++) {
-        mplayer->menu->textures[MPLAYER_TAB_TEXTURE][i-1] = mplayer_rendertab(mplayer, &tab_info[i-1]);
-        if(i+1 > 1) {
+    tab_info[0].text_canvas.x = text_canvas.x + text_canvas.w + TAB_SPACING;
+    if(!TAB_INIT) { TAB_INIT = 1; }
+    for(int i=0;i<tab_info_size;i++) {
+        mplayer->menu->textures[MPLAYER_TAB_TEXTURE][i] = mplayer_rendertab(mplayer, &tab_info[i]);
+        if(i > 0) {
             int tab_x = tab_info[i-1].text_canvas.x + tab_info[i-1].text_canvas.w + TAB_SPACING;
             tab_info[i].text_canvas.x = tab_x;
         }
-        if(tab_info[i-1].active) {
-            mplayer_renderactive_tab(mplayer, &tab_info[i-1]);
-        }
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TAB_TEXTURE][i-1], NULL,
-            &tab_info[i-1].text_canvas);
-        mplayer->menu->texture_canvases[MPLAYER_TAB_TEXTURE][i-1] = tab_info[i-1].text_canvas;
+        (tab_info[i].active) ?  mplayer_renderactive_tab(mplayer, &tab_info[i]) : 0;
+        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TAB_TEXTURE][i], NULL,
+            &tab_info[i].text_canvas);
+        mplayer->menu->texture_canvases[MPLAYER_TAB_TEXTURE][i] = tab_info[i].text_canvas;
     }
 
     // Create add folder button on screen

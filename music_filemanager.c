@@ -207,6 +207,7 @@ void mplayer_addmusic_location(mplayer_t* mplayer, wchar_t* location) {
     char* string = mplayer_widetostring(location);
     fwrite(string, sizeof(char), wcslen(location), f);
     fclose(f);
+    free(string); string = NULL;
     mplayer_freemusic_info(mplayer);
     mplayer_getmusicpath_info(mplayer);
 }
