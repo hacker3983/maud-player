@@ -392,6 +392,11 @@ void mplayer_menu_freetext(mplayer_t* mplayer, int menu_option) {
 void mplayer_destroyapp(mplayer_t* mplayer) {
     TTF_CloseFont(mplayer->font);
     TTF_CloseFont(mplayer->music_font);
+
+    // free whatever data the user types into the searchbar
+    free(mplayer->musicsearchbar_data); mplayer->musicsearchbar_data = NULL;
+    mplayer->musicsearchbar_datalen = 0;
+    
     // Free resources used by program
     mplayer_freemusic_info(mplayer);
      // destroys music player graphical utilities
