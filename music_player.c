@@ -1170,7 +1170,10 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 if(mplayer->musicsearchbar_clicked && mplayer->musicsearchbar_datalen > 0) {
                     mplayer->musicsearchbar_datalen--;
                     mplayer->musicsearchbar_data[mplayer->musicsearchbar_datalen] = 0;
-                    mplayer->musicsearchbar_data = realloc(mplayer->musicsearchbar_data, mplayer->musicsearchbar_datalen);
+                    char* newsearchbar_data = calloc(mplayer->musicsearchbar_datalen, sizeof(char));
+                    strncpy(newsearchbar_data, mplayer->musicsearchbar_data, mplayer->musicsearchbar_datalen);
+                    free(mplayer->musicsearchbar_data); mplayer->musicsearchbar_data = NULL;
+                    mplayer->musicsearchbar_data = newsearchbar_data;
                     printf("The user typed data as shrinked to %s\n", mplayer->musicsearchbar_data);
                 }
             }
