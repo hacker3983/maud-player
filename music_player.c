@@ -1162,9 +1162,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                     mplayer->musicsearchbar_data = realloc(mplayer->musicsearchbar_data,
                         (mplayer->musicsearchbar_datalen + 1) * sizeof(char));
                 }
-                strncat(mplayer->musicsearchbar_data, mplayer->e.text.text, strlen(mplayer->e.text.text));
+                strcat(mplayer->musicsearchbar_data, mplayer->e.text.text);
                 mplayer->musicsearchbar_data[mplayer->musicsearchbar_datalen] = 0;
-                printf("User has focus in the search bar the text typed is %s\n", mplayer->musicsearchbar_data);
             }
         } else if(mplayer->e.type == SDL_KEYDOWN) {
             if(mplayer->e.key.keysym.scancode == SDL_SCANCODE_BACKSPACE) {
@@ -1176,11 +1175,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                     } else {
                         char* newsearchbar_data = calloc(mplayer->musicsearchbar_datalen+1, sizeof(char));
                         newsearchbar_data[mplayer->musicsearchbar_datalen] = 0;
-                        strncpy(newsearchbar_data, mplayer->musicsearchbar_data, mplayer->musicsearchbar_datalen);
-                        free(mplayer->musicsearchbar_data); mplayer->musicsearchbar_data = NULL;
-                        mplayer->musicsearchbar_data = newsearchbar_data;
+                        strcpy(newsearchbar_data, mplayer->musicsearchbar_data);
+                        free(mplayer->musicsearchbar_data); mplayer->musicsearchbar_data = newsearchbar_data;
                     }
-                    printf("The user typed data as shrinked to %s\n", mplayer->musicsearchbar_data);
                 }
             }
         } else if(mplayer->e.type == SDL_MOUSEMOTION) {
