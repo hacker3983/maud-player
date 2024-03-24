@@ -27,7 +27,7 @@ UNDERLINE_THICKNESS, checkbox_init;
 extern SDL_Rect scrollbar, music_status, songs_box, checkbox_size;
 extern const size_t text_info_size, tab_info_size, setting_textinfo_size, MUSICBTN_COUNT, MTOTALBTN_COUNT, SETTINGSBTN_COUNT;
 extern const SDL_Color window_color, text_color, text2_color, underline_color, white, black, music_statusbar_color,
-songs_boxcolor, setting_wincolor, setting_textcolor, back_btnbg_color, setting_underlinecolor;
+music_searchbar_color, songs_boxcolor, setting_wincolor, setting_textcolor, back_btnbg_color, setting_underlinecolor;
 
 #define color_toparam(color) \
     color.r, color.g, color.b, color.a
@@ -169,6 +169,7 @@ typedef struct mplayer_menu {
 } mplayer_menu_t;
 
 enum cursor_types {
+    MPLAYER_CURSOR_TYPEABLE,
     MPLAYER_CURSOR_POINTER,
     MPLAYER_CURSOR_DEFAULT
 };
@@ -182,7 +183,7 @@ typedef struct mplayer {
     SDL_Event e; // event
     int menu_opt, quit;
     mplayer_menu_t menus[MENU_COUNT], *menu;
-    SDL_Cursor* cursors[2];
+    SDL_Cursor* cursors[3];
 
     // Music Informations such music name, path, duration, etc
     musinfo_t musinfo;
@@ -190,15 +191,17 @@ typedef struct mplayer {
     music_t* current_music, *prev_music;
     size_t music_id, prevmusic_id, playid, music_count, music_renderpos;
     int repeat_id, mouse_x, mouse_y, tick_count, scroll_type;
-    bool music_clicked, music_hover, music_playing, scroll,
-        progressbar_clicked, music_renderinit;
-    SDL_Rect progress_bar, progress_count;
+    char* musicsearchbar_data;
+    size_t musicsearchbar_datalen;
+    bool music_clicked, musicsearchbar_clicked, musicsearchcursor_blink, music_hover, music_playing, scroll, progressbar_clicked, music_renderinit;
+    SDL_Rect progress_bar, progress_count, music_searchbar, music_searchbar_cursor;
 } mplayer_t;
 
 void mplayer_init();
 SDL_Window* mplayer_createwindow(const char* title, int width, int height);
 SDL_Renderer* mplayer_createrenderer(SDL_Window* window);
 TTF_Font* mplayer_openfont(const char* file, int size);
+void mplayer_createsearch_bar(mplayer_t* mplayer);
 void mplayer_createsongs_box(mplayer_t* mplayer);
 void mplayer_createmusicbar(mplayer_t* mplayer);
 void mplayer_createapp(mplayer_t* mplayer);

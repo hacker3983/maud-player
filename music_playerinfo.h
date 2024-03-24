@@ -12,6 +12,7 @@ underline_color = {0x00, 0xff, 0x00, 0xff}, setting_underlinecolor = {0xA5, 0x2A
 white = {0xff, 0xff, 0xff, 0xff},
 black = {0x00, 0x00, 0x00, 0x00},
 green = {0x00, 0xFF, 0x00, 0xFF},
+music_searchbar_color = {0xFF, 0xFF, 0xFF, 0xFF},
 music_statusbar_color = {0x7A, 0x65, 0x63, 0xFF},
 songs_boxcolor = green, back_btnbg_color = {0x46, 0xB1, 0xC9, 0xFF},
 /* Reference: https://coolors.co/023c40-c3979f-0ad3ff-78ffd6-e1faf9 */
@@ -22,8 +23,7 @@ SBOXDISTANCE_X = 50, SETTING_LINESPACING = 10, UNDERLINE_THICKNESS = 10, checkbo
 
 text_info_t text_info[] = {
         {36, "Music", NULL, text_color, {10}},
-        {36, "You're in the Songs tab.", NULL, text_color, {0}},
-        {36, "You're in the Albums tab.", NULL, text_color, {0}}
+        {18, "Type here to search for music", NULL, white, {0, 0}},
 },
 setting_textinfo[] = {
         {45, "Go Back To Home", NULL, text2_color, {10, 0}},
