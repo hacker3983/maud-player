@@ -1156,13 +1156,14 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             if(mplayer->musicsearchbar_clicked) {
                 if(!mplayer->musicsearchbar_data) {
                     mplayer->musicsearchbar_datalen = strlen(mplayer->e.text.text);
-                    mplayer->musicsearchbar_data = calloc(strlen(mplayer->e.text.text), sizeof(char));
+                    mplayer->musicsearchbar_data = calloc(mplayer->musicsearchbar_datalen, sizeof(char));
                 } else {
                     mplayer->musicsearchbar_datalen += strlen(mplayer->e.text.text);
-                    mplayer->musicsearchbar_data = realloc(mplayer->musicsearchbar_data, mplayer->musicsearchbar_datalen
-                        * sizeof(char));
+                    mplayer->musicsearchbar_data = realloc(mplayer->musicsearchbar_data,
+                        (mplayer->musicsearchbar_datalen + 1) * sizeof(char));
                 }
-                strncat(mplayer->musicsearchbar_data, mplayer->e.text.text, mplayer->musicsearchbar_datalen);
+                strncat(mplayer->musicsearchbar_data, mplayer->e.text.text, strlen(mplayer->e.text.text));
+                mplayer->musicsearchbar_data[mplayer->musicsearchbar_datalen] = 0;
                 printf("User has focus in the search bar the text typed is %s\n", mplayer->musicsearchbar_data);
             }
         } else if(mplayer->e.type == SDL_KEYDOWN) {
@@ -1170,7 +1171,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 if(mplayer->musicsearchbar_clicked && mplayer->musicsearchbar_datalen > 0) {
                     mplayer->musicsearchbar_datalen--;
                     mplayer->musicsearchbar_data[mplayer->musicsearchbar_datalen] = 0;
-                    char* newsearchbar_data = calloc(mplayer->musicsearchbar_datalen, sizeof(char));
+                    char* newsearchbar_data = calloc(mplayer->musicsearchbar_datalen+1, sizeof(char));
+                    newsearchbar_data[mplayer->musicsearchbar_datalen] = 0;
+                    printf("data length is %ld\n", mplayer->musicsearchbar_datalen);
                     strncpy(newsearchbar_data, mplayer->musicsearchbar_data, mplayer->musicsearchbar_datalen);
                     free(mplayer->musicsearchbar_data); mplayer->musicsearchbar_data = NULL;
                     mplayer->musicsearchbar_data = newsearchbar_data;
