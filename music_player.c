@@ -716,7 +716,11 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
     if(Mix_PlayingMusic()) {
         text_info_t music_name = {18, NULL, NULL, white, {20, 0, 0, 0}};
         music_name.text_canvas.y = prevbtn_canvas->y - 10;
+        #ifdef _WIN32
         music_name.utext = mplayer->current_music->music_name;
+        #else
+        music_name.text = mplayer->current_music->music_name;
+        #endif
         SDL_Texture* texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &music_name);
         SDL_RenderCopy(mplayer->renderer, texture, NULL, &music_name.text_canvas);
     }
