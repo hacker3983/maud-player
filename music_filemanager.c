@@ -426,7 +426,7 @@ void mplayer_freemusic_info(mplayer_t* mplayer) {
         if(mplayer->music_list) {
             free(mplayer->music_list[i].music_path); mplayer->music_list[i].music_path = NULL;
             free(mplayer->music_list[i].music_name); mplayer->music_list[i].music_name = NULL;
-            free(mplayer->music_list[i].text_texture); mplayer->music_list[i].text_texture = NULL;
+            mplayer->music_list[i].text_texture = NULL;
             mplayer->musinfo.files[i].path = NULL;
             #ifdef _WIN32
             free(mplayer->music_list[i].music_alternatepath); mplayer->music_list[i].music_alternatepath = NULL;

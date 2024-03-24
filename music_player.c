@@ -390,12 +390,13 @@ void mplayer_menu_freetext(mplayer_t* mplayer, int menu_option) {
 }
 
 void mplayer_destroyapp(mplayer_t* mplayer) {
-    // destroys music player graphrical utilities
-    SDL_DestroyRenderer(mplayer->renderer);
-    SDL_DestroyWindow(mplayer->window);
     TTF_CloseFont(mplayer->font);
+    TTF_CloseFont(mplayer->music_font);
     // Free resources used by program
     mplayer_freemusic_info(mplayer);
+     // destroys music player graphical utilities
+    SDL_DestroyRenderer(mplayer->renderer);
+    SDL_DestroyWindow(mplayer->window);
 
     // free the text informations
     mplayer_menu_freetext(mplayer, MPLAYER_DEFAULT_MENU);
@@ -723,6 +724,7 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
         #endif
         SDL_Texture* texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &music_name);
         SDL_RenderCopy(mplayer->renderer, texture, NULL, &music_name.text_canvas);
+        SDL_DestroyTexture(texture); texture = NULL;
     }
 }
 
