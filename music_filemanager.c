@@ -86,9 +86,14 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         #endif
         #ifdef _WIN32
         if(!PathFileExistsW(mplayer->musinfo.locations[i].path)) {
+            LPSTR messageBuffer = NULL;
+            size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
+                | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                &messageBuffer, 0, NULL);
             char* path = mplayer_widetostring(mplayer->musinfo.locations[i].path);
-            fprintf(stderr, "Error: The music location %s doesn't exist or permission denied.\n", path);
+            fprintf(stderr, "Error: The music location %s: %s\n", path, messageBuffer);
             free(path); path = NULL;
+            LocalFree(messageBuffer);
             continue;
         }
         wchar_t* path_pattern = calloc(pathpat_len, sizeof(wchar_t));
