@@ -35,12 +35,14 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
     while((c = fgetc(f)) != EOF) {
         #ifdef _WIN32
         mbtowc(&wc, &c, 1);
-        if(wc == L'\n') {
+        if(wc == L'\n' && mloc_len > 0) {
             music_loclist[muslist_count++].path = music_loc;
             music_loclist = realloc(music_loclist, (muslist_count + 1) * sizeof(musloc_t));
             music_loclist[muslist_count].path = NULL;
             music_loc = calloc(2, sizeof(wchar_t));
             mloc_len = 0;
+            continue;
+        } else if(wc == L'\n' && mloc_len == 0) {
             continue;
         }
         music_loc[mloc_len++] = wc;
@@ -49,12 +51,14 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
         wcsncpy(music_loc, temp, mloc_len);
         free(temp); temp = NULL;
         #else
-        if(c == '\n') {
+        if(c == '\n' && mloc_len > 0) {
             music_loclist[muslist_count++].path = music_loc;
             music_loclist = realloc(music_loclist, (muslist_count + 1) * sizeof(musloc_t));
             music_loclist[muslist_count].path = NULL;
             music_loc = calloc(2, sizeof(char));
             mloc_len = 0;
+            continue;
+        } else if(c == '\n' && mloc_len == 0) {
             continue;
         }
         music_loc[mloc_len++] = c;
@@ -89,7 +93,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
             LPSTR messageBuffer = NULL;
             size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
                 | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                &messageBuffer, 0, NULL);
+                (LPSTR)&messageBuffer, 0, NULL);
             char* path = mplayer_widetostring(mplayer->musinfo.locations[i].path);
             fprintf(stderr, "Error: The music location %s: %s\n", path, messageBuffer);
             free(path); path = NULL;
@@ -148,7 +152,11 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         struct dirent* entry = readdir(dirp);
         struct stat sb = {0};
         while(entry) {
-            char* ext = strrchr(entry->d_name, '.') + 1;
+            char* ext = strrchr(entry->d_name, '.');
+            if(!ext) {
+                entry = readdir(dirp); continue;
+            }
+            ext++;
             size_t total_mpath_size = location_len + strlen(entry->d_name) + 2;
             for(size_t j=0;FILE_EXTENSIONS[j] != NULL;j++) {
                 if(strcmp(FILE_EXTENSIONS[j], ext) == 0) {
