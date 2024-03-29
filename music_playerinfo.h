@@ -32,7 +32,8 @@ setting_textinfo[] = {
 tabinfo_t tab_info[] = {
         {28, "Songs", text2_color, underline_color, {0, 9}, SONGS_TAB, true, false},
         {28, "Albums", text2_color, {0}, {0, 9}, ALBUMS_TAB, false, false},
-        {28, "Queues", text2_color, {0}, {0, 9}, QUEUES_TAB, false, false}
+        {28, "Play Queue", text2_color, {0}, {0, 9}, QUEUES_TAB, false, false},
+        {28, "Playlists", text2_color, {0}, {0, 9}, PLAYLISTS_TAB, false, false}
 };
 int active_tab = SONGS_TAB, prev_tab = -1;
 

@@ -139,7 +139,8 @@ enum setting_buttons {
 enum TAB_ID {
         SONGS_TAB,
         ALBUMS_TAB,
-        QUEUES_TAB
+        QUEUES_TAB,
+        PLAYLISTS_TAB,
 };
 
 enum menu_options {
@@ -192,6 +193,7 @@ typedef struct mplayer {
     size_t music_id, prevmusic_id, playid, music_count, music_renderpos;
     int repeat_id, mouse_x, mouse_y, tick_count, scroll_type;
     char* musicsearchbar_data;
+    int musicsearchcursor_relpos;
     size_t musicsearchbar_datalen;
     bool music_clicked, musicsearchbar_clicked, musicsearchcursor_blink, music_hover, music_playing, scroll, progressbar_clicked, music_renderinit;
     SDL_Rect progress_bar, progress_count, music_searchbar, music_searchbar_cursor;
