@@ -98,7 +98,6 @@ void mplayer_createapp(mplayer_t* mplayer) {
         strcat(location, home);
         strcat(location, "/Music");
         mplayer_addmusic_location(mplayer, location);
-        free(home); home = NULL;
         free(location); location = NULL;
         #endif
     }
@@ -1120,9 +1119,7 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
             menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = music_btns[i].btn_canvas;
             music_btns[i].texture_idx = i;
         }
-
-        // TODO: REPLACE WITH mplayer_menuplacetexture function
-
+        
         // Add a texture for the add folder icon button
         mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
         music_addfolderbtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;

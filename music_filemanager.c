@@ -49,6 +49,7 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
         wcsncpy(music_loc, temp, mloc_len);
         free(temp); temp = NULL;
         #else
+        printf("%c\n", c);
         if(c == '\n') {
             music_loclist[muslist_count++].path = music_loc;
             music_loclist = realloc(music_loclist, (muslist_count + 1) * sizeof(musloc_t));
@@ -77,7 +78,6 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
     }
     musloc_t* music_files = calloc(1, sizeof(musloc_t));
     size_t mfile_count = 0;
-
     for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
         #ifdef _WIN32
         size_t location_len = wcslen(mplayer->musinfo.locations[i].path);
@@ -329,6 +329,22 @@ void mplayer_browsefolder(mplayer_t* mplayer) {
             mplayer_addmusic_location(mplayer, folder_path);
         }
     }
+    #else
+    FILE* f = popen("zenity --file-selection --directory --title \"Select a directory to search for music\"", "r");
+    size_t chunksize = 1024;
+    char* directory = calloc(chunksize, 1024), c = 0;
+    size_t dirlen = 0;
+    while((c = fgetc(f)) != EOF) {
+        directory[dirlen++] = c;
+        if(dirlen % chunksize == 0) {
+            char* new_str = calloc(dirlen+1, sizeof(char));
+            strcpy(new_str, directory);
+            free(directory); directory = NULL;
+            directory = new_str;
+        }
+    }
+    mplayer_addmusic_location(mplayer, directory);
+    free(directory);
     #endif
 }
 
