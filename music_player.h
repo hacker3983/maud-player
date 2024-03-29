@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <locale.h>
+#include <errno.h>
 #ifdef _WIN32
 #include <windows.h>
 #include <shlwapi.h>
