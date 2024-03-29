@@ -80,11 +80,17 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
     for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
         #ifdef _WIN32
         size_t location_len = wcslen(mplayer->musinfo.locations[i].path);
+        size_t pathpat_len = location_len + 8;
         #else
         size_t location_len = strlen(mplayer->musinfo.locations[i].path);
         #endif
-        size_t pathpat_len = location_len + 8;
         #ifdef _WIN32
+        if(!PathFileExistsW(mplayer->musinfo.locations[i].path)) {
+            char* path = mplayer_widetostring(mplayer->musinfo.locations[i].path);
+            fprintf(stderr, "Error: The music location %s doesn't exist\n", path);
+            free(path); path = NULL;
+            continue;
+        }
         wchar_t* path_pattern = calloc(pathpat_len, sizeof(wchar_t));
         for(int j=0;FILE_EXTENSIONS[j] != NULL;j++) {
             wchar_t *wstr = mplayer_stringtowide(FILE_EXTENSIONS[j]);
@@ -130,6 +136,10 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         #else
         char* path = mplayer->musinfo.locations[i].path;
         DIR* dirp = opendir(path);
+        if(!dirp) {
+            fprintf(stderr, "Error: The music location %s doesn't exist\n", path);
+            continue;
+        }
         struct dirent* entry = readdir(dirp);
         struct stat sb = {0};
         while(entry) {
