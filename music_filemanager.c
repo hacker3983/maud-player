@@ -15,7 +15,7 @@ void mplayer_getroot_path(char* root_path) {
 void mplayer_getmusic_locations(mplayer_t* mplayer) {
     FILE* f = fopen(MUSIC_PATHINFO_FILE, "r");
     if(f == NULL) {
-        printf("PATH DOES NOT EXIST\n");
+        printf("Error: %s file doesn't exist: Creating %s file...\n", MUSIC_PATHINFO_FILE, MUSIC_PATHINFO_FILE);
         mplayer->music_count = 0;
         mplayer->music_list = NULL;
         mplayer->musinfo.files = NULL;
@@ -95,7 +95,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
                 | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                 (LPSTR)&messageBuffer, 0, NULL);
             char* path = mplayer_widetostring(mplayer->musinfo.locations[i].path);
-            fprintf(stderr, "Error: The music location %s: %s\n", path, messageBuffer);
+            fprintf(stderr, "Error: The music location %s: %s", path, messageBuffer);
             free(path); path = NULL;
             LocalFree(messageBuffer);
             continue;
@@ -111,7 +111,6 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
             WIN32_FIND_DATAW fd = {0};
             HANDLE hfind = FindFirstFileW(path_pattern, &fd);
             if(hfind == INVALID_HANDLE_VALUE) {
-                printf("No file extension found\n");
                 continue;
             }
             do {
@@ -146,7 +145,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         char* path = mplayer->musinfo.locations[i].path;
         DIR* dirp = opendir(path);
         if(!dirp) {
-            fprintf(stderr, "Error: The music location %s: %s\n", path, strerror(errno));
+            fprintf(stderr, "Error: The music location %s: %s", path, strerror(errno));
             continue;
         }
         struct dirent* entry = readdir(dirp);
@@ -272,14 +271,18 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
         #else
         char* music_path = mplayer->musinfo.files[i].path;
         #endif
-
         music = Mix_LoadMUS(music_path);
+
         if(music == NULL) {
             #ifdef _WIN32
             music = Mix_LoadMUS(mplayer->musinfo.files[i].altpath);
             #endif
             if(music == NULL) {
-                printf("Failed to load music %ls\n", mplayer->musinfo.files[i].path);
+                #ifdef _WIN32
+                printf("Error: Failed to load music %ls\n", mplayer->musinfo.files[i].path);
+                #else
+                printf("Error: Failed to load music %s\n", mplayer->musinfo.files[i].path);
+                #endif
             }
         }
         music_durationsecs = Mix_MusicDuration(music);
