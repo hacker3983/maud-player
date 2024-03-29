@@ -49,7 +49,6 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
         wcsncpy(music_loc, temp, mloc_len);
         free(temp); temp = NULL;
         #else
-        printf("%c\n", c);
         if(c == '\n') {
             music_loclist[muslist_count++].path = music_loc;
             music_loclist = realloc(music_loclist, (muslist_count + 1) * sizeof(musloc_t));
