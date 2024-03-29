@@ -349,6 +349,9 @@ void mplayer_browsefolder(mplayer_t* mplayer) {
     char* directory = calloc(chunksize, 1024), c = 0;
     size_t dirlen = 0;
     while((c = fgetc(f)) != EOF) {
+        if(c == '\n') {
+            break;
+        }
         directory[dirlen++] = c;
         if(dirlen % chunksize == 0) {
             char* new_str = calloc(dirlen+1, sizeof(char));
