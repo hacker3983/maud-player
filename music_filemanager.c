@@ -87,7 +87,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         #ifdef _WIN32
         if(!PathFileExistsW(mplayer->musinfo.locations[i].path)) {
             char* path = mplayer_widetostring(mplayer->musinfo.locations[i].path);
-            fprintf(stderr, "Error: The music location %s doesn't exist\n", path);
+            fprintf(stderr, "Error: The music location %s doesn't exist or permission denied.\n", path);
             free(path); path = NULL;
             continue;
         }
@@ -137,7 +137,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         char* path = mplayer->musinfo.locations[i].path;
         DIR* dirp = opendir(path);
         if(!dirp) {
-            fprintf(stderr, "Error: The music location %s doesn't exist\n", path);
+            fprintf(stderr, "Error: The music location %s: %s\n", path, strerror(errno));
             continue;
         }
         struct dirent* entry = readdir(dirp);
