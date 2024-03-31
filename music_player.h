@@ -129,7 +129,8 @@ enum musical_buttons {
     MUSIC_REPEATONEBTN,
     MUSIC_REPEATOFFBTN,
     MUSIC_LISTPLAYBTN,
-    MUSIC_ADDFOLDERBTN
+    MUSIC_ADDFOLDERBTN,
+    MUSIC_REMOVEBTN
 };
 
 enum setting_buttons {
@@ -285,5 +286,5 @@ void mplayer_getroot_path(char* root_path);
 #endif
 extern text_info_t text_info[], setting_textinfo[];
 extern tabinfo_t tab_info[];
-extern ibtn_t music_btns[], setting_btns[], setting_iconbtn, music_listplaybtn, music_addfolderbtn;
+extern ibtn_t music_btns[], setting_btns[], setting_iconbtn, music_listplaybtn, music_addfolderbtn, music_removebtn;
 #endif

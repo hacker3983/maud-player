@@ -26,7 +26,8 @@ text_info_t text_info[] = {
         {18, "Type here to search for music", NULL, white, {0, 0}},
 },
 setting_textinfo[] = {
-        {45, "Go Back To Home", NULL, text2_color, {10, 0}},
+        {50, "Go back to home", NULL, {0x0C, 0xF5, 0x74, 0xFF}, {10, 0}},
+        {40, "Music locations", NULL, {0x58, 0x72, 0x91, 0xFF}, {0, 0}}
 };
 
 tabinfo_t tab_info[] = {
@@ -49,8 +50,9 @@ ibtn_t music_btns[] = {
 },
 music_listplaybtn = {"images/play-button (1).png", MUSIC_LISTPLAYBTN, {0, 0, 30, 50}, false, false, 0},
 music_addfolderbtn = {"images/add-folder.png", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0},
+music_removebtn = {"images/remove.png", MUSIC_REMOVEBTN, {0, 0, 24, 24}, false, false, 0},
 setting_btns[] = {
-        {"images/back-button.png", BACK_BUTTON, {0, 5, 45, 45}, false, false, 0}
+        {"images/back-button.png", BACK_BUTTON, {5, 0, 50, 50}, false, false, 0}
 },
 setting_iconbtn = {"images/settings (5).png", SETTING_BUTTON, {0, 9, 45, 45}, false, false, 0};
 SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},

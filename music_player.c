@@ -139,8 +139,8 @@ bool mplayer_tab_hover(mplayer_t* mplayer, tabinfo_t tab) {
 bool mplayer_ibutton_hover(mplayer_t* mplayer, ibtn_t button) {
     int x = button.btn_canvas.x, y = button.btn_canvas.y,
         w = button.btn_canvas.w, h = button.btn_canvas.h;
-    if((mplayer->e.motion.x <= x + h && mplayer->e.motion.x >= x) &&
-        (mplayer->e.motion.y <= y + h && mplayer->e.motion.y >= y)) {
+    if((mplayer->mouse_x <= x + h && mplayer->mouse_x >= x) &&
+        (mplayer->mouse_y <= y + h && mplayer->mouse_y >= y)) {
             return true;
     }
     return false;
@@ -1146,7 +1146,14 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
         for(size_t i=0;i<SETTINGSBTN_COUNT;i++) {
             menu->textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, setting_btns[i].imgbtn_path);
             menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = setting_btns[i].btn_canvas;
+            setting_btns[i].texture_idx = i;
         }
+        // music location remove button
+        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
+        music_removebtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
+        menu->textures[MPLAYER_BUTTON_TEXTURE][music_removebtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
+            music_removebtn.imgbtn_path);
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_removebtn.texture_idx] = music_removebtn.btn_canvas;
     }
 }
 
@@ -1252,6 +1259,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                     break;
             }
         } else if(mplayer->e.type == SDL_MOUSEMOTION) {
+            mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
             if(mplayer_ibutton_hover(mplayer, setting_iconbtn)) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
                 setting_iconbtn.hover = true;
@@ -1270,7 +1278,6 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
                 setting_iconbtn.hover = false;
             }
-            mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
         } else if(mplayer->e.type == SDL_MOUSEWHEEL) {
             if(mplayer->e.wheel.y > 0) {
                 mplayer->scroll_type = MPLAYERSCROLL_UP;
@@ -1416,8 +1423,10 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
 }
 
 void mplayer_settingmenu(mplayer_t* mplayer) {
+    text_info_t music_location = {24, NULL, NULL, white, {0}};
     SDL_Rect* canvas = NULL;
     int btn_id = 0;
+    bool mouse_clicked = false;
     mplayer_set_window_title(mplayer, SETTING_TITLE);
     mplayer_set_window_color(mplayer->renderer, setting_wincolor);
     while(SDL_PollEvent(&mplayer->e)) {
@@ -1425,6 +1434,7 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
             mplayer->quit = 1;
             break;
         } else if(mplayer->e.type == SDL_MOUSEMOTION) {
+            mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
             // Check if we hover the back button
             if(mplayer_ibuttons_hover(mplayer, setting_btns, &btn_id, SETTINGSBTN_COUNT)) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
@@ -1438,10 +1448,11 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
                 return;
             }
+            mouse_clicked = true;
         }
     }
-
-    // create buttons, text and display on the screen
+    SDL_GetWindowSize(mplayer->window, &WIDTH, &HEIGHT);
+    // create buttons text, normal and display on the screen
     for(size_t i=0;i<setting_textinfo_size;i++) {
         mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][i] = mplayer_rendertext(mplayer, mplayer->font, &setting_textinfo[i]);
     }
@@ -1450,21 +1461,73 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     canvas = &setting_textinfo[0].text_canvas;
     canvas->x = setting_btns[0].btn_canvas.x + setting_btns[0].btn_canvas.w + 5;
 
+    SDL_Rect bg_canvas = {0};
+    SDL_Color bg_canvascolor = {0x28, 0x30, 0x44, 0xFF};
+    bg_canvas.w = WIDTH, bg_canvas.h = setting_btns[0].btn_canvas.y + setting_btns[0].btn_canvas.h + SETTING_LINESPACING;
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
+    SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
+    SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
+    canvas->y = roundf((float)(bg_canvas.h - canvas->h) / (float)2);
+    setting_btns[0].btn_canvas.y = roundf((float)(bg_canvas.h - setting_btns[0].btn_canvas.h) / (float)2);
+
     for(size_t i=1;i<setting_textinfo_size;i++) {
-        setting_textinfo[i].text_canvas.y = setting_textinfo[i-1].text_canvas.y + setting_textinfo[i-1].text_canvas.h;
+        setting_textinfo[i].text_canvas.y = setting_textinfo[i-1].text_canvas.y + setting_textinfo[i-1].text_canvas.h + SETTING_LINESPACING;
     }
 
-    // render each texture on its particular canvas
+    // Draw a background for the Music Location category
+    canvas = &setting_textinfo[1].text_canvas;
+    bg_canvas = (SDL_Rect){0};
+    bg_canvas.x = 0, bg_canvas.y = canvas->y;
+    bg_canvas.w = WIDTH, bg_canvas.h = canvas->h;
+    canvas->x = roundf((float)(WIDTH - canvas->w)/(float)2);
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
+    SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
+    SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
+    
+    // copy each texture on its particular canvas
     for(size_t i=0;i<setting_textinfo_size;i++) {
         mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][i] = setting_textinfo[i].text_canvas;
         SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][i], NULL,
             &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][i]);
     }
 
+    // Render each music location from the music paths info file
+    music_location.text_canvas.x = 50;
+    music_location.text_canvas.y = canvas->y + canvas->h + SETTING_LINESPACING;
+    bg_canvas.x = 0, bg_canvas.y = music_location.text_canvas.y;
+    bg_canvascolor = (SDL_Color){0x58, 0x72, 0x91, 0xFF};
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
+    for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
+        music_location.utext = mplayer->musinfo.locations[i].path;
+        SDL_Texture* texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &music_location);
+        bg_canvas.w = WIDTH, bg_canvas.h = music_location.text_canvas.h + SETTING_LINESPACING;
+        music_location.text_canvas.y = bg_canvas.y + roundf((float)(bg_canvas.h - music_location.text_canvas.h) / (float)2);
+        SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
+        SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
+
+        canvas = &music_removebtn.btn_canvas;
+        canvas->x = WIDTH - (canvas->w * 2);
+        canvas->y = music_location.text_canvas.y;
+        if(mplayer_ibutton_hover(mplayer, music_removebtn) && mouse_clicked) {
+            printf("removing music location %ls\n", music_location.utext);
+        }
+
+        mplayer_addmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE);
+        mplayer_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, texture, music_location.text_canvas);
+        bg_canvas.y = bg_canvas.y + bg_canvas.h + SETTING_LINESPACING;
+        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][music_removebtn.texture_idx],
+            NULL, canvas);
+        SDL_RenderCopy(mplayer->renderer,
+            mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]-1], NULL,
+            &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]
+            - 1]);
+    }
+
     // render buttons on screen
     for(size_t i=0;i<SETTINGSBTN_COUNT;i++) {
+        mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = setting_btns[i].btn_canvas;
         SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][i], NULL,
-            &mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i]);
+            &setting_btns[i].btn_canvas);
     }
     SDL_RenderPresent(mplayer->renderer);
     mplayer_destroytextures(mplayer->menu->textures[MPLAYER_TEXT_TEXTURE],
