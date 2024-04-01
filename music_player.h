@@ -221,9 +221,12 @@ void mplayer_loadmusics(mplayer_t* mplayer);
 void mplayer_browsefolder(mplayer_t* mplayer);
 #ifdef _WIN32
 void mplayer_addmusic_location(mplayer_t* mplayer, wchar_t* location);
+void mplayer_delmusic_location(mplayer_t* mplayer, wchar_t* location);
 #else
 void mplayer_addmusic_location(mplayer_t* mplayer, char* location);
+void mplayer_delmusic_location(mplayer_t* mplayer, char* location);
 #endif
+void mplayer_delmusic_locationindex(mplayer_t* mplayer, size_t loc_index);
 mtime_t mplayer_music_gettime(double seconds);
 #ifdef _WIN32
 bool mplayer_musiclocation_exists(mplayer_t* mplayer, wchar_t* location);

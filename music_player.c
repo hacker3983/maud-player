@@ -88,10 +88,8 @@ void mplayer_createapp(mplayer_t* mplayer) {
         strcat(location_str, "\\Music");
         location = mplayer_stringtowide(location_str);
         mplayer_addmusic_location(mplayer, location);
-        //mplayer_getmusicpath_info(mplayer);
         free(location_str); location_str = NULL;
         free(location); location = NULL;
-        // TODO: Linux
         #else
         char* home = getenv("HOME"), *location = NULL;
         location = calloc(strlen(home) + 7, sizeof(char));
@@ -834,6 +832,9 @@ void mplayer_displayprogression_control(mplayer_t* mplayer) {
 }
 
 void mplayer_rendersongs(mplayer_t* mplayer) {
+    if(!mplayer->music_count) {
+        return;
+    }
     int cursor = MPLAYER_CURSOR_DEFAULT;
     playbtn_listcanvas = &music_btns[MUSIC_LISTPLAYBTN].btn_canvas;
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
@@ -1401,7 +1402,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     if(active_tab == SONGS_TAB) {
         /* Create the search bar for searching for music */
         mplayer_createsearch_bar(mplayer);
-        /* Create songs box*/
+        /* Create songs box */
         mplayer_createsongs_box(mplayer);
         mplayer_rendersongs(mplayer);
     } else if(active_tab == ALBUMS_TAB) {
@@ -1509,7 +1510,8 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
         canvas->x = WIDTH - (canvas->w * 2);
         canvas->y = music_location.text_canvas.y;
         if(mplayer_ibutton_hover(mplayer, music_removebtn) && mouse_clicked) {
-            printf("removing music location %ls\n", music_location.utext);
+            mplayer_delmusic_locationindex(mplayer, i);
+            break;
         }
 
         mplayer_addmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE);
