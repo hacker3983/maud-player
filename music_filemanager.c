@@ -68,6 +68,18 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
         free(temp); temp = NULL;
         #endif
     }
+    // Whenever the MUSIC_PATHINFO_FILE is empty release the memory of the music_loclist back to the system
+    if(muslist_count == 0 && mloc_len == 0) {
+        free(music_loclist); music_loclist = NULL;
+        mplayer->music_list = NULL;
+        mplayer->musinfo.files = NULL;
+        mplayer->musinfo.file_count = 0;
+        mplayer->music_count = 0;
+    }
+    /* If the last line of the file is reached and it does not encounter a newline character while it was iterating
+       in the loop then we add it to the list and if the music location length is equal to zero we release the memory
+       to the system.
+    */
     (mloc_len == 0) ? free(music_loc) : (music_loclist[muslist_count++].path = music_loc);
     fclose(f);
     mplayer->musinfo.locations = music_loclist;
@@ -76,7 +88,6 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
 
 void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
     if(mplayer->musinfo.locations == NULL) {
-        mplayer->music_count = 0;
         return;
     }
     musloc_t* music_files = calloc(1, sizeof(musloc_t));
@@ -177,6 +188,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
     mplayer->musinfo.files = music_files;
     mplayer->musinfo.file_count = mfile_count;
     mplayer->music_count = mfile_count;
+    mplayer->music_list = NULL;
 }
 
 void mplayer_getmusicpath_info(mplayer_t* mplayer) {
@@ -252,7 +264,67 @@ void mplayer_addmusic_location(mplayer_t* mplayer, char* location) {
 }
 #endif
 
+void mplayer_delmusic_locationindex(mplayer_t* mplayer, size_t loc_index) {
+    if(!(loc_index < mplayer->musinfo.location_count && loc_index >= 0)) {
+        return;
+    }
+    FILE* f = fopen(MUSIC_PATHINFO_FILE, "w+");
+    char* locations_buff = NULL;
+    size_t size = 0;
+    free(mplayer->musinfo.locations[loc_index].path); mplayer->musinfo.locations[loc_index].path = NULL;
+    for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
+        if(!mplayer->musinfo.locations[i].path) {
+            continue;
+        }
+        #ifdef _WIN32
+        size_t len = wcslen(mplayer->musinfo.locations[i].path);
+        char* loc_str = mplayer_widetostring(mplayer->musinfo.locations[i].path);
+        #else
+        size_t len = strlen(mplayer->musinfo .locations[i].path);
+        char* loc_str = mplayer->musinfo.locations[i].path;
+        #endif
+        size += len + 1;
+        if(!locations_buff) {
+            locations_buff = calloc(size+1, sizeof(char));
+            strncpy(locations_buff, loc_str, len);
+            if(i+1 == loc_index && i+1 == mplayer->musinfo.location_count-1) {
+                locations_buff[size-1] = '\0';
+                size--;
+            } else if(i < loc_index && i+1 != mplayer->musinfo.location_count) {
+                strcat(locations_buff, "\n");
+            } else if(i > loc_index && i+1 != mplayer->musinfo.location_count) {
+                strcat(locations_buff, "\n");
+            } else {
+                size--;
+            }
+            continue;
+        }
+        locations_buff = realloc(locations_buff, (size+1) * sizeof(char));
+        locations_buff[size] = '\0';
+        strncat(locations_buff, loc_str, len);
+        if(i+1 == loc_index && i+1 == mplayer->musinfo.location_count-1) {
+            locations_buff[size-1] = '\0';
+            size--;
+        } else if(i < loc_index && i != mplayer->musinfo.location_count) {
+            locations_buff[size-1] = '\n';
+        } else if(i > loc_index && i+1 != mplayer->musinfo.location_count) {
+            locations_buff[size-1] = '\n';
+        } else {
+            locations_buff[size-1] = '\0';
+            size--;
+        }
+    }
+    fwrite(locations_buff, sizeof(char), size, f);
+    fclose(f);
+    free(locations_buff); locations_buff = NULL;
+    mplayer_freemusic_info(mplayer);
+    mplayer_getmusicpath_info(mplayer);
+}
+
 void mplayer_loadmusics(mplayer_t* mplayer) {
+    if(!mplayer->musinfo.file_count) {
+        return;
+    }
     music_t* music_list = calloc(mplayer->musinfo.file_count, sizeof(music_t));
     Mix_Music* music = NULL;
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
