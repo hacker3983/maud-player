@@ -16,7 +16,7 @@ music_searchbar_color = {0xFF, 0xFF, 0xFF, 0xFF},
 music_statusbar_color = {0x7A, 0x65, 0x63, 0xFF},
 songs_boxcolor = green, back_btnbg_color = {0x46, 0xB1, 0xC9, 0xFF},
 /* Reference: https://coolors.co/023c40-c3979f-0ad3ff-78ffd6-e1faf9 */
-setting_wincolor = black/*{0x02, 0x3C, 0x40, 0xFF}*/,
+setting_wincolor = {0x07, 0x00, 0x4D, 0xFF}/*{0x0B, 0x31, 0x42, 0xFF}{0x54, 0x08, 0x04, 0xFF}{0x1B, 0x06, 0x5E, 0xFF}black{0x20, 0x81, 0xC3, 0xFF}{0x02, 0x3C, 0x40, 0xFF}*/,
 setting_textcolor = {0xC3, 0x97, 0x9F, 0xFF};
 int WIDTH = 900, HEIGHT = 600, TAB_INIT = 0, FONT_SIZE = 20, MUSIC_FONTSIZE = 14, TAB_SPACING = 20,
 SBOXDISTANCE_X = 50, SETTING_LINESPACING = 10, UNDERLINE_THICKNESS = 10, checkbox_init = 0;
@@ -26,8 +26,9 @@ text_info_t text_info[] = {
         {18, "Type here to search for music", NULL, white, {0, 0}},
 },
 setting_textinfo[] = {
-        {50, "Go back to home", NULL, {0x0C, 0xF5, 0x74, 0xFF}, {10, 0}},
-        {40, "Music locations", NULL, {0x58, 0x72, 0x91, 0xFF}, {0, 0}}
+        {50, "Go back to home", NULL, {0xE5, 0x58, 0x12, 0xFF}/*{0x95, 0xC6, 0x23, 0xFF}{0xF9, 0x62, 0x7D, 0xFF}{0x0C, 0xF5, 0x74, 0xFF}*/, {10, 0}},
+        {40, "Music locations:", NULL, {0x95, 0xC6, 0x23, 0xFF}/*{0xF9, 0x62, 0x7D, 0xFF}{0xAD, 0x2E, 0x24, 0xFF}*//*{0x0C, 0xF5, 0x74, 0xFF}{0xF7, 0xF9, 0xF9, 0xFF}{0x58, 0x72, 0x91, 0xFF}*/, {0, 0}},
+        {28, "Add folder", NULL, {0x95, 0xC6, 0x23, 0xFF}, {0, 0}}
 };
 
 tabinfo_t tab_info[] = {
@@ -52,7 +53,8 @@ music_listplaybtn = {"images/play-button (1).png", MUSIC_LISTPLAYBTN, {0, 0, 30,
 music_addfolderbtn = {"images/add-folder.png", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0},
 music_removebtn = {"images/remove.png", MUSIC_REMOVEBTN, {0, 0, 24, 24}, false, false, 0},
 setting_btns[] = {
-        {"images/back-button.png", BACK_BUTTON, {5, 0, 50, 50}, false, false, 0}
+        {"images/back-button.png", BACK_BUTTON, {5, 0, 50, 50}, false, false, 0},
+        {"images/add-folder.png", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0}
 },
 setting_iconbtn = {"images/settings (5).png", SETTING_BUTTON, {0, 9, 45, 45}, false, false, 0};
 SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},

@@ -221,10 +221,8 @@ void mplayer_loadmusics(mplayer_t* mplayer);
 void mplayer_browsefolder(mplayer_t* mplayer);
 #ifdef _WIN32
 void mplayer_addmusic_location(mplayer_t* mplayer, wchar_t* location);
-void mplayer_delmusic_location(mplayer_t* mplayer, wchar_t* location);
 #else
 void mplayer_addmusic_location(mplayer_t* mplayer, char* location);
-void mplayer_delmusic_location(mplayer_t* mplayer, char* location);
 #endif
 void mplayer_delmusic_locationindex(mplayer_t* mplayer, size_t loc_index);
 mtime_t mplayer_music_gettime(double seconds);
@@ -241,6 +239,7 @@ void mplayer_setcursor(mplayer_t* mplayer, int cursor_type);
 void mplayer_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color);
 void mplayer_set_window_title(mplayer_t* mplayer, const char* title);
 bool mplayer_tab_hover(mplayer_t* mplayer, tabinfo_t tab);
+bool mplayer_rect_hover(mplayer_t* mplayer, SDL_Rect rect);
 bool mplayer_ibutton_hover(mplayer_t* mplayer, ibtn_t button);
 bool mplayer_tbutton_hover(mplayer_t* mplayer, tbtn_t button);
 bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t tab_count);

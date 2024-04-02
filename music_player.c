@@ -134,6 +134,14 @@ bool mplayer_tab_hover(mplayer_t* mplayer, tabinfo_t tab) {
     return false;
 }
 
+bool mplayer_rect_hover(mplayer_t* mplayer, SDL_Rect rect) {
+    if((mplayer->mouse_x <= rect.x + rect.w && mplayer->mouse_x >= rect.x) &&
+        (mplayer->mouse_y <= rect.y + rect.h && mplayer->mouse_y >= rect.y)) {
+        return true;
+    }
+    return false;
+}
+
 bool mplayer_ibutton_hover(mplayer_t* mplayer, ibtn_t button) {
     int x = button.btn_canvas.x, y = button.btn_canvas.y,
         w = button.btn_canvas.w, h = button.btn_canvas.h;
@@ -1149,6 +1157,7 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
             menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = setting_btns[i].btn_canvas;
             setting_btns[i].texture_idx = i;
         }
+
         // music location remove button
         mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
         music_removebtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
@@ -1424,7 +1433,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
 }
 
 void mplayer_settingmenu(mplayer_t* mplayer) {
-    text_info_t music_location = {24, NULL, NULL, white, {0}};
+    text_info_t music_location = {24, NULL, NULL, {0xE5, 0x58, 0x12, 0xFF}/*white*/, {0}};
     SDL_Rect* canvas = NULL;
     int btn_id = 0;
     bool mouse_clicked = false;
@@ -1436,7 +1445,6 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
             break;
         } else if(mplayer->e.type == SDL_MOUSEMOTION) {
             mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
-            // Check if we hover the back button
             if(mplayer_ibuttons_hover(mplayer, setting_btns, &btn_id, SETTINGSBTN_COUNT)) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
             } else {
@@ -1444,10 +1452,12 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
             }
         } else if(mplayer->e.type == SDL_MOUSEBUTTONUP) {
             if(mplayer_ibuttons_hover(mplayer, setting_btns, &btn_id, SETTINGSBTN_COUNT)) {
-                mplayer->menu_opt = MPLAYER_DEFAULT_MENU;
-                mplayer_setup_menu(mplayer);
-                mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
-                return;
+                if(btn_id == BACK_BUTTON) {
+                    mplayer->menu_opt = MPLAYER_DEFAULT_MENU;
+                    mplayer_setup_menu(mplayer);
+                    mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
+                    return;
+                }
             }
             mouse_clicked = true;
         }
@@ -1463,7 +1473,7 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     canvas->x = setting_btns[0].btn_canvas.x + setting_btns[0].btn_canvas.w + 5;
 
     SDL_Rect bg_canvas = {0};
-    SDL_Color bg_canvascolor = {0x28, 0x30, 0x44, 0xFF};
+    SDL_Color bg_canvascolor = (SDL_Color){0x39, 0x37, 0x5B, 0xFF}/*{0x4B, 0x3B, 0x40, 0xFF}{0x0F, 0x52, 0x57, 0xFF}{0x81, 0x17, 0x1B, 0xFF}{0x20, 0x81, 0xC3, 0xFF}{0x28, 0x30, 0x44, 0xFF}*/;
     bg_canvas.w = WIDTH, bg_canvas.h = setting_btns[0].btn_canvas.y + setting_btns[0].btn_canvas.h + SETTING_LINESPACING;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
     SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
@@ -1477,14 +1487,41 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
 
     // Draw a background for the Music Location category
     canvas = &setting_textinfo[1].text_canvas;
+    bg_canvascolor = (SDL_Color){0x0F, 0x52, 0x57, 0xFF};
     bg_canvas = (SDL_Rect){0};
     bg_canvas.x = 0, bg_canvas.y = canvas->y;
-    bg_canvas.w = WIDTH, bg_canvas.h = canvas->h;
-    canvas->x = roundf((float)(WIDTH - canvas->w)/(float)2);
+    bg_canvas.w = WIDTH, bg_canvas.h = canvas->h + SETTING_LINESPACING;
+    canvas->x = 20/*roundf((float)(WIDTH - canvas->w)/(float)2)*/;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
     SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
     SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
-    
+
+    // Draw a canvas to hold the button in and set the canvas position for the add folder button
+    canvas = &setting_btns[1].btn_canvas;
+    canvas->x = WIDTH - canvas->w;
+    canvas->y = bg_canvas.y + roundf((float)(bg_canvas.h - canvas->h)/(float)2);
+
+    setting_textinfo[2].text_canvas.x = canvas->x - setting_textinfo[2].text_canvas.w - 10;
+    setting_textinfo[2].text_canvas.y = bg_canvas.y + roundf((float)(bg_canvas.h - setting_textinfo[2].text_canvas.h)
+        / (float)2);
+
+    bg_canvascolor = black/*(SDL_Color){0x81, 0x17, 0x1B, 0xFF}*/;
+    bg_canvas.w = canvas->w + setting_textinfo[2].text_canvas.w + 10, bg_canvas.h = canvas->h;
+    bg_canvas.x = setting_textinfo[2].text_canvas.x - 5;
+    bg_canvas.y = setting_textinfo[1].text_canvas.y + roundf((float)(bg_canvas.h - (canvas->h - SETTING_LINESPACING))
+        / (float)2);
+
+    if(mplayer_rect_hover(mplayer, bg_canvas)) {
+        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+        if(mouse_clicked) {
+            mplayer_browsefolder(mplayer);
+        }
+    }
+
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
+    SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
+    SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
+
     // copy each texture on its particular canvas
     for(size_t i=0;i<setting_textinfo_size;i++) {
         mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][i] = setting_textinfo[i].text_canvas;
@@ -1496,7 +1533,8 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     music_location.text_canvas.x = 50;
     music_location.text_canvas.y = canvas->y + canvas->h + SETTING_LINESPACING;
     bg_canvas.x = 0, bg_canvas.y = music_location.text_canvas.y;
-    bg_canvascolor = (SDL_Color){0x58, 0x72, 0x91, 0xFF};
+    bg_canvascolor = (SDL_Color){0x4B, 0x3B, 0x40, 0xFF}
+    /*(SDL_Color){0x0F, 0x52, 0x57, 0xFF}(SDL_Color){0x81, 0x17, 0x1B, 0xFF}(SDL_Color){0x1E, 0x96, 0xFC, 0xFF}{0x58, 0x72, 0x91, 0xFF}*/;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
     for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
         music_location.utext = mplayer->musinfo.locations[i].path;
@@ -1509,9 +1547,11 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
         canvas = &music_removebtn.btn_canvas;
         canvas->x = WIDTH - (canvas->w * 2);
         canvas->y = music_location.text_canvas.y;
-        if(mplayer_ibutton_hover(mplayer, music_removebtn) && mouse_clicked) {
-            mplayer_delmusic_locationindex(mplayer, i);
-            break;
+        if(mplayer_ibutton_hover(mplayer, music_removebtn)) {
+            mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+            if(mouse_clicked) {
+                mplayer_delmusic_locationindex(mplayer, i); break;
+            }
         }
 
         mplayer_addmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE);
