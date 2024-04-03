@@ -46,10 +46,9 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
             continue;
         }
         music_loc[mloc_len++] = wc;
-        wchar_t* temp = music_loc;
-        music_loc = calloc(mloc_len + 1, sizeof(wchar_t));
-        wcsncpy(music_loc, temp, mloc_len);
-        free(temp); temp = NULL;
+        wchar_t* newptr = calloc(mloc_len +1, sizeof(wchar_t));
+        wcsncpy(newptr, music_loc, mloc_len);
+        free(music_loc); music_loc = newptr;
         #else
         if(c == '\n' && mloc_len > 0) {
             music_loclist[muslist_count++].path = music_loc;
@@ -62,10 +61,9 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
             continue;
         }
         music_loc[mloc_len++] = c;
-        char* temp = music_loc;
-        music_loc = calloc(mloc_len + 1, sizeof(char));
-        strcpy(music_loc, temp);
-        free(temp); temp = NULL;
+        char* newptr = calloc(mloc_len + 1, sizeof(char));
+        strcpy(newptr, music_loc);
+        free(music_loc); music_loc = newptr;
         #endif
     }
     // Whenever the MUSIC_PATHINFO_FILE is empty release the memory of the music_loclist back to the system
@@ -156,7 +154,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         char* path = mplayer->musinfo.locations[i].path;
         DIR* dirp = opendir(path);
         if(!dirp) {
-            fprintf(stderr, "Error: The music location %s: %s", path, strerror(errno));
+            fprintf(stderr, "Error: The music location %s: %s\n", path, strerror(errno));
             continue;
         }
         struct dirent* entry = readdir(dirp);
