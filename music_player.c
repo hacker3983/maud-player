@@ -302,7 +302,7 @@ Uint16* mplayer_widetouint16(wchar_t* wstring) {
 
 Uint16* mplayer_stringtouint16(char* string) {
     size_t strsize = strlen(string);
-    Uint16* uint16_string = calloc(strsize, sizeof(Uint16));
+    Uint16* uint16_string = calloc(strsize+1, sizeof(Uint16));
     for(size_t i = 0; i < strsize; i++) {
         uint16_string[i] = string[i];
     }
@@ -1537,7 +1537,12 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     /*(SDL_Color){0x0F, 0x52, 0x57, 0xFF}(SDL_Color){0x81, 0x17, 0x1B, 0xFF}(SDL_Color){0x1E, 0x96, 0xFC, 0xFF}{0x58, 0x72, 0x91, 0xFF}*/;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
     for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
+        #ifdef _WIN32
         music_location.utext = mplayer->musinfo.locations[i].path;
+        #else
+        music_location.text = mplayer->musinfo.locations[i].path;
+        printf("On platform linux the music_location.text = %s\n", music_location.text);
+        #endif
         SDL_Texture* texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &music_location);
         bg_canvas.w = WIDTH, bg_canvas.h = music_location.text_canvas.h + SETTING_LINESPACING;
         music_location.text_canvas.y = bg_canvas.y + roundf((float)(bg_canvas.h - music_location.text_canvas.h) / (float)2);
