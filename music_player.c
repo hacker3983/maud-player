@@ -10,7 +10,7 @@ void mplayer_init() {
     TTF_Init();
     IMG_Init(IMG_INIT_PNG);
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
-    setlocale(LC_ALL,"it_IT.UTF-16"); 
+    setlocale(LC_ALL,"it_IT.UTF-16");
 }
 
 SDL_Window* mplayer_createwindow(const char* title, int width, int height) {
@@ -73,6 +73,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->musicsearchcursor_relpos = 0;
     mplayer->current_music = NULL, mplayer->prev_music = NULL,
     mplayer->music_list = NULL;
+    mplayer->mouse_x = 0, mplayer->mouse_y = 0;
 
     // create music information
     mplayer_getmusicpath_info(mplayer);
@@ -395,18 +396,21 @@ void mplayer_menu_freetext(mplayer_t* mplayer, int menu_option) {
 }
 
 void mplayer_destroyapp(mplayer_t* mplayer) {
+    // Close the Fonts used by the program to render text
     TTF_CloseFont(mplayer->font);
     TTF_CloseFont(mplayer->music_font);
+
+    // Release the memory back to the system that was used to create the cursors
+    for(int i=0;i<sizeof(mplayer->cursors)/sizeof(SDL_Cursor*);i++) {
+        SDL_FreeCursor(mplayer->cursors[i]); mplayer->cursors[i] = NULL;
+    }
 
     // free whatever data the user types into the searchbar
     free(mplayer->musicsearchbar_data); mplayer->musicsearchbar_data = NULL;
     mplayer->musicsearchbar_datalen = 0;
 
-    // Free resources used by program
+    // Free music resources used by program
     mplayer_freemusic_info(mplayer);
-     // destroys music player graphical utilities
-    SDL_DestroyRenderer(mplayer->renderer);
-    SDL_DestroyWindow(mplayer->window);
 
     // free the text informations
     mplayer_menu_freetext(mplayer, MPLAYER_DEFAULT_MENU);
@@ -440,7 +444,10 @@ void mplayer_destroyapp(mplayer_t* mplayer) {
         mplayer->menus[i].texture_canvases[MPLAYER_BUTTON_TEXTURE] = NULL;
         mplayer->menus[i].texture_canvases[MPLAYER_TAB_TEXTURE] = NULL;
     }
-    SDL_FreeCursor(mplayer->cursors[MPLAYER_CURSOR_POINTER]);
+
+    // Destroys music player graphical utilities
+    SDL_DestroyRenderer(mplayer->renderer);
+    SDL_DestroyWindow(mplayer->window);
 
     // uninitialize libraries
     IMG_Quit();
@@ -932,7 +939,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.utext,
                 &default_w, &default_h);
             #else
-            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.text,
+            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)&mplayer->music_list[i].text_info.text,
                 &default_w, &default_h);
             #endif
             default_h += 22;
@@ -950,7 +957,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.utext,
                 &default_w, &default_h);
             #else
-            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.text,
+            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)&mplayer->music_list[i].text_info.text,
                 &default_w, &default_h);
             #endif
             default_h += 22;
@@ -1122,8 +1129,6 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
         mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, MUSICBTN_COUNT/*MTOTALBTN_COUNT*/);
         // Load Button Textures and Canvas's
         for(int i=0;i<MUSICBTN_COUNT;i++) {
-            /*printf("music_btns[i].imgbtn_path: %s, x: %d, y: %d\n", music_btns[i].imgbtn_path,
-                music_btns[i].btn_canvas.x, music_btns[i].btn_canvas.y);*/
             menu->textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, music_btns[i].imgbtn_path);
             menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = music_btns[i].btn_canvas;
             music_btns[i].texture_idx = i;
@@ -1193,7 +1198,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 size_t text_len = strlen(mplayer->e.text.text), text2_len = 0;
                 if(!mplayer->musicsearchbar_data) {
                     mplayer->musicsearchbar_datalen = text_len;
-                    mplayer->musicsearchbar_data = calloc(mplayer->musicsearchbar_datalen, sizeof(char));
+                    mplayer->musicsearchbar_data = calloc(mplayer->musicsearchbar_datalen + 1, sizeof(char));
                 } else {
                     // Get the text before the cursor position
                     if(mplayer->musicsearchcursor_relpos > 0 ||
@@ -1541,7 +1546,6 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
         music_location.utext = mplayer->musinfo.locations[i].path;
         #else
         music_location.text = mplayer->musinfo.locations[i].path;
-        printf("On platform linux the music_location.text = %s\n", music_location.text);
         #endif
         SDL_Texture* texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &music_location);
         bg_canvas.w = WIDTH, bg_canvas.h = music_location.text_canvas.h + SETTING_LINESPACING;
