@@ -46,7 +46,7 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
             continue;
         }
         music_loc[mloc_len++] = wc;
-        wchar_t* newptr = calloc(mloc_len +1, sizeof(wchar_t));
+        wchar_t* newptr = calloc(mloc_len + 1, sizeof(wchar_t));
         wcsncpy(newptr, music_loc, mloc_len);
         free(music_loc); music_loc = newptr;
         #else
@@ -62,7 +62,7 @@ void mplayer_getmusic_locations(mplayer_t* mplayer) {
         }
         music_loc[mloc_len++] = c;
         char* newptr = calloc(mloc_len + 1, sizeof(char));
-        strcpy(newptr, music_loc);
+        strncpy(newptr, music_loc, mloc_len);
         free(music_loc); music_loc = newptr;
         #endif
     }
@@ -538,16 +538,17 @@ void mplayer_freecurrmusic(mplayer_t* mplayer) {
 
 void mplayer_freemusic_info(mplayer_t* mplayer) {
     for(size_t i=0;i<mplayer->musinfo.file_count;i++) {
+        free(mplayer->musinfo.files[i].path); mplayer->musinfo.files[i].path = NULL;
+        #ifdef _WIN32
+        free(mplayer->musinfo.files[i].altpath); mplayer->musinfo.files[i].altpath = NULL;
+        #endif
         if(mplayer->music_list) {
-            free(mplayer->music_list[i].music_path); mplayer->music_list[i].music_path = NULL;
             free(mplayer->music_list[i].music_name); mplayer->music_list[i].music_name = NULL;
-            mplayer->music_list[i].text_texture = NULL;
-            mplayer->musinfo.files[i].path = NULL;
+            mplayer->music_list[i].music_path = NULL;
             #ifdef _WIN32
-            free(mplayer->music_list[i].music_alternatepath); mplayer->music_list[i].music_alternatepath = NULL;
-            mplayer->musinfo.files[i].altpath = NULL;
+            mplayer->music_list[i].music_alternatepath = NULL;
             #endif
-            Mix_FreeMusic(mplayer->music_list[i].music);
+            Mix_FreeMusic(mplayer->music_list[i].music); mplayer->music_list[i].music = NULL;
         }
     }
     for(size_t i=0;i<mplayer->musinfo.location_count;i++) {
