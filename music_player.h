@@ -71,7 +71,7 @@ typedef struct music {
     double music_durationsecs;
     SDL_Rect outer_canvas, checkbox_size;
     int scroll_y;
-    bool hover, checkbox_ticked, fill, music_playing, render;
+    bool checkbox_ticked, fill, music_playing, render;
 } music_t;
 
 typedef struct music_location {
