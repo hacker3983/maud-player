@@ -342,7 +342,6 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
         char* music_path = mplayer->musinfo.files[i].path;
         #endif
         music = Mix_LoadMUS(music_path);
-
         if(music == NULL) {
             #ifdef _WIN32
             music = Mix_LoadMUS(mplayer->musinfo.files[i].altpath);
@@ -366,7 +365,7 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
             #endif
             if(!mplayer->music_renderinit) {
                 mplayer->music_renderpos = i;
-                mplayer->music_renderinit = true;
+                mplayer->music_renderinit = 1;
             }
             music_list[i].render = true;
             music_list[i].text_texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &utext);

@@ -70,7 +70,8 @@ typedef struct music {
     mtime_t music_duration;
     double music_durationsecs;
     SDL_Rect outer_canvas, checkbox_size;
-    bool hover, clicked, checkbox_ticked, fill, music_playing, render;
+    int scroll_y;
+    bool hover, checkbox_ticked, fill, music_playing, render;
 } music_t;
 
 typedef struct music_location {
@@ -192,12 +193,13 @@ typedef struct mplayer {
     musinfo_t musinfo;
     music_t* music_list;
     music_t* current_music, *prev_music;
-    size_t music_id, prevmusic_id, playid, music_count, music_renderpos;
+    size_t music_id, prevmusic_id, playid, music_count, music_prevrenderpos, music_renderpos,
+    music_endrenderpos;
     int repeat_id, mouse_x, mouse_y, tick_count, scroll_type;
     char* musicsearchbar_data;
     int musicsearchcursor_relpos;
-    size_t musicsearchbar_datalen;
-    bool music_clicked, musicsearchbar_clicked, musicsearchcursor_blink, music_hover, music_playing, scroll, progressbar_clicked, music_renderinit;
+    size_t musicsearchbar_datalen, music_renderinit;
+    bool mouse_clicked, musicsearchbar_clicked, musicsearchcursor_blink, music_hover, music_playing, scroll, progressbar_clicked;
     SDL_Rect progress_bar, progress_count, music_searchbar, music_searchbar_cursor;
 } mplayer_t;
 
@@ -245,7 +247,7 @@ bool mplayer_tbutton_hover(mplayer_t* mplayer, tbtn_t button);
 bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t tab_count);
 bool mplayer_ibuttons_hover(mplayer_t* mplayer, ibtn_t* buttons, int* btn_id, size_t button_count);
 bool mplayer_tbuttons_hover(mplayer_t* mplayer, tbtn_t* buttons, int* btn_id, size_t button_count);
-bool mplayer_music_hover(mplayer_t* mplayer);
+bool mplayer_music_hover(mplayer_t* mplayer, size_t i);
 bool mplayer_songsbox_hover(mplayer_t* mplayer);
 bool mplayer_progressbar_hover(mplayer_t* mplayer);
 bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer);

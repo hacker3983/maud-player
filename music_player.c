@@ -55,6 +55,8 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->music_hover = false;
     mplayer->music_id = 0, mplayer->prevmusic_id = 0, mplayer->playid = 0, mplayer->repeat_id = MUSIC_REPEATALLBTN;
     mplayer->music_renderpos = 0;
+    mplayer->music_prevrenderpos = 0;
+    mplayer->music_endrenderpos = 0;
     mplayer->music_renderinit = false;
     mplayer->tick_count = 0;
     mplayer->music_playing = false;
@@ -200,22 +202,13 @@ bool mplayer_tbuttons_hover(mplayer_t* mplayer, tbtn_t* buttons, int* btn_id, si
     return false;
 }
 
-bool mplayer_music_hover(mplayer_t* mplayer) {
-    SDL_Rect canvas = {0};
-    mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
-    // ensure that the music list has been initialized with the loaded musics
-    if(!mplayer->music_list) {
-        return false;
-    }
-    for(size_t i=mplayer->music_renderpos;i<mplayer->music_count;i++) {
-        canvas = mplayer->music_list[i].outer_canvas;
-        if(mplayer->music_list[i].render &&
-            (mplayer->e.motion.x <= canvas.x + canvas.w && mplayer->e.motion.x >= canvas.x) &&
-            (mplayer->e.motion.y <= canvas.y + canvas.h && mplayer->e.motion.y >= canvas.y)) {
+bool mplayer_music_hover(mplayer_t* mplayer, size_t index) {
+    SDL_Rect canvas = mplayer->music_list[index].outer_canvas;
+    if((mplayer->mouse_x <= canvas.x + canvas.w && mplayer->mouse_x >= canvas.x) &&
+        (mplayer->mouse_y <= canvas.y + canvas.h && mplayer->mouse_y >= canvas.y)) {
             mplayer->prevmusic_id = mplayer->music_id;
             mplayer->music_list[mplayer->prevmusic_id].hover = false;
-            mplayer->music_id = i; mplayer->music_list[i].hover = true; return true;
-        }
+            mplayer->music_id = index; mplayer->music_list[index].hover = true; return true;
     }
     mplayer->music_list[mplayer->music_id].hover = false;
     mplayer->music_hover = false;
@@ -250,6 +243,7 @@ bool mplayer_checkbox_hovered(mplayer_t* mplayer) {
 }
 
 bool mplayer_progressbar_hover(mplayer_t* mplayer) {
+    printf("progressbar_hover\n");
     int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
     if((mouse_x <= mplayer->progress_bar.x + mplayer->progress_bar.w && mouse_x >= mplayer->progress_bar.x) &&
         (mouse_y <= mplayer->progress_bar.y + mplayer->progress_bar.h && mouse_y >= mplayer->progress_bar.y)) {
@@ -594,10 +588,7 @@ void mplayer_createsearch_bar(mplayer_t* mplayer) {
             SDL_RenderFillRect(mplayer->renderer, &mplayer->music_searchbar_cursor);
             mplayer->musicsearchcursor_blink = true;
         }
-    } else {
-        printf("We lost focus in the searchbar\n");
     }
-
 }
 
 void mplayer_createsongs_box(mplayer_t* mplayer) {
@@ -868,6 +859,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     // calculation for the scrollability
     size_t max_textures = (size_t)roundf((float)songs_box.h / ((float)utext.text_canvas.h + (float)25)),
         render_count = 0;
+    //printf("The maximum amount of textures per scroll will be %ld\n", max_textures);
     bool render_stop = 0, fit = 0;
     size_t trender_count = 0;
     // Get the starting render position so that if we scroll we can update the positions for the musics that
@@ -875,56 +867,132 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     SDL_Rect prev_canvas = mplayer->music_list[mplayer->music_renderpos].outer_canvas;
     prev_canvas.x = songs_box.x + 2, prev_canvas.y = songs_box.y + 1;
     mplayer->music_list[mplayer->music_renderpos].outer_canvas.y = songs_box.y + 1;
+    size_t match_index = 0;
     for(size_t i=0;i<mplayer->music_count;i++) {
         utext = mplayer->music_list[i].text_info;
         outer_canvas = mplayer->music_list[i].outer_canvas;
         utext.utext = mplayer->music_list[i].music_name;
-        if(!utext.utext || !mplayer->music_list[i].render) continue;
+        if(mplayer->musicsearchbar_data && (utext.utext || utext.text)) {
+            #ifdef _WIN32
+            /* Create a copy of the music search data and the music_name so that we do not modify the contents
+               of the original and convert them to lowercase / uppercase so we can make our match incase sensitive
+            */
+            wchar_t *music_name = calloc(wcslen(mplayer->music_list[i].music_name)+1, sizeof(wchar_t)),
+                    *substring = mplayer_stringtowide(mplayer->musicsearchbar_data);
+            wcscpy(music_name, mplayer->music_list[i].music_name);
+            wchar_t* substring_lower = wcslwr(substring), *music_namelower = wcslwr(music_name);
+            // Compare the lowercase versions to see if we get a match
+            wchar_t* match = wcsstr(music_namelower, substring_lower);
+            #else
+            char *music_name = calloc(strlen(mplayer->music_list[i].music_name)+1, sizeof(char)),
+                 *substring = calloc(strlen(mplayer->musicsearchbar_data)+1, sizeof(char));
+            strcpy(music_name, mplayer->music_list[i].music_name);
+            strcpy(substring, mplayer->musicsearchbar_data);
+            char* match = strstr(mplayer->music_list[i].music_name, mplayer->musicsearchbar_data);
+            #endif
+            free(substring); free(music_name); substring = NULL; music_name = NULL;
+            if(match) {
+                //printf("match was %ls\n", match);
+                //printf("A match was found at index %ld in mplayer->music_list\n", i);
+                if(!mplayer->music_prevrenderpos) {
+                    mplayer->music_prevrenderpos = mplayer->music_renderpos+1;
+                    //mplayer->music_renderpos = i;
+                    printf("The first render position is %ld which is the music %ls\n", i, mplayer->music_list[i].music_name);
+                    prev_canvas.h = (utext.text_canvas.h + 22);
+                    printf("prev_canvas.x = %d, prev_canvas.y = %d\n", prev_canvas.x, prev_canvas.y);
+                    printf("prev_canvas.w = %d, prev_canvas.h = %d\n", prev_canvas.w, prev_canvas.h);
+                    mplayer->music_list[i].outer_canvas = prev_canvas;
+                }
+                if(mplayer->music_list[i].scroll_y >= utext.text_canvas.h + 22) {
+                    mplayer->music_list[i].render = true;
+                } else {
+                    mplayer->music_list[i].render = true;
+                }
+                mplayer->music_list[i].outer_canvas.y = prev_canvas.y;
+                outer_canvas = mplayer->music_list[i].outer_canvas;
+            } else {
+                continue;
+            }
+        } else if(!mplayer->musicsearchbar_data && mplayer->music_prevrenderpos > 0) {
+            printf("here\n");
+            mplayer->music_renderpos = mplayer->music_prevrenderpos-1;
+            mplayer->music_list[mplayer->music_renderpos].render = true;
+            mplayer->music_list[mplayer->music_renderpos].outer_canvas.h = utext.text_canvas.h + 22;
+            prev_canvas = mplayer->music_list[mplayer->music_renderpos].outer_canvas;
+            mplayer->music_prevrenderpos = 0;
+        }
+        if((!utext.utext || !mplayer->music_list[i].render) && !mplayer->music_list[i].scroll_y) continue;
+        TTF_SetFontSize(mplayer->music_font, utext.font_size);
+        #ifdef _WIN32
+        TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.utext,
+            &default_w, &default_h);
+        #else
+        TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.text,
+            &default_w, &default_h);
+        #endif
+        mplayer->music_list[i].outer_canvas.x = prev_canvas.x,
+        mplayer->music_list[i].outer_canvas.y = prev_canvas.y;
+        mplayer->music_list[i].outer_canvas.w = WIDTH - scrollbar.w;
+        outer_canvas = mplayer->music_list[i].outer_canvas;
+        utext = mplayer->music_list[i].text_info;
+        mplayer->music_list[i].text_info.text_canvas.y = outer_canvas.y +
+            ((mplayer->music_list[i].outer_canvas.h -
+            utext.text_canvas.h) / 2);
         if(fit) {
             // whenever the last texture can fit within the songs box then we render a portion of the next music
-            TTF_SetFontSize(mplayer->music_font, utext.font_size);
-            #ifdef _WIN32
-            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.utext,
-                &default_w, &default_h);
-            #else
-            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.text,
-                &default_w, &default_h);
-            #endif
-            mplayer->music_list[i].outer_canvas.h = default_h - ((outer_canvas.y + default_h) - (songs_box.y + songs_box.h) + 1);
+            mplayer->music_list[i].outer_canvas.h = (default_h + 22) - ((outer_canvas.y + (default_h + 22)) - (songs_box.y + songs_box.h) + 1);
             mplayer->music_list[i].text_info.text_canvas.y = outer_canvas.y + ((outer_canvas.h - utext.text_canvas.h) / 2);
             fit = false;
         }
         if(mplayer->scroll) {
-            //printf("mplayer->music_count - mplayer music_renderpos : %ld ? max_textures: %ld, i: %ld\n",
-            //(mplayer->music_count - mplayer->music_renderpos), max_textures, i);
-            printf("Mplayer->music_renderpos is %ld\n", mplayer->music_renderpos);
-            if(mplayer->scroll_type == MPLAYERSCROLL_DOWN && (mplayer->music_count - mplayer->music_renderpos) >= max_textures) {
-                //printf("DOWN\n");
-                // whenever we scroll down and textures can hold on the screen we increase the render position
-                if(mplayer->music_list[i].outer_canvas.h >= 3) {
-                    mplayer->music_list[i].outer_canvas.h -= 3;
-                    printf("Here\n");
-                    if(mplayer->music_list[i].outer_canvas.h <= 3) {
-                        printf("ok\n");
-                        mplayer->music_list[i].render = false;
-                        mplayer->music_renderpos++;
-                        mplayer->music_renderpos %= mplayer->music_count;
-                    }
+            if(mplayer->musicsearchbar_data) {
+                switch(mplayer->scroll_type) {
+                    case MPLAYERSCROLL_DOWN:
+                        printf("SCROLL_DOWN at index %ld\n", i);
+                        if(mplayer->music_list[i].outer_canvas.h >= 3) {
+                            mplayer->music_list[i].outer_canvas.h -= 3;
+                            mplayer->music_list[i].scroll_y += 3;
+                            if(mplayer->music_list[i].outer_canvas.h <= 0) {
+                                mplayer->music_list[i].render = false;
+                            }
+                        }
+                        break;
                 }
-            } else if(mplayer->scroll_type == MPLAYERSCROLL_UP && mplayer->music_renderpos >= 0) {
-                if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h < default_h) {
-                    mplayer->music_list[mplayer->music_renderpos].outer_canvas.h += 3;
-                    mplayer->music_list[mplayer->music_renderpos].render = true;
-                } else if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h >= default_h &&
-                    mplayer->music_renderpos > 0) {
-                    mplayer->music_renderpos--;
-                    mplayer->music_list[mplayer->music_renderpos].render = true;
-
-                }
-                if(mplayer->music_list[i].outer_canvas.h >= default_h &&
-                    mplayer->music_renderpos > 0) {
-                    mplayer->music_renderpos--;
-                    printf("here multiple times mplayer->music_renderpos: %ld\n", mplayer->music_renderpos);
+            } else if(!mplayer->musicsearchbar_data) {
+                switch(mplayer->scroll_type) {
+                    case MPLAYERSCROLL_DOWN:
+                        if(mplayer->music_list[i].scroll_y > 0) {
+                            mplayer->music_list[i].outer_canvas.h = default_h + 22;
+                            mplayer->music_list[i].render = true;
+                            mplayer->music_list[i].scroll_y = 0;
+                        }
+                        if(mplayer->music_count - mplayer->music_renderpos >= max_textures &&
+                            mplayer->music_list[mplayer->music_renderpos].outer_canvas.h >= 3) {
+                            mplayer->music_list[mplayer->music_renderpos].outer_canvas.h -= 3;
+                            if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h <= 3) {
+                                mplayer->music_list[mplayer->music_renderpos].render = false;
+                                mplayer->music_renderpos++;
+                                mplayer->music_renderpos %= mplayer->music_count;
+                            }
+                        }
+                        break;
+                    case MPLAYERSCROLL_UP:
+                        if(mplayer->music_renderpos >= 0) {
+                            if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h < default_h + 22) {
+                                mplayer->music_list[mplayer->music_renderpos].outer_canvas.h += 3;
+                                mplayer->music_list[mplayer->music_renderpos].render = true;
+                            } else if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h >= default_h + 22 &&
+                                mplayer->music_renderpos > 0) {
+                                mplayer->music_renderpos--;
+                                mplayer->music_list[mplayer->music_renderpos].render = true;
+                            }
+                            if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h >= default_h + 22 &&
+                                mplayer->music_renderpos > 0) {
+                                mplayer->music_renderpos--;
+                                printf("here multiple times mplayer->music_renderpos: %ld\n", mplayer->music_renderpos);
+                            }
+                        }
+                        break;
                 }
             }
             mplayer->scroll = false;
@@ -933,47 +1001,23 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             // of the screen we exit the loop
             break;
         } else if(render_count == max_textures-1) {
-            // Calculate the original height for the current
-            TTF_SetFontSize(mplayer->music_font, utext.font_size);
-            #ifdef _WIN32
-            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.utext,
-                &default_w, &default_h);
-            #else
-            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)&mplayer->music_list[i].text_info.text,
-                &default_w, &default_h);
-            #endif
-            default_h += 22;
             // whenever the last texture cannot fit inside the songs box then we stop rendering more music
-            if((outer_canvas.y + default_h) > (songs_box.y + songs_box.h)) {
-                mplayer->music_list[i].outer_canvas.h = default_h - ((outer_canvas.y + default_h) -
+            if((outer_canvas.y + default_h + 22) > (songs_box.y + songs_box.h)) {
+                mplayer->music_list[i].outer_canvas.h = (default_h + 22) - ((outer_canvas.y + (default_h + 22)) -
                     (songs_box.y + songs_box.h) + 1);
                 render_stop = true;
             } else {
                 fit = true;
             }
         } else if(render_count > 0 && render_count < max_textures-1 && outer_canvas.h < default_h) {
-            TTF_SetFontSize(mplayer->music_font, utext.font_size);
-            #ifdef _WIN32
-            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.utext,
-                &default_w, &default_h);
-            #else
-            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)&mplayer->music_list[i].text_info.text,
-                &default_w, &default_h);
-            #endif
-            default_h += 22;
-            mplayer->music_list[i].outer_canvas.h = default_h;
+            mplayer->music_list[i].outer_canvas.h = default_h + 22;
         }
-        //printf("The render positions is %ld\n", mplayer->music_renderpos);
-        mplayer->music_list[i].outer_canvas.x = prev_canvas.x,
-        mplayer->music_list[i].outer_canvas.y = prev_canvas.y;
+
+        // calculate the y position for the next musics outercanvas
         prev_canvas.y += mplayer->music_list[i].outer_canvas.h + 3;
-        mplayer->music_list[i].text_info.text_canvas.y = mplayer->music_list[i].outer_canvas.y +
-            ((mplayer->music_list[i].outer_canvas.h - mplayer->music_list[i].text_info.text_canvas.h) / 2);
-        mplayer->music_list[i].outer_canvas.w = WIDTH - scrollbar.w;
         SDL_SetRenderDrawColor(mplayer->renderer, 0x3B, 0x35, 0x61, 0xff);
         SDL_RenderDrawRect(mplayer->renderer, &mplayer->music_list[i].outer_canvas);
         SDL_RenderFillRect(mplayer->renderer, &mplayer->music_list[i].outer_canvas);
-        // calculate the y position for the next musics outercanvas
 
         SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
                 fill_color = {0xFF, 0xA5, 0x00, 0xff};
@@ -988,12 +1032,12 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         SDL_Rect hoverbg_canvas = {0};
         // check if we hover over the play button and we haven't ticked any checkbox
         if(mplayer_musiclist_playbutton_hover(mplayer) && !mplayer->tick_count) {
-                hoverbg_canvas = music_listplaybtn.btn_canvas;
-                hoverbg_canvas.x -= 5, hoverbg_canvas.w += 5;
-                hoverbg_canvas.h = outer_canvas.h, hoverbg_canvas.y = outer_canvas.y;
-                SDL_SetRenderDrawColor(mplayer->renderer, 0x00, 0x00, 0x00, 0x00);
-                SDL_RenderDrawRect(mplayer->renderer, &hoverbg_canvas);
-                SDL_RenderFillRect(mplayer->renderer, &hoverbg_canvas);
+            hoverbg_canvas = music_listplaybtn.btn_canvas;
+            hoverbg_canvas.x -= 5, hoverbg_canvas.w += 5;
+            hoverbg_canvas.h = outer_canvas.h, hoverbg_canvas.y = outer_canvas.y;
+            SDL_SetRenderDrawColor(mplayer->renderer, 0x00, 0x00, 0x00, 0x00);
+            SDL_RenderDrawRect(mplayer->renderer, &hoverbg_canvas);
+            SDL_RenderFillRect(mplayer->renderer, &hoverbg_canvas);
         }
 
         if(music_btns[MUSIC_PREVBTN].clicked && mplayer->playid >= 0) {
@@ -1027,10 +1071,12 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                 }
             }
             music_btns[MUSIC_SKIPBTN].clicked = false;
-        } else if(mplayer->music_list[i].hover) {
+        } else if(mplayer_music_hover(mplayer, i)) {
+            printf("you are hovering over the music mplayer->music_list[i].music_name = %ls\n",
+                mplayer->music_list[i].music_name);
             // check if the mouse is hovered over the music
             if(mplayer_checkbox_hovered(mplayer)) {
-                if(mplayer->music_list[i].clicked) {
+                if(mplayer->mouse_clicked) {
                     // if we are in the position of the checkbox and we clicked it
                     switch(mplayer->music_list[i].checkbox_ticked) {
                         case false:
@@ -1050,7 +1096,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                             mplayer->tick_count--;
                             break;
                     }
-                    mplayer->music_list[i].clicked = false;
+                    mplayer->mouse_clicked = false;
                 } else {
                     /* if we just hover over the checkbox without clicking it then we set that checkbox
                        fill equal to true
@@ -1060,7 +1106,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                 cursor = MPLAYER_CURSOR_POINTER;
                 mplayer_setcursor(mplayer, cursor);
             } else if(mplayer_musiclist_playbutton_hover(mplayer) && !mplayer->tick_count) {
-                if(mplayer->music_list[i].clicked) {
+                if(mplayer->mouse_clicked) {
                     /* whenever we hover over the playbutton on the music
                        we determine if we should restart the current playing music or play a new music
                     */
@@ -1079,14 +1125,14 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                         mplayer->music_list[i].music_playing = true;
                         Mix_PlayMusic(mplayer->current_music->music, 1);
                     }
-                    mplayer->music_list[i].clicked = false;
+                    mplayer->mouse_clicked = false;
                 }
                 cursor = MPLAYER_CURSOR_POINTER;
                 mplayer_setcursor(mplayer, cursor);
-            } else if(mplayer->music_list[i].clicked) {
+            } else if(mplayer->mouse_clicked) {
                 // whenever we click the music without clicking any of its elements
                 // we set clicked equal to false to prevent it from performing any action that we do not want
-                mplayer->music_list[i].clicked = false;
+                mplayer->mouse_clicked = false;
             }
             mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_listplaybtn.texture_idx] =
                 music_listplaybtn.btn_canvas;
@@ -1100,12 +1146,12 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         }
 
         if(mplayer->tick_count) {
-            if(!mplayer->music_list[i].checkbox_ticked && !mplayer->music_list[i].hover) {
+            if(!mplayer->music_list[i].checkbox_ticked && !mplayer_music_hover(mplayer, i)) {
                 mplayer->music_list[i].fill = false;
             }
             mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, mplayer->music_list[i].fill, tick_color,
                 mplayer->music_list[i].checkbox_ticked);
-        } else if (mplayer->music_list[i].hover) {
+        } else if (mplayer_music_hover(mplayer, i)) {
             if(mplayer_checkbox_hovered(mplayer)) {
                 mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, mplayer->music_list[i].fill, tick_color,
                     mplayer->music_list[i].checkbox_ticked);
@@ -1184,8 +1230,6 @@ void mplayer_run(mplayer_t* mplayer) {
 }
 
 void mplayer_defaultmenu(mplayer_t* mplayer) {
-    bool checkbox_ticked = false;
-    bool *music_clicked = &mplayer->music_clicked;
     int tab_hoverid = 0;
     int music_id = 0;
     mplayer_set_window_title(mplayer, WINDOW_TITLE);
@@ -1283,8 +1327,6 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 music_addfolderbtn.hover = true;
             } else if(mplayer_tabs_hover(mplayer, tab_info, &tab_hoverid, tab_info_size) && TAB_INIT) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
-            } else if(mplayer_music_hover(mplayer)) {
-                music_id = mplayer->music_id;
             } else if(mplayer_progressbar_hover(mplayer) && Mix_PlayingMusic()) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
             } else if(mplayer_searchbar_hover(mplayer)) {
@@ -1312,6 +1354,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                     Mix_PauseMusic();
                 }
         } else if(mplayer->e.type == SDL_MOUSEBUTTONUP) {
+            mplayer->mouse_x = mplayer->e.button.x, mplayer->mouse_y = mplayer->e.button.y;
             if(mplayer_tabs_hover(mplayer, tab_info, &tab_hoverid, tab_info_size) && TAB_INIT) {
                 tab_info[prev_tab].active = false;
                 tab_info[tab_hoverid].underline_color = underline_color;
@@ -1323,6 +1366,11 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 return;
             } else if(mplayer_ibutton_hover(mplayer, music_addfolderbtn)) {
                 mplayer_browsefolder(mplayer);
+            } else if(mplayer_progressbar_hover(mplayer)) {
+                if(Mix_PlayingMusic()) {
+                    mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
+                    mplayer->progressbar_clicked = true;
+                }
             } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_PLAYBTN])) {
                 // since the pause and play button will be in the same position we
                 // can just check if we clicked in the position for the play button
@@ -1350,17 +1398,6 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                     break;
                 }
                 music_btns[mplayer->repeat_id++].clicked = true;
-            } else if(mplayer_music_hover(mplayer)) {
-                mplayer->mouse_x = mplayer->e.button.x;
-                mplayer->mouse_y = mplayer->e.button.y;
-                mplayer->music_list[mplayer->music_id].clicked = true;
-            } else if(mplayer_progressbar_hover(mplayer)) {
-                if(Mix_PlayingMusic()) {
-                    mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
-                    mplayer->progressbar_clicked = true;
-                }
-            } else {
-                *music_clicked = false;
             }
             /* Check if we have clicked in the music search bar. if the condition is true we set clicked equal to false
                Otherwise if the we haven't clicked the music search bar but another region of the screen then we lose
@@ -1371,6 +1408,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             } else {
                 mplayer->musicsearchbar_clicked = false;
             }
+            mplayer->mouse_clicked = true;
         }
     }
     SDL_GetWindowSize(mplayer->window, &WIDTH, &HEIGHT);
