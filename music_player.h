@@ -71,7 +71,7 @@ typedef struct music {
     double music_durationsecs;
     SDL_Rect outer_canvas, checkbox_size;
     int scroll_y;
-    bool checkbox_ticked, fill, music_playing, render;
+    bool checkbox_ticked, fill, music_playing, render, search_match, search_render;
 } music_t;
 
 typedef struct music_location {
@@ -252,6 +252,7 @@ bool mplayer_songsbox_hover(mplayer_t* mplayer);
 bool mplayer_progressbar_hover(mplayer_t* mplayer);
 bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer);
 bool mplayer_checkbox_hovered(mplayer_t* mplayer);
+bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index);
 #ifdef _WIN32
 wchar_t* mplayer_stringtowide(const char* string);
 char* mplayer_widetostring(wchar_t* wstring);

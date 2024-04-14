@@ -192,6 +192,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
 void mplayer_getmusicpath_info(mplayer_t* mplayer) {
     mplayer_getmusic_locations(mplayer);
     mplayer_getmusic_filepaths(mplayer);
+    mplayer->music_renderpos = 0;
 }
 
 #ifdef _WIN32
