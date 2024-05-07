@@ -329,13 +329,6 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
     SDL_Rect outer_canvas = utext.text_canvas;
     double music_durationsecs = 0;
-    TTF_SetFontSize(mplayer->music_font, utext.font_size);
-    #ifdef _WIN32
-    TTF_SizeUNICODE(mplayer->music_font, (Uint16*)L"A", &utext.text_canvas.w, &utext.text_canvas.h);
-    #else
-    TTF_SizeUNICODE(mplayer->music_font, (Uint16*)"A", &utext.text_canvas.w, &utext.text_canvas.h);
-    #endif
-    
     for(size_t i=0;i<mplayer->musinfo.file_count;i++) {
         #ifdef _WIN32
         char* music_path = mplayer_widetostring(mplayer->musinfo.files[i].path);
@@ -359,11 +352,7 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
         music_list[i].music = music;
         if(music) {
             music_list[i].music_name = mplayer_getmusic_namefrompath(music, mplayer->musinfo.files[i].path);
-            #ifdef _WIN32
-                utext.utext = music_list[i].music_name;
-            #else
-                utext.text = music_list[i].music_name;
-            #endif
+            utext.utext = music_list[i].music_name;
             if(!mplayer->music_renderinit) {
                 mplayer->music_renderpos = i;
                 mplayer->music_renderinit = 1;
