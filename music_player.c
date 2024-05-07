@@ -337,19 +337,18 @@ SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t*
 }
 
 SDL_Texture* mplayer_renderunicode_text(mplayer_t* mplayer, TTF_Font* font, text_info_t* utext_info) {
-    SDL_Rect utext_canvas = utext_info->text_canvas;
+    SDL_Rect* utext_canvas = &utext_info->text_canvas;
     TTF_SetFontSize(font, utext_info->font_size);
     #ifdef _WIN32
     Uint16* uint16_string = mplayer_widetouint16(utext_info->utext);
     #else
     Uint16* uint16_string = mplayer_stringtouint16(utext_info->text);
     #endif
-    TTF_SizeUNICODE(font, uint16_string, &utext_canvas.w, &utext_canvas.h);
+    TTF_SizeUNICODE(font, uint16_string, &utext_canvas->w, &utext_canvas->h);
     SDL_Surface* surface = TTF_RenderUNICODE_Blended(font, uint16_string, utext_info->text_color);
     SDL_Texture* texture = SDL_CreateTextureFromSurface(mplayer->renderer, surface);
     SDL_FreeSurface(surface);
     free(uint16_string); uint16_string = NULL;
-    utext_info->text_canvas = utext_canvas;
     return texture;
 }
 
@@ -895,15 +894,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         outer_canvas = mplayer->music_list[i].outer_canvas;
         utext.utext = mplayer->music_list[i].music_name;
         // Get the default with and height of the text
-        if(utext.utext || utext.text) {
-            TTF_SetFontSize(mplayer->music_font, utext.font_size);
-            #ifdef _WIN32
-            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.utext,
-            &default_w, &default_h);
-            #else
-            TTF_SizeUNICODE(mplayer->music_font, (Uint16*)mplayer->music_list[i].text_info.text,
-            &default_w, &default_h);
-            #endif
+        if(utext.utext) {
+            default_w = utext.text_canvas.w, default_h = utext.text_canvas.h;
         } else if(!mplayer->music_list[mplayer->music_renderpos].music_name) {
             mplayer->music_renderpos++;
             continue;
