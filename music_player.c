@@ -342,7 +342,7 @@ SDL_Texture* mplayer_renderunicode_text(mplayer_t* mplayer, TTF_Font* font, text
     #ifdef _WIN32
     Uint16* uint16_string = mplayer_widetouint16(utext_info->utext);
     #else
-    Uint16* uint16_string = mplayer_stringtouint16(utext_info->text);
+    Uint16* uint16_string = mplayer_stringtouint16(utext_info->utext);
     #endif
     TTF_SizeUNICODE(font, uint16_string, &utext_canvas->w, &utext_canvas->h);
     SDL_Surface* surface = TTF_RenderUNICODE_Blended(font, uint16_string, utext_info->text_color);
