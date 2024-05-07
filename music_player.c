@@ -988,8 +988,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                         if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h >= 3
                             && mplayer->music_count - mplayer->music_renderpos >= max_textures+1
                             && mplayer->music_count - mplayer->music_renderpos != max_textures+1) {
-                            mplayer->music_list[mplayer->music_renderpos].outer_canvas.h -= 3;
-                            mplayer->music_list[mplayer->music_renderpos].scroll_y += 3;
+                            mplayer->music_list[mplayer->music_renderpos].outer_canvas.h -= 10;
+                            mplayer->music_list[mplayer->music_renderpos].scroll_y += 10;
                             if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h <= 3) {
                                 mplayer->music_list[mplayer->music_renderpos++].search_render = false;
                             }
@@ -1003,9 +1003,9 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                             }
                         }
                         if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h <= default_h + 22) {
-                            mplayer->music_list[mplayer->music_renderpos].outer_canvas.h += 3;
+                            mplayer->music_list[mplayer->music_renderpos].outer_canvas.h += 10;
                             if(mplayer->music_list[mplayer->music_renderpos].scroll_y > 0) {
-                                mplayer->music_list[mplayer->music_renderpos].scroll_y -= 3;
+                                mplayer->music_list[mplayer->music_renderpos].scroll_y -= 10;
                             }
                             mplayer->music_list[mplayer->music_renderpos].search_render = true;
                             if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h > default_h + 22) {
@@ -1022,13 +1022,12 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                 switch(mplayer->scroll_type) {
                     case MPLAYERSCROLL_DOWN:
                         if(mplayer->music_count - mplayer->music_renderpos >= max_textures+1 &&
-                            mplayer->music_count - mplayer->music_renderpos != max_textures+1 &&
+                            mplayer->music_count - mplayer->music_renderpos != max_textures &&
                             mplayer->music_list[mplayer->music_renderpos].outer_canvas.h >= 0) {
-                            mplayer->music_list[mplayer->music_renderpos].outer_canvas.h -= 3;
+                            mplayer->music_list[mplayer->music_renderpos].outer_canvas.h -= 10;
                             if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h <= 0) {
                                 mplayer->music_list[mplayer->music_renderpos].render = false;
                                 mplayer->music_renderpos++;
-                                mplayer->music_renderpos %= mplayer->music_count;
                             }
                         }
                         break;
@@ -1045,7 +1044,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                                     mplayer->music_list[mplayer->music_renderpos].outer_canvas.h = 0;
                             }
                             if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h < default_h + 22) {
-                                mplayer->music_list[mplayer->music_renderpos].outer_canvas.h += 3;
+                                mplayer->music_list[mplayer->music_renderpos].outer_canvas.h += 10;
                                 mplayer->music_list[mplayer->music_renderpos].render = true;
                                 if(mplayer->music_list[mplayer->music_renderpos].outer_canvas.h > default_h + 22) {
                                     mplayer->music_list[mplayer->music_renderpos].outer_canvas.h = default_h + 22;
@@ -1267,7 +1266,12 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
         music_listplaybtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
         menu->textures[MPLAYER_BUTTON_TEXTURE][music_listplaybtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
             music_listplaybtn.imgbtn_path);
-        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_listplaybtn.texture_idx] = music_listplaybtn.btn_canvas; 
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_listplaybtn.texture_idx] = music_listplaybtn.btn_canvas;
+
+        // Add music to playlist button
+        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
+        music_addplaylistbtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_addplaylistbtn.texture_idx] = music_addplaylistbtn.btn_canvas;
     } else if(mplayer->menu_opt == MPLAYER_SETTINGS_MENU && menu->textures[MPLAYER_TEXT_TEXTURE] == NULL) {
         mplayer_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, setting_textinfo_size);
         mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, SETTINGSBTN_COUNT);

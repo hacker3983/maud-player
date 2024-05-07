@@ -51,6 +51,7 @@ ibtn_t music_btns[] = {
 },
 music_listplaybtn = {"images/play-button (1).png", MUSIC_LISTPLAYBTN, {0, 0, 30, 50}, false, false, 0},
 music_addfolderbtn = {"images/add-folder.png", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0},
+music_addplaylistbtn = {"images/add-to-playlist.png", MUSIC_ADDPLAYLISTBTN, {0, 30, 50}, false, false, 0},
 music_removebtn = {"images/remove.png", MUSIC_REMOVEBTN, {0, 0, 24, 24}, false, false, 0},
 setting_btns[] = {
         {"images/back-button.png", BACK_BUTTON, {5, 0, 50, 50}, false, false, 0},
