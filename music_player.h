@@ -293,6 +293,8 @@ Uint16* mplayer_stringtouint16(char* string);
 #endif
 char* mplayer_stringtolower(char** string, size_t len);
 wchar_t* mplayer_widetolower(wchar_t** wstring, size_t wlen);
+void* mplayer_dupstr(void* string, size_t len);
+void* mplayer_strcasestr(void* haystack, void* needle);
 void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info);
 void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color,
     SDL_Color fill_color, bool fill, SDL_Color tick_color, bool check);

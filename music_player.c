@@ -279,10 +279,8 @@ bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index) {
     wchar_t *music_name = calloc(music_namelen+1, sizeof(wchar_t)),
             *music_query = mplayer_stringtowide(mplayer->musicsearchbar_data);
     wcsncpy(music_name, mplayer->music_list[search_index].music_name, music_namelen);
-    mplayer_widetolower(&music_name, music_namelen);
-    mplayer_widetolower(&music_query, music_querylen);
     // Compare the lowercase versions to see if we get a match
-    wchar_t* match_string = wcsstr(music_name,  music_query);
+    wchar_t* match_string = (wchar_t*)mplayer_strcasestr(music_name, music_query);
     #else
     size_t music_namelen = strlen(mplayer->music_list[search_index].music_name), music_querylen = mplayer->musicsearchbar_datalen;
     char *music_name = calloc(music_namelen+1, sizeof(char)),
@@ -297,6 +295,7 @@ bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index) {
         match = true;
     }
     free(music_query); free(music_name); music_query = NULL; music_name = NULL;
+    free(match_string); match_string = NULL;
     return match;
 }
 
@@ -365,6 +364,50 @@ wchar_t* mplayer_stringtowide(const char* string) {
         }
     }
     return wstring;
+}
+
+void* mplayer_dupstr(void* string, size_t len) {
+    if(!string) {
+        return NULL;
+    }
+    #ifdef _WIN32
+    wchar_t *new_dupstr = (wchar_t*)calloc(len+1, sizeof(wchar_t));
+    wcsncpy(new_dupstr, (wchar_t*)string, len);
+    #else
+    char *new_dupstr = (char*)calloc(len+1, sizeof(char));
+    strncpy(new_dupstr, (char*string), len);
+    #endif
+    return new_dupstr;
+}
+
+void* mplayer_strcasestr(void* haystack, void* needle) {
+    size_t haystack_len = 0, needle_len = 0, match_substrlen = 0;
+    #ifdef _WIN32
+    haystack_len = wcslen((wchar_t*)haystack), needle_len = wcslen((wchar_t*)needle);
+    wchar_t *haystack_dup = (wchar_t*)mplayer_dupstr(haystack, haystack_len),
+            *needle_dup = (wchar_t*)mplayer_dupstr(needle, needle_len);
+    mplayer_widetolower(&haystack_dup, haystack_len),
+    mplayer_widetolower(&needle_dup, needle_len);
+    wchar_t* match_substr = wcsstr(haystack_dup, needle_dup);
+    if(match_substr) {
+        match_substrlen = wcslen(match_substr);
+    }
+    match_substr = (wchar_t*)mplayer_dupstr(match_substr, match_substrlen);
+    #else
+    haystack_len = strlen((wchar_t*)haystack), needle_len = strlen((wchar_t*)needle);
+    char *haystack_dup = (char*)mplayer_dupstr(haystack, haystack_len),
+         *needle_dup = (char*)mplayer_dupstr(needle, needle_len);
+    mplayer_stringtolower(&haystack_dup, haystack_len);
+    mplayer_stringtolower(&needle_dup, needle_len);
+    char* match_substr = strstr(haystack_dup, needle_dup);
+    if(match_substr) {
+        match_substrlen = strlen(match_substr);
+    }
+    char* match_substr = (char*)mplayer_dupstr(match_substr, match_substrlen);
+    #endif
+    free(haystack_dup); haystack_dup = NULL;
+    free(needle_dup); needle_dup = NULL;
+    return match_substr;
 }
 
 char* mplayer_widetostring(wchar_t* wstring) {
