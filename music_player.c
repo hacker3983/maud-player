@@ -272,7 +272,6 @@ bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index) {
        of the original and convert them to lowercase / uppercase so we can make our match incase sensitive
     */
     bool match = false;
-    // tODO: GET rid of wcslwr and strcasestr as it is platform and compiler dependent
     #ifdef _WIN32
     size_t music_namelen = wcslen(mplayer->music_list[search_index].music_name),
            music_querylen = mplayer->musicsearchbar_datalen;
@@ -280,16 +279,14 @@ bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index) {
             *music_query = mplayer_stringtowide(mplayer->musicsearchbar_data);
     wcsncpy(music_name, mplayer->music_list[search_index].music_name, music_namelen);
     // Compare the lowercase versions to see if we get a match
-    wchar_t* match_string = (wchar_t*)mplayer_strcasestr(music_name, music_query);
+    wchar_t *match_string = (wchar_t*)mplayer_strcasestr(music_name, music_query);
     #else
     size_t music_namelen = strlen(mplayer->music_list[search_index].music_name), music_querylen = mplayer->musicsearchbar_datalen;
     char *music_name = calloc(music_namelen+1, sizeof(char)),
          *music_query = calloc(music_querylen+1, sizeof(char));
     strncpy(music_name, mplayer->music_list[search_index].music_name, music_namelen);
     strncpy(music_query, mplayer->musicsearchbar_data, music_querylen);
-    mplayer_stringtolower(&music_name, music_namelen);
-    mplayer_stringtolower(&music_query, music_querylen);
-    char* match_string = strstr(music_name, music_query);
+    char *match_string = (char*)mplayer_strcasestr(music_name, music_query);
     #endif
     if(match_string) {
         match = true;
@@ -298,6 +295,7 @@ bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index) {
     free(match_string); match_string = NULL;
     return match;
 }
+
 
 void mplayer_search_music(mplayer_t* mplayer) {
     if(!mplayer->musicsearchbar_data) {
@@ -366,6 +364,7 @@ wchar_t* mplayer_stringtowide(const char* string) {
     return wstring;
 }
 
+
 void* mplayer_dupstr(void* string, size_t len) {
     if(!string) {
         return NULL;
@@ -375,7 +374,7 @@ void* mplayer_dupstr(void* string, size_t len) {
     wcsncpy(new_dupstr, (wchar_t*)string, len);
     #else
     char *new_dupstr = (char*)calloc(len+1, sizeof(char));
-    strncpy(new_dupstr, (char*string), len);
+    strncpy(new_dupstr, (char*)string, len);
     #endif
     return new_dupstr;
 }
@@ -391,10 +390,10 @@ void* mplayer_strcasestr(void* haystack, void* needle) {
     wchar_t* match_substr = wcsstr(haystack_dup, needle_dup);
     if(match_substr) {
         match_substrlen = wcslen(match_substr);
+        match_substr = (wchar_t*)mplayer_dupstr(match_substr, match_substrlen);
     }
-    match_substr = (wchar_t*)mplayer_dupstr(match_substr, match_substrlen);
     #else
-    haystack_len = strlen((wchar_t*)haystack), needle_len = strlen((wchar_t*)needle);
+    haystack_len = strlen((char*)haystack), needle_len = strlen((char*)needle);
     char *haystack_dup = (char*)mplayer_dupstr(haystack, haystack_len),
          *needle_dup = (char*)mplayer_dupstr(needle, needle_len);
     mplayer_stringtolower(&haystack_dup, haystack_len);
@@ -402,8 +401,8 @@ void* mplayer_strcasestr(void* haystack, void* needle) {
     char* match_substr = strstr(haystack_dup, needle_dup);
     if(match_substr) {
         match_substrlen = strlen(match_substr);
+        match_substr = (char*)mplayer_dupstr(match_substr, match_substrlen);
     }
-    char* match_substr = (char*)mplayer_dupstr(match_substr, match_substrlen);
     #endif
     free(haystack_dup); haystack_dup = NULL;
     free(needle_dup); needle_dup = NULL;

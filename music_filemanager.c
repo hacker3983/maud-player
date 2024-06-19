@@ -687,7 +687,7 @@ void* mplayer_getmusic_namefrompath(Mix_Music* music, void* path) {
     #ifdef _WIN32
     name_len = wcslen(filename);
     #else
-    name_len = strlen(fllename);
+    name_len = strlen(filename);
     #endif
     int music_type = Mix_GetMusicType(music);
     switch(music_type) {
