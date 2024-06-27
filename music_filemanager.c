@@ -190,7 +190,6 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
 void mplayer_getmusicpath_info(mplayer_t* mplayer) {
     mplayer_getmusic_locations(mplayer);
     mplayer_getmusic_filepaths(mplayer);
-    mplayer->music_renderpos = 0;
 }
 
 bool mplayer_musiclocation_exists(mplayer_t* mplayer, void* locationv) {
@@ -383,7 +382,6 @@ void mplayer_delmusic_locationindex(mplayer_t* mplayer, size_t loc_index) {
 }
 
 void mplayer_copymusicinfo_fromsearchindex(mplayer_t* mplayer, size_t index, music_t* music_info) {
-    printf("mplayer_copymusicinfo_fromsearchindex(...):\n");
     Mix_Music* music = mplayer->music_list[index].music;
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
     SDL_Rect outer_canvas = utext.text_canvas;
@@ -393,9 +391,6 @@ void mplayer_copymusicinfo_fromsearchindex(mplayer_t* mplayer, size_t index, mus
     music_info->searchmusic_id = index;
 
     /* Render the music_name and initialize the other infos (positions, texture, etc) */
-    if(!mplayer->music_list[index].music_path) {
-        printf("in mplayer_copymusicinfo_fromsearchindex func() music_path is NULL\n");
-    }
     music_info->music_name = mplayer_getmusic_namefrompath(music, mplayer->music_list[index].music_path);
     music_info->text_texture = mplayer_renderunicode_text(mplayer, mplayer->music_font,
         &mplayer->music_list[index].text_info);
@@ -417,22 +412,69 @@ void mplayer_copymusicinfo_fromsearchindex(mplayer_t* mplayer, size_t index, mus
     music_info->fill = false;
 }
 
+void mplayer_copymusic_info(music_t* src_info, music_t* dest_info) {
+    dest_info->checkbox_size = src_info->checkbox_size;
+    dest_info->checkbox_ticked = src_info->checkbox_ticked;
+    dest_info->fill = src_info->fill;
+    dest_info->music = src_info->music;
+    dest_info->music_position = src_info->music_position;
+    dest_info->music_duration = src_info->music_duration;
+    dest_info->music_durationsecs = src_info->music_durationsecs;
+    dest_info->music_playing = src_info->music_playing;
+    dest_info->render = src_info->render;
+    dest_info->search_render = src_info->search_render;
+    dest_info->music_name = src_info->music_name;
+    dest_info->text_info = src_info->text_info;
+    dest_info->outer_canvas = src_info->outer_canvas;
+    dest_info->text_texture = src_info->text_texture;
+    #ifdef _WIN32
+    dest_info->music_alternatepath = src_info->music_alternatepath;
+    #endif
+}
+
 void mplayer_removemusics_pendingremoval(mplayer_t* mplayer) {
+    if(!mplayer->musicpending_removalcount) {
+        return;
+    }
     // if music_count is equal to zero then we exit the function
     if(mplayer->music_count == 0) {
         return;
     }
+    text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
+    SDL_Rect outer_canvas = utext.text_canvas;
     // determine the new music count after removing the musics it would basically be equal to the total_filecount
     // in mplayer_structure
     size_t newmusic_count = mplayer->music_count - mplayer->musicpending_removalcount, j = 0, new_playid = 0;
     bool preserve_playid = false;
 
     // create a new list to store the musics that were not marked for removal
-    music_t* newmusic_list = (newmusic_count == 0) ? NULL : calloc(newmusic_count, sizeof(music_t));
+    music_t *newmusic_list = (newmusic_count == 0) ? NULL : calloc(newmusic_count, sizeof(music_t)),
+            *oldmusic_list = NULL;
+    size_t new_locationindex = 0, new_location_filecount = 0;
     for(size_t i=0;i<mplayer->music_count;i++) {
         // As long as the new music list is NULL we exit the loop
         if(!newmusic_list) {
+            mplayer->music_renderpos = 0;
+            mplayer->music_maxrenderpos = 0;
             break;
+        }
+        if(i+1 >= mplayer->music_renderpos) {
+            /* Whenever the the music index i is equal to the current render position or scroll bar position
+               we set the current music render position equal to the new music render position j this will
+               allow the user to maintain there scroll position without it resetting every time a music location
+               is removed
+            */
+            if(i+1 == mplayer->music_renderpos) {
+                mplayer->music_renderpos = j+1;
+            }
+            // calculate the canvas positions and dimensions for the current music that will not be removed
+            utext = mplayer->music_list[i].text_info;
+            outer_canvas.h = utext.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
+            utext.text_canvas.x = outer_canvas.x + 50,
+            utext.text_canvas.y = outer_canvas.y + ((outer_canvas.h - utext.text_canvas.h) / 2);
+    
+            mplayer->music_list[i].text_info.text_canvas = utext.text_canvas;
+            mplayer->music_list[i].outer_canvas = outer_canvas;
         }
         // iterate through the music list and whenever we find a music that was marked for removal we check if that
         // current music is playing if it is playing then we halt it and set the playing status and the playing status
@@ -442,8 +484,7 @@ void mplayer_removemusics_pendingremoval(mplayer_t* mplayer) {
                 Mix_HaltMusic();
                 mplayer->music_list[i].music_playing = false;
                 mplayer->current_music = NULL;
-            }
-            
+            }       
             mplayer->music_list[i].remove = false;       
             mplayer_freemusic(&mplayer->music_list[i]);
             continue;
@@ -453,22 +494,64 @@ void mplayer_removemusics_pendingremoval(mplayer_t* mplayer) {
            happen in any random position.
         */
         if(Mix_PlayingMusic() && mplayer->playid == i) {
-            new_playid = j; preserve_playid = true;            
+            new_playid = j; preserve_playid = true;
         }
-        newmusic_list[j++] = mplayer->music_list[i];
+
+        /* As long as the file count in the current location index is greater than zero then we increment the file
+           count by 1 each time we are iterating and also assing the new music path to the new music list
+        */
+        if(mplayer->locations[new_locationindex].file_count > 0) {
+            mplayer->music_list[i].music_path = mplayer->locations[new_locationindex].files[new_location_filecount].path;
+            new_location_filecount++;
+        }
+
+        // determine the music location index for the file
+        mplayer->music_list[i].location_index = new_locationindex;
+        // whenever the new location file count is equal to the number of files in that particular location
+        // we increment the new location index and set the new_location_filecount equal to zero that way we can
+        // determine which music location index for the music file
+        if(new_location_filecount == mplayer->locations[new_locationindex].file_count) {
+            new_locationindex++; new_location_filecount = 0;
+        }
+        mplayer->music_list[i].fit = true;
+        /* Whenever removing a music we want to maintain the scroll position therefore we check if the current index i
+           is equal to the mplayer->music_renderpos as long as that is true we set mplayer->music_renderpos equal to j
+           which represents the new music render position after removal of the music location and its music files
+        */
+        mplayer_copymusic_info(&mplayer->music_list[i], &newmusic_list[j++]);
+
+        // calculate the canvas positions and dimensions for the current music that will not be removed
+        utext.text_canvas.y += utext.text_canvas.h + 22;
+        outer_canvas.y += utext.text_canvas.h + 25;
     }
     // check if the newmusic list is not NULL
     if(newmusic_list) {
-        free(mplayer->music_list); mplayer->music_list = NULL;
+        bool resume_playing = false;
+        oldmusic_list = mplayer->music_list;
         // whenever we should preserve the playid for a currently playing music we changed the current playid to the new
         // playid and set the current music to link or point to the new music index at that particular playid
-        if(preserve_playid) {
-            mplayer->playid = new_playid;
-            mplayer->current_music = &newmusic_list[mplayer->playid];
+        if(!Mix_PausedMusic() && Mix_PlayingMusic()) {
+            resume_playing = true;
+            Mix_PauseMusic();
+            printf("The music was paused for a moment due to the removal process\n");
         }
-        mplayer->music_maxrenderpos = newmusic_count-1;
+        if(preserve_playid) {
+            // set the current music pointer to be equal to newmusic_list[new_playid] before chaning the mplayer->playid
+            mplayer->current_music = &newmusic_list[new_playid];
+            mplayer->playid = new_playid;
+        }
+        
+        if(resume_playing) {
+            // add a slight delay to the music resumption process this will be suttle and create the illusion of
+            // the music still playing
+            SDL_Delay(10);
+            printf("The music was resumed due to the removal process being completed\n");
+            Mix_ResumeMusic();
+        }
         mplayer->music_list = newmusic_list;
         mplayer->music_count = newmusic_count;
+        mplayer->music_maxrenderpos = newmusic_count-1;
+        free(oldmusic_list); oldmusic_list = NULL;
     }
     mplayer->musicpending_removalcount = 0;
 }
@@ -478,11 +561,6 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
         mplayer_freemusic_list(mplayer);
         return;
     }
-    // as long as data is present in the search bar then we set new search equal to true so when we return back to the
-    // default menu the music search results gets updated if a music location was removed vice versa.
-    if(mplayer->musicsearchbar_data) {
-        mplayer->music_newsearch = true;
-    }
     music_t* music_list = NULL;
     size_t music_count = 0;
     Mix_Music* music = NULL;
@@ -490,6 +568,15 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
     SDL_Rect outer_canvas = utext.text_canvas;
     double music_durationsecs = 0;
     size_t startlocation_index = 0;
+    if(mplayer->music_locationremoved) {
+        mplayer_removemusics_pendingremoval(mplayer);
+        if(mplayer->musicsearchbar_data) {
+            mplayer->music_newsearch = true;
+            mplayer->update_searchresults = true;
+        }
+        return;
+    }
+
     if(!mplayer->music_list) {
         music_list = calloc(mplayer->total_filecount, sizeof(music_t));
         // As long as the music count is greater than zero then we save the mplayer->music_list
@@ -497,34 +584,31 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
             music_list[i] = mplayer->music_list[i];
         }
     } else if(mplayer->total_filecount > mplayer->music_count) {
+        bool resume_music = false;
+        if(Mix_PlayingMusic() && !Mix_PausedMusic()) {
+            Mix_PauseMusic();
+            resume_music = true;
+        }
         printf("Reallocating memory\n");
         mplayer->music_list = (music_t*)realloc(mplayer->music_list, mplayer->total_filecount * sizeof(music_t));
+        if(Mix_PlayingMusic()) {
+            mplayer->current_music = &mplayer->music_list[mplayer->playid];
+        }
         if(mplayer->music_list == NULL) {
             printf("Realloc failed\n");
         }
         size_t size_diff = mplayer->total_filecount - mplayer->music_count;
         memset((music_t*)mplayer->music_list + mplayer->music_count, 0, size_diff * sizeof(music_t));
         music_list = mplayer->music_list;
-    }
-    if(mplayer->music_locationremoved) {
-        /* whenever the total file count is less than the music count then that means we should remove musics
-           that are pending / waiting to be removed. otherwise it means we should append music to the music list
-        */
-        if(mplayer->total_filecount < mplayer->music_count && mplayer->music_list) {
-            mplayer_removemusics_pendingremoval(mplayer);
-            music_list = mplayer->music_list;
-            music_count = 0;
+        if(resume_music) {
+            SDL_Delay(10);
+            Mix_ResumeMusic();
         }
     }
     if(mplayer->music_locationadded) {
         music_count = mplayer->music_count;
-        // whenever mplayer->music_list is not null then append the new music 
         startlocation_index = mplayer->location_count-1;
-        if(Mix_PlayingMusic() && mplayer->current_music) {
-            mplayer->current_music = &music_list[mplayer->playid];
-        }
     }
-
     for(size_t i=startlocation_index;i<mplayer->location_count;i++) {
         for(size_t j=0;j<mplayer->locations[i].file_count;j++) {
             music = music_list[music_count].music;
@@ -595,9 +679,14 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
             music_count++;
         }
     }
-    //free(mplayer->music_list); mplayer->music_list = NULL;
     mplayer->music_list = music_list;
     mplayer->music_count = mplayer->total_filecount;
+    // as long as data is present in the search bar then we set new search equal to true so when we return back to the
+    // default menu the music search results gets updated if a music location was removed vice versa.
+    if(mplayer->musicsearchbar_data) {
+        mplayer->music_newsearch = true;
+        mplayer->update_searchresults = true;
+    }
 }
 
 #ifdef _WIN32
@@ -669,12 +758,16 @@ void* mplayer_getmusic_namefrompath(Mix_Music* music, void* path) {
     size_t name_len = 0, ext_index = 0, byte_size = sizeof(char);
     #ifdef _WIN32
     wchar_t *music_name = NULL, *filename = NULL, *filename_cp = NULL;
-    const wchar_t *ext = NULL;
+    wchar_t ext[6] = {0};
+    wcscpy(ext, L".");
+    wchar_t *(*string_concat)(wchar_t* dest, const wchar_t* src) = &wcscat; 
     filename = wcsrchr((wchar_t*)path, L'\\');
     byte_size = sizeof(wchar_t);
     #else
     char *music_name = NULL, *filename = NULL, *filename_cp = NULL;
-    const char *ext = NULL;
+    char ext[6] = {0};
+    strcpy(ext, ".");
+    char *(*string_concat)(char* dest, const char* src) = &strcat;
     filename = strrchr((char*)path, '/');
     #endif
     // Whenever the last occurence of the character '\' in the file path is not found then filename will be equal to NULL
@@ -691,12 +784,12 @@ void* mplayer_getmusic_namefrompath(Mix_Music* music, void* path) {
     #endif
     int music_type = Mix_GetMusicType(music);
     switch(music_type) {
-        case MUS_MP3:  ext = FILE_EXTENSIONS[MPLAYER_MP3EXT];  break;
-        case MUS_FLAC: ext = FILE_EXTENSIONS[MPLAYER_FLACEXT]; break;
-        case MUS_OGG:  ext = FILE_EXTENSIONS[MPLAYER_OGGEXT];  break;
-        case MUS_OPUS: ext = FILE_EXTENSIONS[MPLAYER_OPUSEXT]; break;
-        case MUS_WAV:  ext = FILE_EXTENSIONS[MPLAYER_WAVEXT];  break;
-        default:       ext = FILE_EXTENSIONS[MPLAYER_M4AEXT];
+        case MUS_MP3:  string_concat(ext, FILE_EXTENSIONS[MPLAYER_MP3EXT]);  break;
+        case MUS_FLAC: string_concat(ext, FILE_EXTENSIONS[MPLAYER_FLACEXT]); break;
+        case MUS_OGG:  string_concat(ext, FILE_EXTENSIONS[MPLAYER_OGGEXT]);  break;
+        case MUS_OPUS: string_concat(ext, FILE_EXTENSIONS[MPLAYER_OPUSEXT]); break;
+        case MUS_WAV:  string_concat(ext, FILE_EXTENSIONS[MPLAYER_WAVEXT]);  break;
+        default:       string_concat(ext, FILE_EXTENSIONS[MPLAYER_M4AEXT]);
     }
     for(size_t i=0;i<name_len;i++) {
         filename++;
@@ -743,17 +836,18 @@ void mplayer_freecurrmusic(mplayer_t* mplayer) {
     mplayer->current_music = NULL;
 }
 
-void mplayer_freemusic_searchresult(mplayer_t* mplayer) {
-    if(!mplayer->music_searchresult) {
+void mplayer_freemusic_searchresult(music_t** music_searchresult, size_t* music_resultcount) {
+    if(!(*music_searchresult)) {
         return;
     }
-    for(size_t i=0;i<mplayer->music_searchresult_count;i++) {
-        free(mplayer->music_searchresult[i].music_name);
-        SDL_DestroyTexture(mplayer->music_searchresult[i].text_texture);
-        mplayer->music_searchresult[i].music_name = NULL;
+    for(size_t i=0;i<*music_resultcount;i++) {
+        free((*music_searchresult)[i].music_name);
+        SDL_DestroyTexture((*music_searchresult)[i].text_texture);
+        (*music_searchresult)[i].music_name = NULL;
+        (*music_searchresult)[i].text_texture = NULL;
     }
-    free(mplayer->music_searchresult); mplayer->music_searchresult = NULL;
-    mplayer->music_searchresult_count = 0;
+    free(*music_searchresult); *music_searchresult = NULL;
+    *music_resultcount = 0;
 }
 
 void mplayer_freemusicpath_info(mplayer_t* mplayer) {
@@ -768,6 +862,7 @@ void mplayer_freemusicpath_info(mplayer_t* mplayer) {
         free(mplayer->locations[i].files); mplayer->locations[i].files = NULL;
         mplayer->locations[i].file_count = 0;
     }
+    
     mplayer->total_filecount = 0;
     mplayer->location_count = 0;
     free(mplayer->locations); mplayer->locations = NULL;
@@ -790,7 +885,11 @@ void mplayer_freemusic_list(mplayer_t* mplayer) {
     for(size_t i=0;i<mplayer->music_count;i++) {
         mplayer_freemusic(&mplayer->music_list[i]);
     }
-    mplayer_freemusic_searchresult(mplayer);
+    mplayer_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
     free(mplayer->music_list); mplayer->music_list = NULL; mplayer->music_count = 0;
     mplayer->musicpending_removalcount = 0;
+    mplayer->music_renderpos = 0;
+    mplayer->music_maxrenderpos = 0;
+    mplayer->match_maxrenderpos = 0;
+    mplayer->music_searchrenderpos = 0;
 }
