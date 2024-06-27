@@ -94,7 +94,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->search_thread = 0;
     mplayer->searchthread_created = false;
     mplayer->searchthread_creationtimer = 0;
-    mplayer->mutex = 0;
+    mplayer->mutex = (pthread_mutex_t)0;
 
     // create music information
     mplayer_getmusicpath_info(mplayer);
