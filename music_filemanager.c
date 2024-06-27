@@ -679,13 +679,17 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
             music_count++;
         }
     }
-    mplayer->music_list = music_list;
-    mplayer->music_count = mplayer->total_filecount;
-    // as long as data is present in the search bar then we set new search equal to true so when we return back to the
-    // default menu the music search results gets updated if a music location was removed vice versa.
-    if(mplayer->musicsearchbar_data) {
-        mplayer->music_newsearch = true;
-        mplayer->update_searchresults = true;
+    // Before modifiying the music list ensure that the location that was added contains music files
+    // to prevent crashing
+    if(music_list) {
+        mplayer->music_list = music_list;
+        mplayer->music_count = mplayer->total_filecount;
+        // as long as data is present in the search bar then we set new search equal to true so when we return back to the
+        // default menu the music search results gets updated if a music location was removed vice versa.
+        if(mplayer->musicsearchbar_data) {
+            mplayer->music_newsearch = true;
+            mplayer->update_searchresults = true;
+        }
     }
 }
 
