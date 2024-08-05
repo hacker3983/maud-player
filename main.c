@@ -2,7 +2,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "music_playerinfo.h"
 #include "music_player.h"
 
 int main(int argc, char** argv) {

@@ -24,20 +24,6 @@
 #include <dirent.h>
 #endif
 
-extern const char* WINDOW_TITLE, *SETTING_TITLE, *FONT_FILE, *MUSIC_FONTFILE, *MUSIC_PATHINFO_FILE;
-extern int WIDTH, HEIGHT, FONT_SIZE, MUSIC_FONTSIZE, TAB_INIT, active_tab, prev_tab, TAB_SPACING, SBOXDISTANCE_X,  SETTING_LINESPACING,
-UNDERLINE_THICKNESS, checkbox_init;
-extern SDL_Rect scrollbar, music_status, songs_box, checkbox_size;
-extern const size_t text_info_size, tab_info_size, setting_textinfo_size, MUSICBTN_COUNT, MTOTALBTN_COUNT, SETTINGSBTN_COUNT;
-extern const SDL_Color window_color, text_color, text2_color, underline_color, white, black, music_statusbar_color,
-music_searchbar_color, songs_boxcolor, setting_wincolor, setting_textcolor, back_btnbg_color, setting_underlinecolor;
-
-#ifdef _WIN32
-extern const wchar_t* FILE_EXTENSIONS[];
-#else
-extern const char* FILE_EXTENSIONS[];
-#endif
-
 #define color_toparam(color) \
     color.r, color.g, color.b, color.a
 #define MENU_COUNT 2
@@ -55,12 +41,7 @@ enum file_extensions {
 
 typedef struct text_info {
     int font_size;
-    char* text;
-    #ifdef _WIN32
-    wchar_t* utext;
-    #else
-    char* utext;
-    #endif
+    char *text, *utext;
     SDL_Color text_color;
     SDL_Rect text_canvas;
 } text_info_t;
@@ -72,13 +53,12 @@ typedef struct music_time {
 
 // structure representing music
 typedef struct music {
+    char* music_name;
     #ifdef _WIN32
     char *music_alternatepath;
-    #endif
-    #ifdef _WIN32
-    wchar_t* music_name, *music_path;
+    wchar_t *music_path;
     #else
-    char* music_name, *music_path;
+    char *music_path;
     #endif
     text_info_t text_info;
     SDL_Texture* text_texture;
@@ -150,6 +130,7 @@ enum musical_buttons {
     MUSIC_LISTPLAYBTN,
     MUSIC_ADDFOLDERBTN,
     MUSIC_ADDPLAYLISTBTN,
+    MUSIC_ADDTOBTN,
     MUSIC_REMOVEBTN
 };
 
@@ -249,8 +230,8 @@ typedef struct mplayer {
     music_t* current_music, *prev_music;
     size_t* music_searchresult_indices;
     size_t music_id, prevmusic_id, playid, searchid, music_count, music_searchresult_count, music_renderpos,
-           music_searchrenderpos, music_searchresult_indicescount, music_populatedresult_count;
-    int repeat_id, mouse_x, mouse_y, tick_count, scroll_type;
+           music_searchrenderpos, music_searchresult_indicescount, music_populatedresult_count, tick_count;
+    int repeat_id, mouse_x, mouse_y, scroll_type;
     char* musicsearchbar_data, *current_musicsearch_query, *additional_musicsearch_query;
     text_info_t musicsearchbar_datainfo;
     int musicsearchcursor_relpos;
@@ -260,8 +241,10 @@ typedef struct mplayer {
         populate_index;
     bool mouse_clicked, musicsearchbar_clicked, musicsearchcursor_blink, music_hover, music_newsearch, music_playing,
          scroll, progressbar_clicked, progressbar_dragged, mouse_buttondown, music_locationremoved, music_locationadded, music_searchresult_ready,
-         start_search, searchthread_created, update_searchresults;
-    SDL_Rect progress_bar, progress_count, music_searchbar, music_searchbar_cursor;
+         start_search, searchthread_created, update_searchresults, music_selectionmenu_checkbox_tickall,
+         music_selectionmenu_checkbox_fillall;
+    SDL_Rect progress_bar, progress_count, music_searchbar,
+        music_selectionmenu, music_searchbar_cursor;
 } mplayer_t;
 
 void mplayer_init();
@@ -269,13 +252,22 @@ SDL_Window* mplayer_createwindow(const char* title, int width, int height);
 SDL_Renderer* mplayer_createrenderer(SDL_Window* window);
 TTF_Font* mplayer_openfont(const char* file, int size);
 void mplayer_createsearch_bar(mplayer_t* mplayer);
+void mplayer_createselection_menu(mplayer_t* mplayer);
+void mplayer_displayselection_menu_addbtn(mplayer_t* mplayer, SDL_Rect playbtn_background);
+void mplayer_displayselection_menu_playbtn(mplayer_t* mplayer, text_info_t songs_selectioninfo,
+    SDL_Rect* playbtn_backgroundref);
+void mplayer_selectionmenu_setsongs_selectionstate(mplayer_t* mplayer, bool state);
+void mplayer_displayselection_menu_songs_selection_info(mplayer_t* mplayer, text_info_t* songs_selectioninfo);
+void mplayer_displayselection_menu_checkbox(mplayer_t* mplayer);
 void mplayer_createsongs_box(mplayer_t* mplayer);
 void mplayer_createmusicbar(mplayer_t* mplayer);
 void mplayer_createapp(mplayer_t* mplayer);
 void mplayer_getmusic_locations(mplayer_t* mplayer);
 void mplayer_getmusic_filepaths(mplayer_t* mplayer);
 void mplayer_getmusicpath_info(mplayer_t* mplayer);
-void* mplayer_getmusic_namefrompath(Mix_Music* music, void* path);
+int mplayer_getsize_t_length(size_t number);
+char* mplayer_size_t_tostring(size_t number, int* digit_count);
+char* mplayer_getmusic_namefrompath(Mix_Music* music, void* path);
 void mplayer_copymusicinfo_fromsearchindex(mplayer_t* mplayer, size_t index, music_t* music_info);
 void mplayer_loadmusics(mplayer_t* mplayer);
 void mplayer_browsefolder(mplayer_t* mplayer);
@@ -313,15 +305,14 @@ void mplayer_populate_searchresults(mplayer_t* mplayer);
 void* mplayer_searchthread(void* arg);
 #ifdef _WIN32
 wchar_t* mplayer_stringtowide(const char* string);
-char* mplayer_widetostring(wchar_t* wstring);
-Uint16* mplayer_widetouint16(wchar_t* wstring);
+char* mplayer_widetoutf8(wchar_t* wstring);
 #else
 Uint16* mplayer_stringtouint16(char* string);
 #endif
 char* mplayer_stringtolower(char** string, size_t len);
 wchar_t* mplayer_widetolower(wchar_t** wstring, size_t wlen);
-void* mplayer_dupstr(void* string, size_t len);
-void* mplayer_strcasestr(void* haystack, void* needle);
+char* mplayer_dupstr(char* string, size_t len);
+char* mplayer_strcasestr(char* haystack, char* needle);
 void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info);
 void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color,
     SDL_Color fill_color, bool fill, SDL_Color tick_color, bool check);
@@ -330,7 +321,7 @@ void mplayer_renderscroll_bar(mplayer_t* mplayer, mplayer_scrollbar_t* scrollbar
 void mplayer_rendersongs(mplayer_t* mplayer);
 void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Color line_color,
     double curr_durationsecs, double full_durationsecs);
-int mplayer_get_textsize(TTF_Font* font, int font_size, text_info_t* utext_info);
+int mplayer_get_textsize(TTF_Font* font, text_info_t* utext_info);
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t* text_info);
 SDL_Texture* mplayer_renderunicode_text(mplayer_t* mplayer, TTF_Font* font, text_info_t* utext_info);
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
@@ -355,8 +346,5 @@ void mplayer_destroyapp(mplayer_t* mplayer);
 #ifdef _WIN32
 void mplayer_getroot_path(char* root_path);
 #endif
-extern text_info_t text_info[], setting_textinfo[];
-extern tabinfo_t tab_info[];
-extern ibtn_t music_btns[], setting_btns[], setting_iconbtn, music_listplaybtn, music_addfolderbtn, music_addplaylistbtn,
-music_removebtn;
+#include "music_playerinfo_extern.h"
 #endif

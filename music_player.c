@@ -1,14 +1,20 @@
 #include "music_player.h"
+#include "music_playerinfo.h"
 
 SDL_Rect *playbtn_canvas = NULL, *playbtn_listcanvas = NULL,
         *prevbtn_canvas = NULL, *skipbtn_canvas = NULL,
         *pausebtn_canvas = NULL, *repeatoffbtn_canvas = NULL,
         *repeatallbtn_canvas = NULL, *repeatonebtn_canvas = NULL,
         *shufflebtn_canvas = NULL;
+
 void mplayer_init() {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER);
     TTF_Init();
     IMG_Init(IMG_INIT_PNG);
+    int audioinit_flags = MIX_INIT_FLAC | MIX_INIT_MP3 | MIX_INIT_MOD | MIX_INIT_OGG | MIX_INIT_OPUS;
+    if(Mix_Init(audioinit_flags) == audioinit_flags) {
+        printf("successfully initialized SDL Mixer\n");
+    }
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
     setlocale(LC_ALL,"it_IT.UTF-16");
 }
@@ -94,6 +100,10 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->search_thread = 0;
     mplayer->searchthread_created = false;
     mplayer->searchthread_creationtimer = 0;
+    mplayer->music_selectionmenu.x = 0, mplayer->music_selectionmenu.y = 0;
+    mplayer->music_selectionmenu.w = 0, mplayer->music_selectionmenu.h = 0;
+    mplayer->music_selectionmenu_checkbox_fillall = false;
+    mplayer->music_selectionmenu_checkbox_tickall = false;
 
     // create music information
     mplayer_getmusicpath_info(mplayer);
@@ -283,32 +293,11 @@ bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index) {
        of the original and convert them to lowercase / uppercase so we can make our match incase sensitive
     */
     bool match = false;
-    #ifdef _WIN32
-    size_t music_namelen = wcslen(mplayer->music_list[search_index].music_name),
-           music_querylen = mplayer->current_musicsearch_querylen;
-    wchar_t *music_name = calloc(music_namelen+1, sizeof(wchar_t));
-    if(!music_name) {
-        printf("calloc failed for music name allocation\n");
-    }
-    //printf("mplayer->musicsearchbar_data is %s\n", mplayer->musicsearchbar_data);
-    //printf("mplayer->musicsearchbar_datalen: %zu\n", mplayer->musicsearchbar_datalen);
-    wchar_t *music_query = mplayer_stringtowide(mplayer->current_musicsearch_query);
-    if(!music_query) {
-        printf("Memory allocation failed for music_query\n");
-    }
-    wcsncpy(music_name, mplayer->music_list[search_index].music_name, music_namelen);
-    //printf("mplayer_music_searchsubstr(): music_name: %ls, music_query: %ls\n", music_name, music_query);
-    // Compare the lowercase versions to see if we get a match
-    wchar_t *match_string = (wchar_t*)mplayer_strcasestr(music_name, music_query);
-    #else
     size_t music_namelen = strlen(mplayer->music_list[search_index].music_name),
            music_querylen = mplayer->current_musicsearch_querylen;
-    char *music_name = calloc(music_namelen+1, sizeof(char)),
-         *music_query = calloc(music_querylen+1, sizeof(char));
-    strncpy(music_name, mplayer->music_list[search_index].music_name, music_namelen);
-    strncpy(music_query, mplayer->current_musicsearch_query, music_querylen);
+    char *music_name = mplayer_dupstr(mplayer->music_list[search_index].music_name, music_namelen),
+         *music_query = mplayer_dupstr(mplayer->current_musicsearch_query, music_querylen);
     char *match_string = (char*)mplayer_strcasestr(music_name, music_query);
-    #endif
     if(match_string) {
         match = true;
     }
@@ -473,21 +462,16 @@ wchar_t* mplayer_stringtowide(const char* string) {
 }
 
 
-void* mplayer_dupstr(void* string, size_t len) {
+char* mplayer_dupstr(char* string, size_t len) {
     if(!string) {
         return NULL;
     }
-    #ifdef _WIN32
-    wchar_t *new_dupstr = (wchar_t*)calloc(len+1, sizeof(wchar_t));
-    wcsncpy(new_dupstr, (wchar_t*)string, len);
-    #else
     char *new_dupstr = (char*)calloc(len+1, sizeof(char));
     strncpy(new_dupstr, (char*)string, len);
-    #endif
     return new_dupstr;
 }
 
-void* mplayer_strcasestr(void* haystack, void* needle) {
+char* mplayer_strcasestr(char* haystack, char* needle) {
     size_t haystack_len = 0, needle_len = 0, match_substrlen = 0;
     if(!haystack) {
         return NULL;
@@ -495,18 +479,6 @@ void* mplayer_strcasestr(void* haystack, void* needle) {
     if(!needle) {
         return NULL;
     }
-    #ifdef _WIN32
-    haystack_len = wcslen((wchar_t*)haystack), needle_len = wcslen((wchar_t*)needle);
-    wchar_t *haystack_dup = (wchar_t*)mplayer_dupstr(haystack, haystack_len),
-            *needle_dup = (wchar_t*)mplayer_dupstr(needle, needle_len);
-    mplayer_widetolower(&haystack_dup, haystack_len),
-    mplayer_widetolower(&needle_dup, needle_len);
-    wchar_t* match_substr = wcsstr(haystack_dup, needle_dup);
-    if(match_substr) {
-        match_substrlen = wcslen(match_substr);
-        match_substr = (wchar_t*)mplayer_dupstr(match_substr, match_substrlen);
-    }
-    #else
     haystack_len = strlen((char*)haystack), needle_len = strlen((char*)needle);
     char *haystack_dup = (char*)mplayer_dupstr(haystack, haystack_len),
          *needle_dup = (char*)mplayer_dupstr(needle, needle_len);
@@ -517,38 +489,24 @@ void* mplayer_strcasestr(void* haystack, void* needle) {
         match_substrlen = strlen(match_substr);
         match_substr = (char*)mplayer_dupstr(match_substr, match_substrlen);
     }
-    #endif
     free(haystack_dup); haystack_dup = NULL;
     free(needle_dup); needle_dup = NULL;
     return match_substr;
 }
 
-char* mplayer_widetostring(wchar_t* wstring) {
-    size_t len_wstr = wcstombs(NULL, wstring, 0);
-    char* string = calloc(len_wstr+1, sizeof(char));
+char* mplayer_widetoutf8(wchar_t* wstring) {
+    size_t len_wstr = 0;
+    char* string = NULL;
+    #ifdef _WIN32
+    len_wstr = WideCharToMultiByte(CP_UTF8, 0, wstring, -1, NULL, 0, NULL, NULL);
+    string = calloc(len_wstr+1, sizeof(char));
+    WideCharToMultiByte(CP_UTF8, 0, wstring, -1, string, len_wstr, NULL, NULL);
+    #else
+    len_wstr = wcstombs(NULL, wstring, 0);
+    string = calloc(len_wstr+1, sizeof(char));
     wcstombs(string, wstring, len_wstr);
+    #endif
     return string;
-}
-
-Uint16* mplayer_widetouint16(wchar_t* wstring) {
-    if(wstring == NULL) {
-        return NULL;
-    }
-    size_t wstring_length = wcslen(wstring);
-    Uint16* uint_string = calloc(wstring_length+1, sizeof(Uint16));
-    for(size_t i=0;i<wstring_length;i++) {
-        uint_string[i] = (Uint16)wstring[i];
-    }
-    return uint_string;
-}
-
-Uint16* mplayer_stringtouint16(char* string) {
-    size_t strsize = strlen(string);
-    Uint16* uint16_string = calloc(strsize+1, sizeof(Uint16));
-    for(size_t i = 0; i < strsize; i++) {
-        uint16_string[i] = string[i];
-    }
-    return uint16_string;
 }
 
 SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t* text_info) {
@@ -567,16 +525,13 @@ SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t*
     return texture;
 }
 
-int mplayer_get_textsize(TTF_Font* font, int font_size, text_info_t* utext_info) {
+int mplayer_get_textsize(TTF_Font* font, text_info_t* utext_info) {
     int ret = 0;
+    if((ret = TTF_SetFontSize(font, utext_info->font_size)) < 0) {
+        return ret;
+    }
     if(utext_info->utext) {
-        #ifdef _WIN32
-        Uint16* uint16_string = mplayer_widetouint16(utext_info->utext);
-        ret = TTF_SizeUNICODE(font, utext_info->utext, &utext_info->text_canvas.w, &utext_info->text_canvas.h);
-        free(uint16_string);
-        #else
         ret = TTF_SizeUTF8(font, utext_info->utext, &utext_info->text_canvas.w, &utext_info->text_canvas.h);
-        #endif
     } else if(utext_info->text) {
         ret = TTF_SizeText(font, utext_info->text, &utext_info->text_canvas.w, &utext_info->text_canvas.h);
     }
@@ -587,25 +542,15 @@ SDL_Texture* mplayer_renderunicode_text(mplayer_t* mplayer, TTF_Font* font, text
     if(!utext_info->utext) {
         return NULL;
     }
-    TTF_SetFontSize(font, utext_info->font_size);
-    if(mplayer_get_textsize(font, utext_info->font_size, utext_info) == -1) {
-        printf("mplayer_getsize(): failed because %s\n", SDL_GetError());
+    if(mplayer_get_textsize(font, utext_info) == -1) {
+        printf("mplayer_get_textsize(): failed because %s\n", SDL_GetError());
         return NULL;
     }
-    #ifdef _WIN32
-    Uint16* uint16_string = mplayer_widetouint16(utext_info->utext);
-    if(!uint16_string) {
-        return NULL;
-    }
-    SDL_Surface* surface = TTF_RenderUNICODE_Blended(font, uint16_string, utext_info->text_color);
-    free(uint16_string); uint16_string = NULL;
-    if(surface == NULL) {
-        printf("TTF_RenderUNICODE_BLENDED(): Failed because %s\n", SDL_GetError());
-        return NULL;
-    }
-    #else
     SDL_Surface* surface = TTF_RenderUTF8_Blended(font, utext_info->utext, utext_info->text_color);
-    #endif
+    if(surface == NULL) {
+        printf("TTF_RenderUTF8_BLENDED(): Failed because %s\n", SDL_GetError());
+        return NULL;
+    }
     SDL_Texture* texture = SDL_CreateTextureFromSurface(mplayer->renderer, surface);
     SDL_FreeSurface(surface); surface = NULL;
     return texture;
@@ -691,8 +636,10 @@ void mplayer_destroyapp(mplayer_t* mplayer) {
     mplayer_menu_freetext(mplayer, MPLAYER_SETTINGS_MENU);
 
     // free texture objects for default menu
+    mplayer_destroytextures(mplayer->menus[MPLAYER_DEFAULT_MENU].textures[MPLAYER_TEXT_TEXTURE],
+        mplayer->menus[MPLAYER_DEFAULT_MENU].texture_sizes[MPLAYER_TEXT_TEXTURE]);
     mplayer_destroytextures(mplayer->menus[MPLAYER_DEFAULT_MENU].textures[MPLAYER_BUTTON_TEXTURE],
-    mplayer->menus[MPLAYER_DEFAULT_MENU].texture_sizes[MPLAYER_BUTTON_TEXTURE]);
+        mplayer->menus[MPLAYER_DEFAULT_MENU].texture_sizes[MPLAYER_BUTTON_TEXTURE]);
 
     // free texture objects for setting menu
     mplayer_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].textures[MPLAYER_TEXT_TEXTURE],
@@ -932,8 +879,28 @@ void mplayer_createsearch_bar(mplayer_t* mplayer) {
     }
 }
 
+int mplayer_getsize_t_length(size_t number) {
+    int num_length = 1;
+    while(number >= 10) {
+        number /= 10;
+        num_length++;
+    }
+    return num_length;
+}
+
+char* mplayer_size_t_tostring(size_t number, int* digit_count) {
+    int num_length = mplayer_getsize_t_length(number);
+    char* number_string = malloc((num_length + 1) * sizeof(char));
+    snprintf(number_string, num_length+1, "%zu", number);
+    *digit_count = num_length;
+    return number_string;
+}
+
 void mplayer_createsongs_box(mplayer_t* mplayer) {
     songs_box.y = mplayer->music_searchbar.y + mplayer->music_searchbar.h + 5/*tab_info[0].text_canvas.y + tab_info[0].text_canvas.h + (UNDERLINE_THICKNESS + 5)*/;
+    if(mplayer->tick_count) {
+        songs_box.y = mplayer->music_selectionmenu.y + mplayer->music_selectionmenu.h;
+    }
     songs_box.w = WIDTH, songs_box.h = HEIGHT - music_status.h - songs_box.y;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(songs_boxcolor));
     SDL_RenderDrawRect(mplayer->renderer, &songs_box);
@@ -1074,7 +1041,6 @@ void mplayer_rendertooltip(mplayer_t* mplayer, mplayer_tooltip_t* tooltip) {
         tooltip_canvas.y -= tooltip_canvas.h + (-tooltip->y);
     } else if(tooltip->y > 0) {
         tooltip_canvas.y -= tooltip_canvas.h + tooltip->y;
-        printf("tooltip_canvas.y = %d\n", tooltip_canvas.y);
     }
 
     // TODO: IMPLEMENT BALLOON TOOLTIP and also the delay functionality
@@ -1097,21 +1063,35 @@ void mplayer_rendertooltip(mplayer_t* mplayer, mplayer_tooltip_t* tooltip) {
 }
 
 void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration) {
-    text_info_t duration_texts[2] = {0};
-    SDL_Texture* textures[2];
-    duration_texts[0].text = calloc(9, sizeof(char));
-    duration_texts[0].text_canvas.x = music_status.x + 1, duration_texts[0].text_canvas.y = music_status.y + 10;
-    duration_texts[0].text_color = white;
-
-    duration_texts[1].text = calloc(9, sizeof(char));
-    duration_texts[1].text_canvas.x = music_status.x + music_status.w,
-    duration_texts[1].text_canvas.y = music_status.y + 10;
-    duration_texts[1].text_color = white;
-    //printf("curr_duration = %02d:%02d:%02d\n", curr_duration.hrs, curr_duration.mins, curr_duration.secs);
+    text_info_t duration_texts[2] = {
+        // The current duration of the music being played
+        {
+            .font_size = 14,
+            // cast the current duration to a character array since pointers on the stack cannot be modified
+            .text = (char[]){"00:00:00"},
+            .text_canvas = {
+                .x = music_status.x + 1,
+                .y = music_status.y + 10
+            },
+            .text_color = white
+        },
+        // The final duration of music being played 
+        {
+            .font_size = 14,
+            // cast the final duration to a character array since pointers to string literals on the stack
+            // cannot be modified because they are constant
+            .text = (char[]){"00:00:00"},
+            .text_canvas = {
+                .x = music_status.x + music_status.w,
+                .y = music_status.y + 10
+            },
+            .text_color = white
+        }
+    };
+    SDL_Texture* textures[2] = {0};
     sprintf(duration_texts[0].text, "%02d:%02d:%02d", curr_duration.hrs, curr_duration.mins, curr_duration.secs);
     sprintf(duration_texts[1].text, "%02d:%02d:%02d", full_duration.hrs, full_duration.mins, full_duration.secs);
     for(int i=0;i<2;i++) {
-        duration_texts[i].font_size = 14;
         textures[i] = mplayer_rendertext(mplayer, mplayer->music_font, &duration_texts[i]);
     }
     
@@ -1120,14 +1100,12 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
     mplayer->progress_bar.y = music_status.y+10, mplayer->progress_bar.h = duration_texts[0].text_canvas.h;
     duration_texts[1].text_canvas.x = mplayer->progress_bar.x + mplayer->progress_bar.w + 6;
     for(int i=0;i<2;i++) {
-        free(duration_texts[i].text); duration_texts[i].text = NULL;
         SDL_RenderCopy(mplayer->renderer, textures[i], NULL, &duration_texts[i].text_canvas);
         SDL_DestroyTexture(textures[i]);
     }
-    if(mplayer->current_music == NULL) {
+    if(!mplayer->current_music) {
         return;
     }
-
     if(Mix_PlayingMusic()) {
         text_info_t music_name = {18, NULL, NULL, white, {20, 0, 0, 0}};
         music_name.text_canvas.y = prevbtn_canvas->y - 10;
@@ -1206,7 +1184,6 @@ void mplayer_controlmusic_progression(mplayer_t* mplayer) {
             }
             break;
         case MUSIC_REPEATONEBTN:
-            // fix skipping bug for repeat one btn
             if(!Mix_PlayingMusic() && mplayer->current_music) {
                 if(mplayer->music_playing && !mplayer->current_music->music) {
                     if(mplayer->musicsearchbar_data && mplayer->music_searchresult_count > 0) {
@@ -1268,15 +1245,9 @@ void mplayer_displayprogression_control(mplayer_t* mplayer) {
     }
     if(Mix_PlayingMusic() && !Mix_PausedMusic() && mplayer->current_music) {
         mplayer->music_playing = true;
-        #ifdef _WIN32
-        printf("Playing %ls %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
+        /*printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
-            full_duration.hrs, full_duration.mins, full_duration.secs, progress);
-        #else
-        printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
-            curr_duration.hrs, curr_duration.mins, curr_duration.secs,
-            full_duration.hrs, full_duration.mins, full_duration.secs, progress);
-        #endif
+            full_duration.hrs, full_duration.mins, full_duration.secs, progress);*/
     }
     mplayer_controlmusic_progression(mplayer);
     if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
@@ -1291,11 +1262,10 @@ void mplayer_renderscroll_bar(mplayer_t* mplayer, mplayer_scrollbar_t* scrollbar
     SDL_Rect* scrollbar_rect = &scrollbar->rect, scroll_area = scrollbar->scroll_area;
     double scroll_startpos = (double)scrollbar->start_pos, scroll_finalpos = (double)scrollbar->final_pos;
 
-    // Calculate the initial position of the scrollbar    
+    // Calculate the initial position of the scrollbar
     scrollbar_rect->x = scroll_area.w - scrollbar_rect->w + padding_x,
     scrollbar_rect->y = scroll_area.y + -padding_y;
     scrollbar->displacement = (double)scrollbar_rect->y - (double)scroll_area.y;
-
     /* Calculate the percentage of the music we are at based on the music render position
        the music render position is incremented by 1 when scrolling down and decremented by 1when scrolling up
     */
@@ -1311,7 +1281,18 @@ void mplayer_renderscroll_bar(mplayer_t* mplayer, mplayer_scrollbar_t* scrollbar
         // increment the scrollbar y position to let it move whenever a scroll event happens
         scrollbar_rect->y += additional_y;
     }
-
+    // Handle scroll logic whenever the user interacts with scroll bar
+    if(mplayer->mouse_x <= scrollbar->rect.x + scrollbar->rect.w &&
+        mplayer->mouse_x >= scrollbar->rect.x && mplayer_rect_hover(mplayer, scroll_area)) {
+        if(mplayer->mouse_buttondown) {
+            if(mplayer->mouse_y <= scrollbar->rect.y) {
+                mplayer->scroll_type = MPLAYERSCROLL_UP;
+            } else if(mplayer->mouse_y >= scrollbar->rect.y + scrollbar->rect.h) {
+                mplayer->scroll_type = MPLAYERSCROLL_DOWN;
+            }
+            mplayer->scroll = true;
+        }
+    }
     // Draw the scrollbar to the screen
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(white));
     SDL_RenderFillRect(mplayer->renderer, scrollbar_rect);
@@ -1319,8 +1300,6 @@ void mplayer_renderscroll_bar(mplayer_t* mplayer, mplayer_scrollbar_t* scrollbar
 }
 
 void mplayer_rendersongs(mplayer_t* mplayer) {
-    /*printf("In mplayer_rendersongs():\n");
-    printf("mplayer->music_count: %zu, mplayer->music_maxrenderpos: %zu\n", mplayer->music_count, mplayer->music_maxrenderpos);*/
     int cursor = MPLAYER_CURSOR_DEFAULT;
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
     int default_w = 0, default_h = 0;
@@ -1328,8 +1307,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     music_t* music_list = mplayer->music_list;
     size_t music_count = mplayer->music_count, max_renderpos = mplayer->music_maxrenderpos,
            *music_renderpos = &mplayer->music_renderpos;
-    bool mutex_locked = false, searching = false;
-    if(mplayer->musicsearchbar_data) {
+    if(mplayer->musicsearchbar_data && mplayer->music_searchresult &&
+        mplayer->music_searchresult_count < mplayer->music_searchresult_indicescount) {
         music_list = mplayer->music_searchresult;
         music_count = mplayer->music_searchresult_count;
         music_renderpos = &mplayer->music_searchrenderpos;
@@ -1346,11 +1325,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         we can render with in the songs box
     */
     TTF_SetFontSize(mplayer->music_font, utext.font_size);
-    #ifdef _WIN32
-    TTF_SizeUNICODE(mplayer->music_font, (Uint16*)L"A", &utext.text_canvas.w, &utext.text_canvas.h);
-    #else
-    TTF_SizeUNICODE(mplayer->music_font, (Uint16*)"A", &utext.text_canvas.w, &utext.text_canvas.h);
-    #endif
+    TTF_SizeUTF8(mplayer->music_font, "A", &utext.text_canvas.w, &utext.text_canvas.h);
     default_w = utext.text_canvas.w, default_h = utext.text_canvas.h + 22;
     // calculation for the scrollability
     int def_outerheight = 22;
@@ -1377,12 +1352,10 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     if(!music_renderlist) {
         return;
     }
-    //printf("music_count is %ld\n", music_count);
     for(size_t i=0;i<music_count;i++) {
         utext = music_list[i].text_info;
         outer_canvas = music_list[i].outer_canvas;
         default_h = utext.text_canvas.h, default_w = utext.text_canvas.w;
-        //printf("i: %ld, music_name: %ls\n", i, music_list[i].music_name);
         if(music_list[i].search_match && !mplayer->musicsearchbar_data) {
             music_list[i].search_match = false;
             music_list[i].search_render = false;
@@ -1401,17 +1374,18 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         // set the calculated x, y position and other related info for the music text and outer canvas
         music_list[i].outer_canvas.x = prev_canvas.x,
         music_list[i].outer_canvas.y = prev_canvas.y;
-        music_list[i].outer_canvas.w = WIDTH - scrollbar.w;
+        music_list[i].outer_canvas.w = WIDTH - scrollbar.w - 5;
         music_list[i].text_info.text_canvas.y = outer_canvas.y +
             ((music_list[i].outer_canvas.h -
             utext.text_canvas.h) / 2);
-        //printf("Okay i'm here\n");
+
         outer_canvas = music_list[i].outer_canvas;
         utext = music_list[i].text_info;
         if(music_rendercount <= max_rendercount) {
             music_renderlist[music_rendercount] = i;
             // Handling scroll events
-            if(mplayer->scroll && (mplayer->music_searchresult || !mplayer->musicsearchbar_data)) {
+            if(mplayer->scroll && mplayer_rect_hover(mplayer, songs_box)
+                && (mplayer->music_searchresult || !mplayer->musicsearchbar_data)) {
                 size_t index = music_renderlist[music_rendercount];
                 bool *music_renderstatus = (mplayer->music_searchresult) ? &music_list[i].search_render :
                                         &music_list[i].render;
@@ -1491,7 +1465,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                 music_list[i].fit = true;
             }
             if(mplayer->music_searchresult || !mplayer->musicsearchbar_data) {
-                SDL_SetRenderDrawColor(mplayer->renderer, 0x3B, 0x35, 0x61, 0xff);
+                SDL_SetRenderDrawColor(mplayer->renderer, 0x3B, 0x35, 0x61, 0xFF);
                 SDL_RenderDrawRect(mplayer->renderer, &music_list[music_renderlist[music_rendercount]].outer_canvas);
                 SDL_RenderFillRect(mplayer->renderer, &music_list[music_renderlist[music_rendercount]].outer_canvas);
             }
@@ -1500,9 +1474,12 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             checkbox_size.x = outer_canvas.x+5;
             checkbox_size.h = outer_canvas.h-10;
             checkbox_size.y = outer_canvas.y + ((outer_canvas.h - checkbox_size.h)/2);
-            music_listplaybtn.btn_canvas.w = 30, music_listplaybtn.btn_canvas.h = outer_canvas.h - 10;
-            music_listplaybtn.btn_canvas.x = (checkbox_size.x + checkbox_size.w) + 20,
-            music_listplaybtn.btn_canvas.y = checkbox_size.y;
+            // Do not modify the x, y, width, and height of the music list play btn canvas whenever we selected music
+            if(!mplayer->tick_count) {
+                music_listplaybtn.btn_canvas.w = 30, music_listplaybtn.btn_canvas.h = outer_canvas.h - 10;
+                music_listplaybtn.btn_canvas.x = (checkbox_size.x + checkbox_size.w) + 20,
+                music_listplaybtn.btn_canvas.y = checkbox_size.y;
+            }
             int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
             SDL_Rect hoverbg_canvas = {0};
             if(mplayer->music_searchresult || !mplayer->musicsearchbar_data) {
@@ -1618,14 +1595,17 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                            we determine if we should restart the current playing music or play a new music
                         */
                         if(Mix_PlayingMusic() && mplayer->playid == i) {
+                            printf("Music is currently playing and we set the position to zero\n");
                             Mix_SetMusicPosition(0);
                             if(Mix_PausedMusic()) {
                                 Mix_ResumeMusic();
                                 music_list[i].music_playing = true;
                             }
                         } else {
+                            printf("The user attempted to play a music for the first time\n");
                             mplayer->current_music = &music_list[i];
                             if(Mix_PlayingMusic()) {
+                                printf("music is was playing before the user selected this new music so halting\n");
                                 Mix_HaltMusic();
                             }
                             mplayer->playid = i;
@@ -1635,10 +1615,15 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                                 mplayer->searchid = i;
                             }
                             music_list[i].music_playing = true;
+                            printf("Currently start position for the selected music is: %f\n",
+                                Mix_GetMusicPosition(mplayer->current_music->music));
                             if(Mix_PlayMusic(mplayer->current_music->music, 1) == -1) {
                                 music_list[i].music_playing = false;
-                                printf("THe music failed %ls to play\n", music_list[i].music_name);
+                                printf("The music failed %ls to play\n", music_list[i].music_name);
                             }
+                            Mix_SetMusicPosition(0);
+                            printf("Currently start position for the selected music is: %f\n",
+                                Mix_GetMusicPosition(mplayer->current_music->music));
                         }
                         mplayer->mouse_clicked = false;
                     }
@@ -1723,9 +1708,6 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         int amount_notbeing_rendered = (int)roundf((float)(songs_box.h - songs_renderheight_total) /
         (float)(music_list[0].text_info.text_canvas.h + def_outerheight));
         int amount_being_rendered = (max_textures-1) - amount_notbeing_rendered;
-        /*printf("songs_renderheight_total = %d, amount_notbeingrendered = %d, amount_beingrendered: %d\n",
-        songs_renderheight_total, amount_notbeing_rendered, amount_being_rendered);
-        songs_box.h - songs_renderheight_total;*/
         
         /* Whenever the first render position is greater than the amount of textures not being rendered then
            we adjust the height of previous render positions and the first_render position
@@ -1754,15 +1736,23 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         .padding_y = -(2 + (int)((double)scrollbar.h / 2.0)),
         .scroll_area = songs_box
     };
+    mplayer->scroll = false;
     mplayer_renderscroll_bar(mplayer, &songsbox_scrollbar, max_textures);
     mplayer->window_resized = false;
     free(music_renderlist); music_renderlist = NULL;
 }
 
 void mplayer_setup_menu(mplayer_t* mplayer) {
+    bool menu_initialized = false;
     mplayer_menu_t* menu = &mplayer->menus[mplayer->menu_opt];
     mplayer->menu = menu;
-    if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU && menu->textures[MPLAYER_TEXT_TEXTURE] == NULL) {
+    // If the menu is already initialized then we won't reinitialize it
+    if(menu->textures[MPLAYER_TEXT_TEXTURE] || menu->textures[MPLAYER_BUTTON_TEXTURE]
+        || menu->textures[MPLAYER_TAB_TEXTURE]) {
+        printf("THe menu has already been initialized\n");
+        return;
+    }
+    if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
         mplayer_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_info_size-1);
         mplayer_createmenu_texture(mplayer, MPLAYER_TAB_TEXTURE, tab_info_size);
         mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, MUSICBTN_COUNT/*MTOTALBTN_COUNT*/);
@@ -1797,8 +1787,22 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
         // Add music to playlist button
         mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
         music_addplaylistbtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
+        menu->textures[MPLAYER_BUTTON_TEXTURE][music_addplaylistbtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
+            music_addplaylistbtn.imgbtn_path);
         menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_addplaylistbtn.texture_idx] = music_addplaylistbtn.btn_canvas;
-    } else if(mplayer->menu_opt == MPLAYER_SETTINGS_MENU && menu->textures[MPLAYER_TEXT_TEXTURE] == NULL) {
+
+        // Add add to button used for adding music to play queue or new playlist as long as they are selected
+        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
+        music_addtobtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
+        menu->textures[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
+            music_addtobtn.imgbtn_path);
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx] = music_addtobtn.btn_canvas;
+        if(menu->textures[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx] == NULL) {
+            printf("FAILED TO LOAD IMAGE FOR MUSIC_ADDTOBTN: %s\n", IMG_GetError());
+        } else {
+            printf("Successfully loaded image for MUSIC_ADDTOBTN\n");
+        }
+    } else if(mplayer->menu_opt == MPLAYER_SETTINGS_MENU) {
         mplayer_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, setting_textinfo_size);
         mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, SETTINGSBTN_COUNT);
         for(size_t i=0;i<SETTINGSBTN_COUNT;i++) {
@@ -1817,8 +1821,6 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
 }
 
 void mplayer_run(mplayer_t* mplayer) {
-    //pthread_t search_thread = 0, searchbar_thread = 0;
-    //pthread_create(&search_thread, NULL, mplayer_searchthread, mplayer);
     mplayer_setup_menu(mplayer);
     while(!mplayer->quit) {
         if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
@@ -1827,7 +1829,6 @@ void mplayer_run(mplayer_t* mplayer) {
             mplayer_settingmenu(mplayer);
         }
     }
-    //pthread_join(search_thread, NULL);
 }
 
 void mplayer_defaultmenu(mplayer_t* mplayer) {
@@ -2051,7 +2052,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     }
     SDL_GetWindowSize(mplayer->window, &WIDTH, &HEIGHT);
     mplayer_set_window_color(mplayer->renderer, window_color);
-    mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0] = mplayer_rendertext(mplayer, mplayer->font, &text_info[0]);
+    if(!mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0]) {
+        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0] = mplayer_rendertext(mplayer, mplayer->font, &text_info[0]);
+    }
     mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][0] = text_info[0].text_canvas;
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0], NULL,
             &text_info[0].text_canvas);
@@ -2059,7 +2062,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     tab_info[0].text_canvas.x = text_canvas.x + text_canvas.w + TAB_SPACING;
     if(!TAB_INIT) { TAB_INIT = 1; }
     for(int i=0;i<tab_info_size;i++) {
-        mplayer->menu->textures[MPLAYER_TAB_TEXTURE][i] = mplayer_rendertab(mplayer, &tab_info[i]);
+        if(!mplayer->menu->textures[MPLAYER_TAB_TEXTURE][i]) {
+            mplayer->menu->textures[MPLAYER_TAB_TEXTURE][i] = mplayer_rendertab(mplayer, &tab_info[i]);
+        }
         if(i > 0) {
             int tab_x = tab_info[i-1].text_canvas.x + tab_info[i-1].text_canvas.w + TAB_SPACING;
             tab_info[i].text_canvas.x = tab_x;
@@ -2133,6 +2138,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         }
         /* Create the search bar for searching for music */
         mplayer_createsearch_bar(mplayer);
+        /* Create a selection menu bar that allows the user to create playlists, select a music to play next etc */
+        mplayer_createselection_menu(mplayer);
         /* Create songs box */
         mplayer_createsongs_box(mplayer);
         if(mplayer->music_searchresult_ready && mplayer->searchthread_created) {
@@ -2151,13 +2158,10 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
 
     // Present all rendered objects on the screen
     SDL_RenderPresent(mplayer->renderer);
-    mplayer_destroytextures(mplayer->menu->textures[MPLAYER_TEXT_TEXTURE], text_info_size-1);
-    mplayer_destroytextures(mplayer->menu->textures[MPLAYER_TAB_TEXTURE], tab_info_size);
-    mplayer_menu_freetext(mplayer, MPLAYER_DEFAULT_MENU);
 }
 
 void mplayer_settingmenu(mplayer_t* mplayer) {
-    text_info_t music_location = {24, NULL, NULL, {0xE5, 0x58, 0x12, 0xFF}/*white*/, {0}};
+    text_info_t music_location = {24, NULL, NULL, {0xE9, 0x76, 0x5B, 0xFF}/*white*/, {0}};
     SDL_Rect* canvas = NULL;
     int btn_id = 0;
     bool mouse_clicked = false;
@@ -2199,11 +2203,16 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     canvas->x = setting_btns[0].btn_canvas.x + setting_btns[0].btn_canvas.w + 5;
 
     SDL_Rect bg_canvas = {0};
-    SDL_Color bg_canvascolor = (SDL_Color){0x39, 0x37, 0x5B, 0xFF}/*{0x4B, 0x3B, 0x40, 0xFF}{0x0F, 0x52, 0x57, 0xFF}{0x81, 0x17, 0x1B, 0xFF}{0x20, 0x81, 0xC3, 0xFF}{0x28, 0x30, 0x44, 0xFF}*/;
+    SDL_Color bg_canvascolor = (SDL_Color){0x83, 0x22, 0x32, 0xFF}/*black(SDL_Color){0x75, 0x0D, 0x37, 0xFF}*/;
     bg_canvas.w = WIDTH, bg_canvas.h = setting_btns[0].btn_canvas.y + setting_btns[0].btn_canvas.h + SETTING_LINESPACING;
     
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
+    SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
+    SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
+    
+    // tooltip for back button
     mplayer_tooltip_t backbtn_tooltip = {
-        .background_color = {0x09, 0x0C, 0x9B, 0xFF},
+        .background_color = {0x1D, 0x26, 0x3B, 0xFF},
         .text_color = {0x30, 0x66, 0xBE, 0xFF},
         .text = setting_btns[0].tooltip_text,
         .x = 1,
@@ -2214,12 +2223,8 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
         .duration_secs = 0,
         .element_canvas = setting_btns[0].btn_canvas,
         .font = mplayer->music_font,
-        .font_size = 18
+        .font_size = 18,
     };
-    
-    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
-    SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
-    SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
 
     canvas->y = roundf((float)(bg_canvas.h - canvas->h) / (float)2);
     setting_btns[0].btn_canvas.y = roundf((float)(bg_canvas.h - setting_btns[0].btn_canvas.h) / (float)2);
@@ -2228,11 +2233,11 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     }
     // Draw a background for the Music Location category
     canvas = &setting_textinfo[1].text_canvas;
-    bg_canvascolor = (SDL_Color){0x0F, 0x52, 0x57, 0xFF};
+    bg_canvascolor = black /*(SDL_Color){0x5A, 0x9D, 0xA6, 0xFF}*/;
     bg_canvas = (SDL_Rect){0};
-    bg_canvas.x = 0, bg_canvas.y = canvas->y;
-    bg_canvas.w = WIDTH, bg_canvas.h = canvas->h + SETTING_LINESPACING;
-    canvas->x = 20/*roundf((float)(WIDTH - canvas->w)/(float)2)*/;
+    bg_canvas.x = setting_textinfo[1].text_canvas.x - 5, bg_canvas.y = canvas->y;
+    bg_canvas.w = setting_textinfo[1].text_canvas.w + 10/*WIDTH*/, bg_canvas.h = canvas->h + SETTING_LINESPACING;
+    canvas->x = 20;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
     SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
     SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
@@ -2270,16 +2275,24 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
             &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][i]);
     }
 
+    // Render tooltip onto the screen whenever the user hovers over the back button    
+    mplayer_rendertooltip(mplayer, &backbtn_tooltip);
+
     // Render each music location from the music paths info file
     music_location.text_canvas.x = 50;
     music_location.text_canvas.y = canvas->y + canvas->h + SETTING_LINESPACING;
     bg_canvas.x = 0, bg_canvas.y = music_location.text_canvas.y;
-    bg_canvascolor = (SDL_Color){0x4B, 0x3B, 0x40, 0xFF}
+    bg_canvascolor = (SDL_Color){0x3C, 0x2C, 0x44, 0xFF};
+
     /*(SDL_Color){0x0F, 0x52, 0x57, 0xFF}(SDL_Color){0x81, 0x17, 0x1B, 0xFF}(SDL_Color){0x1E, 0x96, 0xFC, 0xFF}{0x58, 0x72, 0x91, 0xFF}*/;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
     for(size_t i=0;i<mplayer->location_count;i++) {
+        #ifdef _WIN32
+        music_location.utext = mplayer_widetoutf8(mplayer->locations[i].path); 
+        #else
         music_location.utext = mplayer->locations[i].path;
-        mplayer_get_textsize(mplayer->music_font, music_location.font_size, &music_location);
+        #endif
+        mplayer_get_textsize(mplayer->music_font, &music_location);
         bg_canvas.w = WIDTH, bg_canvas.h = music_location.text_canvas.h + SETTING_LINESPACING;
         music_location.text_canvas.y = bg_canvas.y + roundf((float)(bg_canvas.h - music_location.text_canvas.h) / (float)2);
     
@@ -2315,7 +2328,6 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
         SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][i], NULL,
             &setting_btns[i].btn_canvas);
     }
-    mplayer_rendertooltip(mplayer, &backbtn_tooltip);
     SDL_RenderPresent(mplayer->renderer);
     mplayer_destroytextures(mplayer->menu->textures[MPLAYER_TEXT_TEXTURE],
         mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]);

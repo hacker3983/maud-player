@@ -100,7 +100,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
             size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
                 | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                 (LPSTR)&messageBuffer, 0, NULL);
-            char* path = mplayer_widetostring(mplayer->locations[i].path);
+            char* path = mplayer_widetoutf8(mplayer->locations[i].path);
             fprintf(stderr, "Error: The music location %s: %s", path, messageBuffer);
             free(path); path = NULL;
             LocalFree(messageBuffer);
@@ -118,8 +118,8 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
                 continue;
             }
             do {
-                char *altstr = mplayer_widetostring(fd.cAlternateFileName),
-                    *altpathstr = mplayer_widetostring(mplayer->locations[i].path);
+                char *altstr = mplayer_widetoutf8(fd.cAlternateFileName),
+                    *altpathstr = mplayer_widetoutf8(mplayer->locations[i].path);
                 size_t length_str = wcslen(fd.cFileName), length_altstr = wcslen(fd.cAlternateFileName);
                 size_t path_len = location_len + length_str + 7,
                     altpath_len = location_len + length_altstr + 7;
@@ -239,7 +239,7 @@ void mplayer_addmusic_location(mplayer_t* mplayer, void* locationv) {
     // whenever on windows we use wchar_t to store the unicode data
     // on any other platform we use just a regular char*
     #ifdef _WIN32
-    location = mplayer_widetostring((wchar_t*)locationv);
+    location = mplayer_widetoutf8((wchar_t*)locationv);
     location_length = wcslen((wchar_t*)locationv);
     #else
     location = (char*)locationv;
@@ -301,7 +301,7 @@ void mplayer_delmusic_locationindex(mplayer_t* mplayer, size_t loc_index) {
         #ifdef _WIN32
         // convert from wchar_t to multibyte string path when on windows
         size_t len = wcslen(mplayer->locations[i].path);
-        char* loc_str = mplayer_widetostring(mplayer->locations[i].path);
+        char* loc_str = mplayer_widetoutf8(mplayer->locations[i].path);
         #else
         size_t len = strlen(mplayer->locations[i].path);
         char* loc_str = mplayer->locations[i].path;
@@ -614,7 +614,7 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
             music = music_list[music_count].music;
             if(!music) {
                 #ifdef _WIN32
-                char* music_path = mplayer_widetostring(mplayer->locations[i].files[j].path);
+                char* music_path = mplayer_widetoutf8(mplayer->locations[i].files[j].path);
                 #else
                 char* music_path = mplayer->locations[i].files[j].path;
                 #endif
@@ -754,21 +754,22 @@ void mplayer_browsefolder(mplayer_t* mplayer) {
     #endif
 }
 
-void* mplayer_getmusic_namefrompath(Mix_Music* music, void* path) {
+char* mplayer_getmusic_namefrompath(Mix_Music* music, void* path) {
     // If the music file path is NULL we just return NULL
     if(path == NULL) {
         return NULL;
     }
+    char* music_name = NULL;
     size_t name_len = 0, ext_index = 0, byte_size = sizeof(char);
     #ifdef _WIN32
-    wchar_t *music_name = NULL, *filename = NULL, *filename_cp = NULL;
+    wchar_t *wmusic_name = NULL, *filename = NULL, *filename_cp = NULL;
     wchar_t ext[6] = {0};
     wcscpy(ext, L".");
     wchar_t *(*string_concat)(wchar_t* dest, const wchar_t* src) = &wcscat; 
     filename = wcsrchr((wchar_t*)path, L'\\');
     byte_size = sizeof(wchar_t);
     #else
-    char *music_name = NULL, *filename = NULL, *filename_cp = NULL;
+    char *filename = NULL, *filename_cp = NULL;
     char ext[6] = {0};
     strcpy(ext, ".");
     char *(*string_concat)(char* dest, const char* src) = &strcat;
@@ -812,7 +813,14 @@ void* mplayer_getmusic_namefrompath(Mix_Music* music, void* path) {
     for(size_t i=0;i<name_len;i++) {
         filename_cp[i] = filename[i];
     }
+    /*
+        On windows we need to convert wchar_t into a multibyte string in utf8 encoding
+    */
+    #ifdef _WIN32
+    music_name = mplayer_widetoutf8(filename_cp);
+    #else
     music_name = filename_cp;
+    #endif
     return music_name;
 }
 
