@@ -1,4 +1,5 @@
 #include "music_player.h"
+#include "music_selectionmenu.h"
 #include "music_playerinfo.h"
 
 SDL_Rect *playbtn_canvas = NULL, *playbtn_listcanvas = NULL,
@@ -104,6 +105,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->music_selectionmenu.w = 0, mplayer->music_selectionmenu.h = 0;
     mplayer->music_selectionmenu_checkbox_fillall = false;
     mplayer->music_selectionmenu_checkbox_tickall = false;
+    mplayer->music_selectionmenu_checkbox_clicked = false;
 
     // create music information
     mplayer_getmusicpath_info(mplayer);
@@ -1245,9 +1247,9 @@ void mplayer_displayprogression_control(mplayer_t* mplayer) {
     }
     if(Mix_PlayingMusic() && !Mix_PausedMusic() && mplayer->current_music) {
         mplayer->music_playing = true;
-        /*printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
+        printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
-            full_duration.hrs, full_duration.mins, full_duration.secs, progress);*/
+            full_duration.hrs, full_duration.mins, full_duration.secs, progress);
     }
     mplayer_controlmusic_progression(mplayer);
     if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
@@ -1366,6 +1368,9 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             }
         }
         SDL_Rect temp_canvas = music_list[i].outer_canvas;
+        if(mplayer_selectionmenu_togglesong_checkbox(mplayer, music_list, i)) {
+            continue;
+        }
         if(def_outerheight < 22 && music_list[i].text_info.text_canvas.h + def_outerheight < temp_canvas.h) {
             music_list[i].outer_canvas.h = music_list[i].text_info.text_canvas.h + def_outerheight;
         }
@@ -1572,7 +1577,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                                 mplayer->tick_count++;
                                 break;
                             case true:
-                                /* whenever the checkbox is already ticked then we set the chekcbox as not ticked
+                                /* whenever the checkbox is already ticked then we set the checkbox as not ticked
                                    and the fill equal to false
                                 */
                                 music_list[i].fill = false;
@@ -1660,7 +1665,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                         music_list[i].fill = false;
                     }
                     mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, music_list[i].fill, tick_color,
-                    music_list[i].checkbox_ticked);
+                        music_list[i].checkbox_ticked);
                 } else if(mplayer_music_hover(mplayer, i)) {
                     // whenever no checkbox is ticked and we hover over the music we display the check box
                     // so that the user can click it or select it
@@ -1749,7 +1754,6 @@ void mplayer_setup_menu(mplayer_t* mplayer) {
     // If the menu is already initialized then we won't reinitialize it
     if(menu->textures[MPLAYER_TEXT_TEXTURE] || menu->textures[MPLAYER_BUTTON_TEXTURE]
         || menu->textures[MPLAYER_TAB_TEXTURE]) {
-        printf("THe menu has already been initialized\n");
         return;
     }
     if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
@@ -2010,6 +2014,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 return;
             } else if(mplayer_ibutton_hover(mplayer, music_addfolderbtn)) {
                 mplayer_browsefolder(mplayer);
+                mplayer->mouse_clicked = false;
+                return;
             } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_PLAYBTN])) {
                 // since the pause and play button will be in the same position we
                 // can just check if we clicked in the position for the play button
@@ -2139,7 +2145,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         /* Create the search bar for searching for music */
         mplayer_createsearch_bar(mplayer);
         /* Create a selection menu bar that allows the user to create playlists, select a music to play next etc */
-        mplayer_createselection_menu(mplayer);
+        mplayer_selectionmenu_create(mplayer);
         /* Create songs box */
         mplayer_createsongs_box(mplayer);
         if(mplayer->music_searchresult_ready && mplayer->searchthread_created) {

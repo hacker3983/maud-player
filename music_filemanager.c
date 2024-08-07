@@ -263,6 +263,9 @@ void mplayer_addmusic_location(mplayer_t* mplayer, void* locationv) {
     mplayer_getmusicpath_info(mplayer);
     mplayer->music_locationadded = true;
     mplayer_loadmusics(mplayer);
+    if(mplayer->music_selectionmenu_checkbox_tickall) {
+        mplayer->tick_count = mplayer->music_count;
+    }
     mplayer->music_locationadded = false;
     printf("Successfully added music locations and reloaded the musics:\n");
     printf("mplayer->total_filecount: %zu, mplayer->music_count is %zu\n", mplayer->total_filecount, mplayer->music_count);
@@ -290,6 +293,9 @@ void mplayer_delmusic_locationindex(mplayer_t* mplayer, size_t loc_index) {
                 // and set the remove status to true
                 size_t music_index = mplayer->locations[i].files[j].location_index;
                 mplayer->music_list[music_index].remove = true;
+                if(mplayer->music_list[music_index].checkbox_ticked) {
+                    mplayer->tick_count--;
+                }
             }
             // store the amount of musics that should be removed at that particular location
             // in the variable mplayer->musicpending_removalcount
@@ -364,6 +370,7 @@ void mplayer_delmusic_locationindex(mplayer_t* mplayer, size_t loc_index) {
         free(loc_str); loc_str = NULL;
         #endif
     }
+
     // write the locations buffer that was create to the MUSICPATHS INFO file and close the file stream
     // and deallocate the allocated locations buff
     fwrite(locations_buff, sizeof(char), size, f);
@@ -377,6 +384,13 @@ void mplayer_delmusic_locationindex(mplayer_t* mplayer, size_t loc_index) {
     if(mplayer->musicpending_removalcount > 0) {
         mplayer->music_locationremoved = true;
         mplayer_loadmusics(mplayer);
+        // Whenever for example a music location is removed and the music count becomes zero then we set the selection menu
+        // check all button clicked and ticked status to false;
+        if(mplayer->music_selectionmenu_checkbox_tickall && !mplayer->music_count) {
+            mplayer->music_selectionmenu_checkbox_fillall = false;
+            mplayer->music_selectionmenu_checkbox_tickall = false;
+            mplayer->music_selectionmenu_checkbox_clicked = false;
+        }
         mplayer->music_locationremoved = false;
     }
 }
@@ -484,7 +498,7 @@ void mplayer_removemusics_pendingremoval(mplayer_t* mplayer) {
                 Mix_HaltMusic();
                 mplayer->music_list[i].music_playing = false;
                 mplayer->current_music = NULL;
-            }       
+            }
             mplayer->music_list[i].remove = false;       
             mplayer_freemusic(&mplayer->music_list[i]);
             continue;

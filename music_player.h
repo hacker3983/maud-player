@@ -241,8 +241,10 @@ typedef struct mplayer {
         populate_index;
     bool mouse_clicked, musicsearchbar_clicked, musicsearchcursor_blink, music_hover, music_newsearch, music_playing,
          scroll, progressbar_clicked, progressbar_dragged, mouse_buttondown, music_locationremoved, music_locationadded, music_searchresult_ready,
-         start_search, searchthread_created, update_searchresults, music_selectionmenu_checkbox_tickall,
-         music_selectionmenu_checkbox_fillall;
+         start_search, searchthread_created, update_searchresults,
+         music_selectionmenu_checkbox_fillall,
+         music_selectionmenu_checkbox_tickall,
+         music_selectionmenu_checkbox_clicked;
     SDL_Rect progress_bar, progress_count, music_searchbar,
         music_selectionmenu, music_searchbar_cursor;
 } mplayer_t;
@@ -252,13 +254,6 @@ SDL_Window* mplayer_createwindow(const char* title, int width, int height);
 SDL_Renderer* mplayer_createrenderer(SDL_Window* window);
 TTF_Font* mplayer_openfont(const char* file, int size);
 void mplayer_createsearch_bar(mplayer_t* mplayer);
-void mplayer_createselection_menu(mplayer_t* mplayer);
-void mplayer_displayselection_menu_addbtn(mplayer_t* mplayer, SDL_Rect playbtn_background);
-void mplayer_displayselection_menu_playbtn(mplayer_t* mplayer, text_info_t songs_selectioninfo,
-    SDL_Rect* playbtn_backgroundref);
-void mplayer_selectionmenu_setsongs_selectionstate(mplayer_t* mplayer, bool state);
-void mplayer_displayselection_menu_songs_selection_info(mplayer_t* mplayer, text_info_t* songs_selectioninfo);
-void mplayer_displayselection_menu_checkbox(mplayer_t* mplayer);
 void mplayer_createsongs_box(mplayer_t* mplayer);
 void mplayer_createmusicbar(mplayer_t* mplayer);
 void mplayer_createapp(mplayer_t* mplayer);
