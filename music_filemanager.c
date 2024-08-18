@@ -263,9 +263,6 @@ void mplayer_addmusic_location(mplayer_t* mplayer, void* locationv) {
     mplayer_getmusicpath_info(mplayer);
     mplayer->music_locationadded = true;
     mplayer_loadmusics(mplayer);
-    if(mplayer->music_selectionmenu_checkbox_tickall) {
-        mplayer->tick_count = mplayer->music_count;
-    }
     mplayer->music_locationadded = false;
     printf("Successfully added music locations and reloaded the musics:\n");
     printf("mplayer->total_filecount: %zu, mplayer->music_count is %zu\n", mplayer->total_filecount, mplayer->music_count);
@@ -512,7 +509,7 @@ void mplayer_removemusics_pendingremoval(mplayer_t* mplayer) {
         }
 
         /* As long as the file count in the current location index is greater than zero then we increment the file
-           count by 1 each time we are iterating and also assing the new music path to the new music list
+           count by 1 each time we are iterating and also adding the new music path to the new music list
         */
         if(mplayer->locations[new_locationindex].file_count > 0) {
             mplayer->music_list[i].music_path = mplayer->locations[new_locationindex].files[new_location_filecount].path;
@@ -652,7 +649,7 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
                 music_list[music_count].music = music;
                 music_list[music_count].music_position.hrs = 0,
                 music_list[music_count].music_position.mins = 0,
-                music_list[music_count].music_position.secs = 0;
+                music_list[music_count].music_position.secs = 0,
                 music_list[music_count].music_playing = 0;
     
                 music_durationsecs = Mix_MusicDuration(music);
@@ -665,6 +662,11 @@ void mplayer_loadmusics(mplayer_t* mplayer) {
             /* Render the music_name and initialize the other infos (positions, texture, etc) */
             if(!music_list[music_count].music_name) {
                 music_list[music_count].music_name = mplayer_getmusic_namefrompath(music, mplayer->locations[i].files[j].path);
+            }
+            if(mplayer->music_selectionmenu_checkbox_tickall) {
+                music_list[music_count].fill = true;
+                music_list[music_count].checkbox_ticked = true;
+                mplayer->tick_count++;
             }
             utext.utext = music_list[music_count].music_name;
             utext.text_canvas = music_list[music_count].text_info.text_canvas;

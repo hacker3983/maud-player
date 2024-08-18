@@ -244,7 +244,8 @@ typedef struct mplayer {
          start_search, searchthread_created, update_searchresults,
          music_selectionmenu_checkbox_fillall,
          music_selectionmenu_checkbox_tickall,
-         music_selectionmenu_checkbox_clicked;
+         music_selectionmenu_checkbox_clicked,
+         hover_object;
     SDL_Rect progress_bar, progress_count, music_searchbar,
         music_selectionmenu, music_searchbar_cursor;
 } mplayer_t;

@@ -9,9 +9,19 @@ SDL_Rect *playbtn_canvas = NULL, *playbtn_listcanvas = NULL,
         *shufflebtn_canvas = NULL;
 
 void mplayer_init() {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER);
-    TTF_Init();
-    IMG_Init(IMG_INIT_PNG);
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) < 0) {
+        fprintf(stderr, "SDL_Init(): Failed because %s\n", SDL_GetError());
+        return;
+    }
+    printf("Successfully initialized SDL\n");
+    if(TTF_Init() < 0) {
+        fprintf(stderr, "TTF_Init(): Failed to initialize SDL TTF because %s\n", TTF_GetError());
+        return;
+    }
+    if(!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
+        fprintf(stderr, "IMG_Init(): Failed to initialize SDL_Image because %s\n", IMG_GetError());
+        return;
+    }
     int audioinit_flags = MIX_INIT_FLAC | MIX_INIT_MP3 | MIX_INIT_MOD | MIX_INIT_OGG | MIX_INIT_OPUS;
     if(Mix_Init(audioinit_flags) == audioinit_flags) {
         printf("successfully initialized SDL Mixer\n");

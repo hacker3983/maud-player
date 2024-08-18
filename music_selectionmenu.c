@@ -1,6 +1,7 @@
 #include "music_player.h"
+#include "music_selectionmenu.h"
 
-void mplayer_createselection_menu(mplayer_t* mplayer) {
+void mplayer_selectionmenu_create(mplayer_t* mplayer) {
     // Set the x position for the music selection menu
     mplayer->music_selectionmenu.x = 0;
     // Set the y position calculation for selection menu will be down below the search bar
@@ -14,16 +15,17 @@ void mplayer_createselection_menu(mplayer_t* mplayer) {
     }
     text_info_t songs_selectioninfo = {0};
     SDL_Rect playbtn_background = {0};
-    mplayer_displayselection_menu_checkbox(mplayer);
-    mplayer_displayselection_menu_songs_selection_info(mplayer, &songs_selectioninfo);
-    mplayer_displayselection_menu_playbtn(mplayer, songs_selectioninfo, &playbtn_background);
-    mplayer_displayselection_menu_addbtn(mplayer, playbtn_background);
+    mplayer_selectionmenu_display_checkallbtn(mplayer);
+    mplayer_selectionmenu_display_songselectioninfo(mplayer, &songs_selectioninfo);
+    mplayer_selectionmenu_handle_checkallbtn_toggleoption(mplayer, songs_selectioninfo);
+    mplayer_selectionmenu_display_playbtn(mplayer, songs_selectioninfo, &playbtn_background);
+    mplayer_selectionmenu_display_addbtn(mplayer, playbtn_background);
     if(mplayer_rect_hover(mplayer, mplayer->music_selectionmenu) && mplayer->mouse_clicked) {
         mplayer->mouse_clicked = false;
     }
 }
 
-void mplayer_displayselection_menu_addbtn(mplayer_t* mplayer, SDL_Rect playbtn_background) {
+void mplayer_selectionmenu_display_addbtn(mplayer_t* mplayer, SDL_Rect playbtn_background) {
     // Create add to button used for adding selected musics to current play queue or creating a new playlist of them    
     music_addtobtn.btn_canvas.x = playbtn_background.x + playbtn_background.w + 20;
     music_addtobtn.btn_canvas.y = mplayer->music_selectionmenu.y +
@@ -48,7 +50,7 @@ void mplayer_displayselection_menu_addbtn(mplayer_t* mplayer, SDL_Rect playbtn_b
     SDL_DestroyTexture(addtobtn_text_texture); addtobtn_text_texture = NULL;
 }
 
-void mplayer_displayselection_menu_playbtn(mplayer_t* mplayer, text_info_t songs_selectioninfo,
+void mplayer_selectionmenu_display_playbtn(mplayer_t* mplayer, text_info_t songs_selectioninfo,
     SDL_Rect* playbtn_backgroundref) {
     // Render the play button icon within the selection menu
     // This can be use to play musics that were selected using the check boxes
@@ -99,11 +101,16 @@ void mplayer_displayselection_menu_playbtn(mplayer_t* mplayer, text_info_t songs
     *playbtn_backgroundref = playbtn_background;
 }
 
-void mplayer_displayselection_menu_songs_selection_info(mplayer_t* mplayer, text_info_t* songs_selectioninfo_ref) {
+void mplayer_selectionmenu_display_songselectioninfo(mplayer_t* mplayer, text_info_t* songs_selectioninfo_ref) {
     // The amount of digits that makes up the number of selected songs
     int songs_selectioncount_length = 0;
+    size_t music_selection_tickcount = mplayer->tick_count;
+    if(mplayer->music_selectionmenu_checkbox_tickall) {
+        music_selection_tickcount = mplayer->music_count;
+    }
     // Convert the number of selected songs into a string
-    char* songs_selectioncount_text = mplayer_size_t_tostring(mplayer->tick_count, &songs_selectioncount_length);
+    char* songs_selectioncount_text = mplayer_size_t_tostring(music_selection_tickcount,
+            &songs_selectioncount_length);
 
     // Allocate memory to store number of selected songs information on screen
     // it will look like this "# of songs"
@@ -133,7 +140,62 @@ void mplayer_displayselection_menu_songs_selection_info(mplayer_t* mplayer, text
     free(songs_selectioninfo_text); songs_selectioninfo_text = NULL;
 }
 
-void mplayer_displayselection_menu_checkbox(mplayer_t* mplayer) {
+bool mplayer_selectionmenu_togglesong_checkbox(mplayer_t* mplayer, music_t* music_list, size_t music_checkbox_index) {
+    size_t i = music_checkbox_index;
+    if(mplayer->music_selectionmenu_checkbox_tickall && !music_list[i].checkbox_ticked) {
+        music_list[i].fill = true;
+        music_list[i].checkbox_ticked = true;
+        if(mplayer->tick_count < mplayer->music_count) {
+            mplayer->tick_count++;
+        }
+        return true;
+    } else if(mplayer->music_selectionmenu_checkbox_clicked &&
+        !mplayer->music_selectionmenu_checkbox_tickall && music_list[i].checkbox_ticked) {
+        music_list[i].fill = false;
+        music_list[i].checkbox_ticked = false;
+        mplayer->tick_count--;
+        if(!mplayer->tick_count) {
+            mplayer->music_selectionmenu_checkbox_clicked = false;
+        }
+        return true;
+    }
+    return false;
+}
+
+void mplayer_selectionmenu_handle_checkallbtn_toggleoption(mplayer_t* mplayer, text_info_t songs_selectioninfo) {
+    bool *fill = &mplayer->music_selectionmenu_checkbox_fillall,
+         *tick = &mplayer->music_selectionmenu_checkbox_tickall;
+    SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
+    fill_color = {0xFF, 0xA5, 0x00, 0xff};
+    int width_between = songs_selectioninfo.text_canvas.x - (music_selectionmenu_checkbox_size.x
+        + music_selectionmenu_checkbox_size.w);
+    SDL_Rect music_selectionmenu_togglecanvas = {
+        .x = music_selectionmenu_checkbox_size.x,
+        .y = music_selectionmenu_checkbox_size.y,
+        .w = music_selectionmenu_checkbox_size.w + width_between + songs_selectioninfo.text_canvas.w,
+        .h = music_selectionmenu_checkbox_size.h
+    };
+    
+    if(mplayer_rect_hover(mplayer, music_selectionmenu_togglecanvas)) {
+        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+        *fill = true;
+        if(mplayer->mouse_clicked) {
+            if(*tick) {
+                *fill = false, *tick = false;
+            } else {
+                *tick = true;
+            }
+            mplayer->music_selectionmenu_checkbox_clicked = true;
+        }
+    } else if(!mplayer->music_selectionmenu_checkbox_clicked && mplayer->tick_count == mplayer->music_count) {
+        *fill = true, *tick = true;
+    } else {
+        *fill = false, *tick = false,
+        mplayer->music_selectionmenu_checkbox_clicked = false;
+    }
+}
+
+void mplayer_selectionmenu_display_checkallbtn(mplayer_t* mplayer) {
     bool *fill = &mplayer->music_selectionmenu_checkbox_fillall,
          *tick = &mplayer->music_selectionmenu_checkbox_tickall;
     SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
@@ -148,17 +210,6 @@ void mplayer_displayselection_menu_checkbox(mplayer_t* mplayer) {
     music_selectionmenu_checkbox_size.h = music_listplaybtn.btn_canvas.h;
     music_selectionmenu_checkbox_size.y = mplayer->music_selectionmenu.y +
                                         ((mplayer->music_selectionmenu.h - music_selectionmenu_checkbox_size.h)/2);
-    if(mplayer_rect_hover(mplayer, music_selectionmenu_checkbox_size)) {
-        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
-        *fill = true;
-        if(mplayer->mouse_clicked) {
-            *fill = !(*tick);
-            *tick = !(*tick);
-            mplayer_selectionmenu_setsongs_selectionstate(mplayer, *tick);
-        }
-    } else if(!(*tick)) {
-        *fill = false;
-    }
 
     mcheckbox_t checkbox_info = {0};
     checkbox_info.checkbox_canvas = music_selectionmenu_checkbox_size;
@@ -167,12 +218,4 @@ void mplayer_displayselection_menu_checkbox(mplayer_t* mplayer) {
     checkbox_info.tick = *tick;
     checkbox_info.fill = *fill;
     mplayer_drawcheckbox(mplayer, &checkbox_info);
-}
-
-void mplayer_selectionmenu_setsongs_selectionstate(mplayer_t* mplayer, bool state) {
-    for(size_t i=0;i<mplayer->music_count;i++) {
-        mplayer->music_list[i].fill = state;
-        mplayer->music_list[i].checkbox_ticked = state;
-    }
-    mplayer->tick_count = (state) ? mplayer->music_count : 0;
 }
