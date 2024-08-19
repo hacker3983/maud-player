@@ -26,8 +26,10 @@ void mplayer_init() {
     if(Mix_Init(audioinit_flags) == audioinit_flags) {
         printf("successfully initialized SDL Mixer\n");
     }
-    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
-    setlocale(LC_ALL,"it_IT.UTF-16");
+    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 8192) < 0) {
+        fprintf(stderr, "Mix_OpenAudio Failed\n");
+    }
+    setlocale(LC_ALL,"it_IT.UTF-8");
 }
 
 SDL_Window* mplayer_createwindow(const char* title, int width, int height) {
@@ -85,6 +87,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->progress_count.x = 0, mplayer->progress_count.y = 0;
     mplayer->music_searchbar.w = 0, mplayer->music_searchbar.x = 0;
     mplayer->music_searchbar.h = 0, mplayer->music_searchbar.y = 0;
+    mplayer->progressbar_dragged = false,
     mplayer->progressbar_clicked = false, mplayer->musicsearchbar_clicked = false;
     mplayer->musicsearchbar_data = NULL, mplayer->musicsearchbar_datainfo = (text_info_t){0};
     mplayer->musicsearchbar_datalen = 0, mplayer->musicsearchbar_datarenderpos = 0;
@@ -286,6 +289,7 @@ bool mplayer_progressbar_hover(mplayer_t* mplayer) {
     int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
     if((mouse_x <= mplayer->progress_bar.x + mplayer->progress_bar.w && mouse_x >= mplayer->progress_bar.x) &&
         (mouse_y <= mplayer->progress_bar.y + mplayer->progress_bar.h && mouse_y >= mplayer->progress_bar.y)) {
+            printf("Progress bar hovering status is True\n");
             return true;
     }
     return false;
@@ -1147,6 +1151,8 @@ void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Col
         mplayer->progress_count.w = percentageof;
         mplayer->progress_count.h = mplayer->progress_bar.h;
         if(mplayer->progressbar_clicked || mplayer->progressbar_dragged) {
+            printf("mplayer->progressbar_clicked = %d, mpalyer->progressbar_dragged = %d\n",
+                mplayer->progressbar_clicked, mplayer->progressbar_dragged);
             // Determine what percentage of the widtth of the progress bar was clicked
             int seek_position = mplayer->mouse_x - mplayer->progress_bar.x;
             percentage = (double)seek_position / (double)mplayer->progress_bar.w * (double)100;
@@ -1191,6 +1197,7 @@ void mplayer_controlmusic_progression(mplayer_t* mplayer) {
                 }
                 // check if playing the music was successful and set music playing status to true if sucessful
                 if(!Mix_PlayMusic(mplayer->current_music->music, 1)) {
+                    printf("Called Mix_Playing func in progression controls\n");
                     mplayer->music_list[mplayer->playid].music_playing = true;
                 }
             }
@@ -1257,9 +1264,9 @@ void mplayer_displayprogression_control(mplayer_t* mplayer) {
     }
     if(Mix_PlayingMusic() && !Mix_PausedMusic() && mplayer->current_music) {
         mplayer->music_playing = true;
-        printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
+        /*printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
-            full_duration.hrs, full_duration.mins, full_duration.secs, progress);
+            full_duration.hrs, full_duration.mins, full_duration.secs, progress);*/
     }
     mplayer_controlmusic_progression(mplayer);
     if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
@@ -1620,7 +1627,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                             printf("The user attempted to play a music for the first time\n");
                             mplayer->current_music = &music_list[i];
                             if(Mix_PlayingMusic()) {
-                                printf("music is was playing before the user selected this new music so halting\n");
+                                printf("music was playing before the user selected this new music so halting\n");
                                 Mix_HaltMusic();
                             }
                             mplayer->playid = i;
@@ -1632,12 +1639,18 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                             music_list[i].music_playing = true;
                             printf("Currently start position for the selected music is: %f\n",
                                 Mix_GetMusicPosition(mplayer->current_music->music));
+                            //SDL_Delay(10000);
+                            Mix_SetMusicPosition(0);
                             if(Mix_PlayMusic(mplayer->current_music->music, 1) == -1) {
                                 music_list[i].music_playing = false;
                                 printf("The music failed %ls to play\n", music_list[i].music_name);
+                            } else {
+                                printf("Playing a music in render songs function\n");
+                                printf("Currently start position for the selected music is: %lf\n",
+                                Mix_GetMusicPosition(mplayer->current_music->music));
                             }
-                            Mix_SetMusicPosition(0);
-                            printf("Currently start position for the selected music is: %f\n",
+                            //Mix_SetMusicPosition(0);
+                            printf("Currently start position for the selected music is: %lf\n",
                                 Mix_GetMusicPosition(mplayer->current_music->music));
                         }
                         mplayer->mouse_clicked = false;
@@ -2136,6 +2149,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     mplayer_rendertooltip(mplayer, &settings_button_tooltip);
     if(!mplayer->music_list) {
         mplayer_loadmusics(mplayer);
+        printf("Successfully loaded all musics\n");
         if(mplayer->musicsearchbar_data && mplayer->music_list) {
             mplayer->music_newsearch = true;
         }
