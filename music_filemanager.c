@@ -182,6 +182,7 @@ void mplayer_getmusic_filepaths(mplayer_t* mplayer) {
         #endif
         mplayer->locations[i].files = musiclocation_files;
         mplayer->locations[i].file_count = musicloc_filecount;
+        mplayer->locations[i].render = true;
         musiclocation_files = NULL, musiclocation_files = calloc(1, sizeof(musloc_t));
         musicloc_filecount = 0;
     }

@@ -73,6 +73,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->cursors[MPLAYER_CURSOR_TYPEABLE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
     mplayer->music_id = 0, mplayer->prevmusic_id = 0, mplayer->playid = 0, mplayer->repeat_id = MUSIC_REPEATALLBTN,
     mplayer->searchid = 0;
+    mplayer->scroll_y = 0;
     mplayer->music_renderpos = 0;
     mplayer->music_searchrenderpos = 0;
     mplayer->music_renderinit = false;
@@ -1264,9 +1265,9 @@ void mplayer_displayprogression_control(mplayer_t* mplayer) {
     }
     if(Mix_PlayingMusic() && !Mix_PausedMusic() && mplayer->current_music) {
         mplayer->music_playing = true;
-        /*printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
+        printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n", mplayer->current_music->music_name,
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
-            full_duration.hrs, full_duration.mins, full_duration.secs, progress);*/
+            full_duration.hrs, full_duration.mins, full_duration.secs, progress);
     }
     mplayer_controlmusic_progression(mplayer);
     if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
@@ -1617,17 +1618,14 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                            we determine if we should restart the current playing music or play a new music
                         */
                         if(Mix_PlayingMusic() && mplayer->playid == i) {
-                            printf("Music is currently playing and we set the position to zero\n");
                             Mix_SetMusicPosition(0);
                             if(Mix_PausedMusic()) {
                                 Mix_ResumeMusic();
                                 music_list[i].music_playing = true;
                             }
                         } else {
-                            printf("The user attempted to play a music for the first time\n");
                             mplayer->current_music = &music_list[i];
                             if(Mix_PlayingMusic()) {
-                                printf("music was playing before the user selected this new music so halting\n");
                                 Mix_HaltMusic();
                             }
                             mplayer->playid = i;
@@ -1637,21 +1635,11 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                                 mplayer->searchid = i;
                             }
                             music_list[i].music_playing = true;
-                            printf("Currently start position for the selected music is: %f\n",
-                                Mix_GetMusicPosition(mplayer->current_music->music));
                             //SDL_Delay(10000);
                             Mix_SetMusicPosition(0);
                             if(Mix_PlayMusic(mplayer->current_music->music, 1) == -1) {
                                 music_list[i].music_playing = false;
-                                printf("The music failed %ls to play\n", music_list[i].music_name);
-                            } else {
-                                printf("Playing a music in render songs function\n");
-                                printf("Currently start position for the selected music is: %lf\n",
-                                Mix_GetMusicPosition(mplayer->current_music->music));
                             }
-                            //Mix_SetMusicPosition(0);
-                            printf("Currently start position for the selected music is: %lf\n",
-                                Mix_GetMusicPosition(mplayer->current_music->music));
                         }
                         mplayer->mouse_clicked = false;
                     }
@@ -2317,6 +2305,9 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     /*(SDL_Color){0x0F, 0x52, 0x57, 0xFF}(SDL_Color){0x81, 0x17, 0x1B, 0xFF}(SDL_Color){0x1E, 0x96, 0xFC, 0xFF}{0x58, 0x72, 0x91, 0xFF}*/;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
     for(size_t i=0;i<mplayer->location_count;i++) {
+        /*if(!mplayer->locations[i].render) {
+            continue;
+        }*/
         #ifdef _WIN32
         music_location.utext = mplayer_widetoutf8(mplayer->locations[i].path); 
         #else
@@ -2325,10 +2316,11 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
         mplayer_get_textsize(mplayer->music_font, &music_location);
         bg_canvas.w = WIDTH, bg_canvas.h = music_location.text_canvas.h + SETTING_LINESPACING;
         music_location.text_canvas.y = bg_canvas.y + roundf((float)(bg_canvas.h - music_location.text_canvas.h) / (float)2);
-    
+
         canvas = &music_removebtn.btn_canvas;
         canvas->x = WIDTH - (canvas->w * 2);
         canvas->y = music_location.text_canvas.y;
+
         if(mplayer_ibutton_hover(mplayer, music_removebtn)) {
             mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
             if(mouse_clicked) {

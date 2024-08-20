@@ -81,7 +81,9 @@ typedef struct music_location {
     char* path;
     #endif
     size_t location_index;
-    size_t file_count; 
+    size_t file_count;
+    SDL_Rect canvas;
+    bool render, init;
     struct music_location* files;
 } musloc_t;
 
@@ -231,7 +233,7 @@ typedef struct mplayer {
     size_t* music_searchresult_indices;
     size_t music_id, prevmusic_id, playid, searchid, music_count, music_searchresult_count, music_renderpos,
            music_searchrenderpos, music_searchresult_indicescount, music_populatedresult_count, tick_count;
-    int repeat_id, mouse_x, mouse_y, scroll_type;
+    int repeat_id, mouse_x, mouse_y, scroll_type, scroll_y;
     char* musicsearchbar_data, *current_musicsearch_query, *additional_musicsearch_query;
     text_info_t musicsearchbar_datainfo;
     int musicsearchcursor_relpos;
