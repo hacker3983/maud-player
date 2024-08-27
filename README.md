@@ -18,7 +18,7 @@ A Music Audio Player Written In C.
 
 **Windows:**
 
-<image src="https://cdn.discordapp.com/attachments/881618109394485248/1255737722568577136/image.png?ex=66c4c0a3&is=66c36f23&hm=2fc78d6d4e460e8e206b581ccd330b596e85de3b1d7d67da99c51f2bae377f8f&">
+<image src="Screenshots/image-5.png">
 <br><br>
 
 <image src="Screenshots/image.png">
