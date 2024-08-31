@@ -29,7 +29,11 @@ text_info_t text_info[] = {
     {36, "Music", NULL, text_color, {10}},
     {18, "Type here to search for music", NULL, white, {0, 0}},
 },
-            setting_textinfo[] = {{50, "Go back to home", NULL, {0xEA, 0xF2, 0x7C, 0xFF} /*{0xE5, 0x58, 0x12, 0xFF}{0x95, 0xC6, 0x23, 0xFF}{0xF9, 0x62, 0x7D, 0xFF}{0x0C, 0xF5, 0x74, 0xFF}*/, {10, 0}}, {40, "Music locations:", NULL, {0xF0, 0xE1, 0x79, 0xFF} /*{0xF9, 0x62, 0x7D, 0xFF}{0xAD, 0x2E, 0x24, 0xFF}*/ /*{0x0C, 0xF5, 0x74, 0xFF}{0xF7, 0xF9, 0xF9, 0xFF}{0x58, 0x72, 0x91, 0xFF}*/, {0, 0}}, {28, "Add folder", NULL, {0xF0, 0xE1, 0x79, 0xFF}, {0, 0}}};
+setting_textinfo[] = {
+    {50, "Go back to home", NULL, {0xEA, 0xF2, 0x7C, 0xFF} /*{0xE5, 0x58, 0x12, 0xFF}{0x95, 0xC6, 0x23, 0xFF}{0xF9, 0x62, 0x7D, 0xFF}{0x0C, 0xF5, 0x74, 0xFF}*/, {10, 0}},
+    {40, "Music locations:", NULL, {0xF0, 0xE1, 0x79, 0xFF} /*{0xF9, 0x62, 0x7D, 0xFF}{0xAD, 0x2E, 0x24, 0xFF}*/ /*{0x0C, 0xF5, 0x74, 0xFF}{0xF7, 0xF9, 0xF9, 0xFF}{0x58, 0x72, 0x91, 0xFF}*/, {0, 0}},
+    {28, "Add folder", NULL, {0xF0, 0xE1, 0x79, 0xFF}, {0, 0}}
+};
 
 tabinfo_t tab_info[] = {
     {28, "Songs", text2_color, underline_color, {0, 9}, SONGS_TAB, true, false},
@@ -59,7 +63,11 @@ music_listplaybtn = {"images/play-button (1).png", "Play", MUSIC_LISTPLAYBTN, {0
 music_addfolderbtn = {"images/add-folder.png", "Add a music location (Directory or Folder)", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0},
 music_addplaylistbtn = {"images/add-to-playlist.png", "Add Playlist", MUSIC_ADDPLAYLISTBTN, {0, 0, 30, 40}, false, false, 0},
 music_addtobtn = {"images/add.png", "Add to", MUSIC_ADDTOBTN, {0, 0, 30, 40}, false, false, 0},
-music_removebtn = {"images/remove.png", "Remove", MUSIC_REMOVEBTN, {0, 0, 24, 24}, false, false, 0}, setting_btns[] = {{"images/back-button.png", "Home", BACK_BUTTON, {5, 0, 50, 50}, false, false, 0}, {"images/add-folder.png", "Add a music location (Directory or Folder)", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0}},
+music_removebtn = {"images/remove.png", "Remove", MUSIC_REMOVEBTN, {0, 0, 24, 24}, false, false, 0},
+setting_btns[] = {
+    {"images/back-button.png", "Home", BACK_BUTTON, {5, 0, 50, 50}, false, false, 0},
+    {"images/add-folder.png", "Add a music location (Directory or Folder)", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0}
+},
 setting_iconbtn = {"images/settings (5).png", "Settings", SETTING_BUTTON, {0, 9, 45, 45}, false, false, 0};
 SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},
          img_border = {10, 0, 80, 70};
