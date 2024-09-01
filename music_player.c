@@ -122,6 +122,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->music_selectionmenu_checkbox_tickall = false;
     mplayer->music_selectionmenu_checkbox_clicked = false;
     mplayer->settingmenu_scrollcontainers = NULL;
+    mplayer->settingmenu_scrollcontainer_index = 0;
     mplayer->settingmenu_scrollcontainer_count = 0;
     mplayer->settingmenu_scrollcontainer_init = false;
 

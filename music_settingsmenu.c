@@ -12,13 +12,13 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     int btn_id = 0,
         disappear_x = 0, disappear_y = 0;
     bool mouse_clicked = false;
-
-    mplayer_set_window_title(mplayer, SETTING_TITLE);
-    mplayer_set_window_color(mplayer->renderer, setting_wincolor);
     while(SDL_PollEvent(&mplayer->e)) {
         if(mplayer->e.type == SDL_QUIT) {
             mplayer->quit = 1;
             break;
+        } else if(mplayer->e.type == SDL_WINDOWEVENT_SIZE_CHANGED) {
+            printf("Resize\n");
+            mplayer_settingmenu_scrollcontainer_update(mplayer);
         } else if(mplayer->e.type == SDL_MOUSEMOTION) {
             mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
             if(mplayer_ibuttons_hover(mplayer, setting_btns, &btn_id, SETTINGSBTN_COUNT)) {
@@ -36,14 +36,14 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
                     return;
                 }
             }
-            mouse_clicked = true;
-        } else if(mplayer->e.type == SDL_WINDOWEVENT_RESIZED) {
-            mplayer_settingmenu_scrollcontainer_update(mplayer);
+            mouse_clicked = true, mplayer->mouse_clicked = true;
         } else if(mplayer->e.type == SDL_MOUSEWHEEL) {
             mplayer_scrolltype_getmousewheel_scrolltype(mplayer->e, &mplayer->scroll_type);
             mplayer->scroll = true;
         }
     }
+    mplayer_set_window_title(mplayer, SETTING_TITLE);
+    mplayer_set_window_color(mplayer->renderer, setting_wincolor);
     if(mplayer->scroll && mplayer->settingmenu_scrollcontainer_init) {
         mplayer_scrollcontainers_performscroll(mplayer->settingmenu_scrollcontainers, mplayer->scroll_type,
             SETTING_LINESPACING * 2, mplayer->settingmenu_scrollcontainer_count);
@@ -209,7 +209,7 @@ void mplayer_settingmenu_render_settingbtns(mplayer_t* mplayer) {
 }
 
 void mplayer_settingmenu_render_musiclocations(mplayer_t* mplayer, SDL_Rect* previous_canvas, int disappear_y) {
-    bool mouse_clicked = mplayer->mouse_clicked;
+    bool *mouse_clicked = &mplayer->mouse_clicked;
     mplayer_scrollcontainer_t scroll_container = {0};
     text_info_t music_location = {24,
         NULL,
@@ -261,10 +261,10 @@ void mplayer_settingmenu_render_musiclocations(mplayer_t* mplayer, SDL_Rect* pre
 
         if(mplayer_ibutton_hover(mplayer, music_removebtn)) {
             mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
-            if(mouse_clicked) {
+            if(*mouse_clicked) {
                 printf("removing music location %ls along with related musics\n", mplayer->locations[i].path);
                 mplayer_delmusic_locationindex(mplayer, i);;
-                mouse_clicked = false;
+                *mouse_clicked = false;
                 continue;
             }
         }
@@ -294,4 +294,5 @@ void mplayer_settingmenu_scrollcontainer_update(mplayer_t* mplayer) {
     mplayer_scrollcontainer_destroylist(&mplayer->settingmenu_scrollcontainers,
     &mplayer->settingmenu_scrollcontainer_count);
     mplayer->settingmenu_scrollcontainer_init = false;
+    printf("mplayer->settingmenu_scrollcontainer was updated\n");
 }

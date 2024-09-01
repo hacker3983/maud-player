@@ -11,6 +11,8 @@
 #include <errno.h>
 #include <wctype.h>
 #include <pthread.h>
+#include "music_scrollcontainers.h"
+#include "music_playerscroll_types.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <shlwapi.h>
@@ -112,13 +114,6 @@ typedef struct text_buttons {
     SDL_Rect btn_canvas;
     int id, hover;
 } tbtn_t;
-
-enum scroll_types {
-    MPLAYERSCROLL_UP,
-    MPLAYERSCROLL_DOWN,
-    MPLAYERSCROLL_RIGHT,
-    MPLAYERSCROLL_LEFT
-};
 
 enum musical_buttons {
     MUSIC_PLAYBTN,
@@ -241,21 +236,22 @@ typedef struct mplayer {
         music_failcount, music_maxrenderpos, match_maxrenderpos, music_renderinit,
         musicpending_removalcount, musiclocation_count, current_musicsearch_querylen,
         populate_index;
+    mplayer_scrollcontainer_t* settingmenu_scrollcontainers;
+    size_t settingmenu_scrollcontainer_index, settingmenu_scrollcontainer_count;
     bool mouse_clicked, musicsearchbar_clicked, musicsearchcursor_blink, music_hover, music_newsearch, music_playing,
          scroll, progressbar_clicked, progressbar_dragged, mouse_buttondown, music_locationremoved, music_locationadded, music_searchresult_ready,
          start_search, searchthread_created, update_searchresults,
          music_selectionmenu_checkbox_fillall,
          music_selectionmenu_checkbox_tickall,
          music_selectionmenu_checkbox_clicked,
-         hover_object;
+         hover_object,
+         settingmenu_scrollcontainer_init;
     SDL_Rect progress_bar, progress_count, music_searchbar,
         music_selectionmenu, music_searchbar_cursor;
 } mplayer_t;
 
 void mplayer_init();
-SDL_Window* mplayer_createwindow(const char* title, int width, int height);
-SDL_Renderer* mplayer_createrenderer(SDL_Window* window);
-TTF_Font* mplayer_openfont(const char* file, int size);
+void mplayer_setup_menu(mplayer_t* mplayer);
 void mplayer_createsearch_bar(mplayer_t* mplayer);
 void mplayer_createsongs_box(mplayer_t* mplayer);
 void mplayer_createmusicbar(mplayer_t* mplayer);
@@ -273,6 +269,9 @@ void mplayer_addmusic_location(mplayer_t* mplayer, void* locationv);
 void mplayer_setmusic_removestatus(mplayer_t* mplayer, size_t index);
 void mplayer_removemusics_pendingremoval(mplayer_t* mplayer);
 void mplayer_delmusic_locationindex(mplayer_t* mplayer, size_t loc_index);
+SDL_Window* mplayer_createwindow(const char* title, int width, int height);
+SDL_Renderer* mplayer_createrenderer(SDL_Window* window);
+TTF_Font* mplayer_openfont(const char* file, int size);
 mtime_t mplayer_music_gettime(double seconds);
 bool mplayer_musiclocation_exists(mplayer_t* mplayer, void* locationv);
 void mplayer_freemusic(music_t* music_ref);
@@ -281,7 +280,6 @@ void mplayer_freemusic_list(mplayer_t* mplayer);
 void mplayer_freemusicpath_info(mplayer_t* mplayer);
 void mplayer_run(mplayer_t* mplayer);
 void mplayer_defaultmenu(mplayer_t* mplayer);
-void mplayer_settingmenu(mplayer_t* mplayer);
 void mplayer_setcursor(mplayer_t* mplayer, int cursor_type);
 void mplayer_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color);
 void mplayer_set_window_title(mplayer_t* mplayer, const char* title);
