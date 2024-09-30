@@ -44,7 +44,7 @@ void mplayer_selectionmenu_display_addbtn(mplayer_t* mplayer, SDL_Rect playbtn_b
         .utext = NULL
     };
 
-    SDL_Texture* addtobtn_text_texture = mplayer_rendertext(mplayer, mplayer->font, &addtobtn_text);
+    SDL_Texture* addtobtn_text_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font, &addtobtn_text);
     SDL_RenderCopy(mplayer->renderer, addtobtn_texture, NULL, &music_addtobtn.btn_canvas);
     SDL_RenderCopy(mplayer->renderer, addtobtn_text_texture, NULL, &addtobtn_text.text_canvas);
     SDL_DestroyTexture(addtobtn_text_texture); addtobtn_text_texture = NULL;
@@ -75,7 +75,7 @@ void mplayer_selectionmenu_display_playbtn(mplayer_t* mplayer, text_info_t songs
         .text_color = {0xFF, 0xFF, 0xFF, 0xFF},
         .utext = NULL
     };
-    SDL_Texture* playtext_texture = mplayer_rendertext(mplayer, mplayer->font, &play_text);
+    SDL_Texture* playtext_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font, &play_text);
     int playbtn_background_height = music_listplaybtn.btn_canvas.h + 10;
     SDL_Rect playbtn_background = {
         .x = music_listplaybtn.btn_canvas.x - 5,
@@ -132,7 +132,7 @@ void mplayer_selectionmenu_display_songselectioninfo(mplayer_t* mplayer, text_in
         .utext = NULL
     };
 
-    SDL_Texture* songs_selectioninfo_texture = mplayer_rendertext(mplayer, mplayer->font, &songs_selectioninfo);
+    SDL_Texture* songs_selectioninfo_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font, &songs_selectioninfo);
     SDL_RenderCopy(mplayer->renderer, songs_selectioninfo_texture, NULL, &songs_selectioninfo.text_canvas);
     SDL_DestroyTexture(songs_selectioninfo_texture); songs_selectioninfo_texture = NULL;
     *songs_selectioninfo_ref = songs_selectioninfo;

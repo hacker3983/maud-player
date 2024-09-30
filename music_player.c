@@ -1,7 +1,14 @@
 #include "music_player.h"
+#include "music_tooltips.h"
+#include "music_checkboxes.h"
+#include "music_textmanager.h"
+#include "music_filemanager.h"
+#include "music_menumanager.h"
+#include "music_texturemanager.h"
 #include "music_selectionmenu.h"
 #include "music_settingsmenu.h"
 #include "music_playerinfo.h"
+#include "music_playerbutton_manager.h"
 
 SDL_Rect *playbtn_canvas = NULL, *playbtn_listcanvas = NULL,
         *prevbtn_canvas = NULL, *skipbtn_canvas = NULL,
@@ -30,7 +37,7 @@ void mplayer_init() {
     if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 8192) < 0) {
         fprintf(stderr, "Mix_OpenAudio Failed\n");
     }
-    setlocale(LC_ALL,"it_IT.UTF-8");
+    setlocale(LC_ALL, "it_IT.UTF-8");
 }
 
 SDL_Window* mplayer_createwindow(const char* title, int width, int height) {
@@ -127,19 +134,19 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->settingmenu_scrollcontainer_init = false;
 
     // create music information
-    mplayer_getmusicpath_info(mplayer);
+    mplayer_filemanager_getmusicpath_info(mplayer);
     if(mplayer->locations == NULL) {
         #ifdef _WIN32
         wchar_t* location = NULL;
         char* username = getenv("USERNAME"), *location_str = NULL, root_path[4] = {0};
         location_str = calloc(16+strlen(username), sizeof(char));
-        mplayer_getroot_path(root_path);
+        mplayer_filemanager_getroot_path(root_path);
         strcpy(location_str, root_path);
         strcat(location_str, "Users\\");
         strcat(location_str, username);
         strcat(location_str, "\\Music");
         location = mplayer_stringtowide(location_str);
-        mplayer_addmusic_location(mplayer, location);
+        mplayer_filemanager_addmusic_location(mplayer, location);
         free(location_str); location_str = NULL;
         free(location); location = NULL;
         #else
@@ -194,26 +201,6 @@ bool mplayer_rect_hover(mplayer_t* mplayer, SDL_Rect rect) {
     return false;
 }
 
-bool mplayer_ibutton_hover(mplayer_t* mplayer, ibtn_t button) {
-    int x = button.btn_canvas.x, y = button.btn_canvas.y,
-        w = button.btn_canvas.w, h = button.btn_canvas.h;
-    if((mplayer->mouse_x <= x + h && mplayer->mouse_x >= x) &&
-        (mplayer->mouse_y <= y + h && mplayer->mouse_y >= y)) {
-            return true;
-    }
-    return false;
-}
-
-bool mplayer_tbutton_hover(mplayer_t* mplayer, tbtn_t button) {
-    int x = button.btn_canvas.x, y = button.btn_canvas.y,
-        w = button.btn_canvas.w, h = button.btn_canvas.h;
-    if((mplayer->e.motion.x <= x + h && mplayer->e.motion.x >= x) &&
-        (mplayer->e.motion.y <= y + h && mplayer->e.motion.y >= y)) {
-            return true;
-    }
-    return false;
-}
-
 bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t tab_count) {
     for(size_t i=0;i<tab_count;i++) {
         if(mplayer_tab_hover(mplayer, tabs[i])) {
@@ -223,30 +210,6 @@ bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t
             tabs[i].hover = true; return true;
         }
         tabs[i].hover = false;
-    }
-    return false;
-}
-
-bool mplayer_ibuttons_hover(mplayer_t* mplayer, ibtn_t* buttons, int* btn_id, size_t button_count) {
-    for(size_t i=0;i<button_count;i++) {
-        if(mplayer_ibutton_hover(mplayer, buttons[i])) {
-            if(btn_id != NULL) {
-                *btn_id = buttons[i].id;
-            }
-            buttons[i].hover = true; return true;
-        }
-    }
-    return false;
-}
-
-bool mplayer_tbuttons_hover(mplayer_t* mplayer, tbtn_t* buttons, int* btn_id, size_t button_count) {
-    for(size_t i=0;i<button_count;i++) {
-        if(mplayer_tbutton_hover(mplayer, buttons[i])) {
-            if(btn_id != NULL) {
-                *btn_id = buttons[i].id;
-            }
-            buttons[i].hover = true; return true;
-        }
     }
     return false;
 }
@@ -278,15 +241,6 @@ bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer) {
     if((mouse_x <= canvas.x + canvas.w && mouse_x >= canvas.x) &&
         (mouse_y <= canvas.y + canvas.h && mouse_y >= canvas.y)) {
         return true;
-    }
-    return false;
-}
-
-bool mplayer_checkbox_hovered(mplayer_t* mplayer) {
-    int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
-    if((mouse_x <= checkbox_size.x + checkbox_size.w && mouse_x >= checkbox_size.x) &&
-        (mouse_y <= checkbox_size.y + checkbox_size.h && mouse_y >= checkbox_size.y)) {
-            return true;
     }
     return false;
 }
@@ -363,7 +317,7 @@ void mplayer_search_music(mplayer_t* mplayer) {
 
 void mplayer_populate_searchresults(mplayer_t* mplayer) {
     if(!mplayer->musicsearchbar_data && mplayer->music_searchresult) {
-        mplayer_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
+        mplayer_filemanager_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
         mplayer->music_searchresult_ready = false;
         return;
     }
@@ -373,20 +327,20 @@ void mplayer_populate_searchresults(mplayer_t* mplayer) {
         // or if the music search bar is empty and contains data we free the search results
         if(mplayer->music_searchresult && mplayer->music_newsearch) {
             printf("Freeing previous seach result\n");
-            mplayer_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
+            mplayer_filemanager_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
         } else if(mplayer->music_searchresult && mplayer->update_searchresults) {
-            mplayer_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
+            mplayer_filemanager_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
             printf("Freeing previous seach result\n");
         }
         return;
     }
     if(mplayer->music_searchresult && mplayer->music_newsearch) {
         printf("Freeing previous search results\n");
-        mplayer_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
+        mplayer_filemanager_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
         mplayer->music_newsearch = false;
     } else if(mplayer->update_searchresults && mplayer->music_searchresult) {
         printf("Freeing previous search results\n");
-        mplayer_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
+        mplayer_filemanager_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
         mplayer->update_searchresults = false;
     }
     if(!mplayer->music_searchresult_indices) {
@@ -405,7 +359,7 @@ void mplayer_populate_searchresults(mplayer_t* mplayer) {
     if(mplayer->populate_index < mplayer->music_searchresult_count) {
         size_t music_index = mplayer->music_searchresult_indices[mplayer->populate_index];
         printf("in mplayer_populate_searchresults(...): at line %d\n", __LINE__);
-        mplayer_copymusicinfo_fromsearchindex(mplayer, music_index,
+        mplayer_filemanager_copymusicinfo_fromsearchindex(mplayer, music_index,
             &mplayer->music_searchresult[mplayer->populate_index]);
         printf("in mplayer_populate_searchresults(...): at line %d\n", __LINE__);
         mplayer->match_maxrenderpos = mplayer->populate_index;
@@ -439,145 +393,6 @@ void* mplayer_searchthread(void* arg) {
     return NULL;
 }
 
-char* mplayer_stringtolower(char** string, size_t wlen) {
-    char* new_string = calloc(wlen+1, sizeof(char));
-    for(size_t i=0;i<wlen;i++) {
-        new_string[i] = tolower((*string)[i]);
-    }
-    free(*string); *string = new_string;
-    return new_string;
-}
-
-wchar_t* mplayer_widetolower(wchar_t** wstring, size_t len) {
-    wchar_t* new_wstring = calloc(len+1, sizeof(wchar_t));
-    for(size_t i=0;i<len;i++) {
-        new_wstring[i] = towlower((*wstring)[i]);
-    }
-    free(*wstring); *wstring = new_wstring;
-    return new_wstring;
-}
-
-wchar_t* mplayer_stringtowide(const char* string) {
-    if(!string) {
-        printf("From mplayer string to wide(): the string give as a parameter is NULL\n");
-        return NULL;
-    }
-    size_t wstr_len = mbstowcs(NULL, string, 0)+1; // get the length of the string in wide characters
-    size_t str_len = strlen(string);
-    if(wstr_len == -1) {
-        printf("mbstowcs(): failed at first\n");
-        wstr_len = str_len;
-    }
-    wchar_t* wstring = calloc(wstr_len+1, sizeof(wchar_t));
-    size_t ret = mbstowcs(wstring, string, wstr_len);
-    if(ret == -1) {
-        printf("mbstowc(): failed again\n");
-        wchar_t wc = 0;
-        for(size_t i=0;i<wstr_len;i++) {
-            if(mbtowc(&wc, &string[i], 1) < 0) {
-                printf("Failed to convert to from string to wide as mbtowc() failed\n");
-            }
-            wstring[i] = wc;
-        }
-    }
-    return wstring;
-}
-
-
-char* mplayer_dupstr(char* string, size_t len) {
-    if(!string) {
-        return NULL;
-    }
-    char *new_dupstr = (char*)calloc(len+1, sizeof(char));
-    strncpy(new_dupstr, (char*)string, len);
-    return new_dupstr;
-}
-
-char* mplayer_strcasestr(char* haystack, char* needle) {
-    size_t haystack_len = 0, needle_len = 0, match_substrlen = 0;
-    if(!haystack) {
-        return NULL;
-    }
-    if(!needle) {
-        return NULL;
-    }
-    haystack_len = strlen((char*)haystack), needle_len = strlen((char*)needle);
-    char *haystack_dup = (char*)mplayer_dupstr(haystack, haystack_len),
-         *needle_dup = (char*)mplayer_dupstr(needle, needle_len);
-    mplayer_stringtolower(&haystack_dup, haystack_len);
-    mplayer_stringtolower(&needle_dup, needle_len);
-    char* match_substr = strstr(haystack_dup, needle_dup);
-    if(match_substr) {
-        match_substrlen = strlen(match_substr);
-        match_substr = (char*)mplayer_dupstr(match_substr, match_substrlen);
-    }
-    free(haystack_dup); haystack_dup = NULL;
-    free(needle_dup); needle_dup = NULL;
-    return match_substr;
-}
-
-char* mplayer_widetoutf8(wchar_t* wstring) {
-    size_t len_wstr = 0;
-    char* string = NULL;
-    #ifdef _WIN32
-    len_wstr = WideCharToMultiByte(CP_UTF8, 0, wstring, -1, NULL, 0, NULL, NULL);
-    string = calloc(len_wstr+1, sizeof(char));
-    WideCharToMultiByte(CP_UTF8, 0, wstring, -1, string, len_wstr, NULL, NULL);
-    #else
-    len_wstr = wcstombs(NULL, wstring, 0);
-    string = calloc(len_wstr+1, sizeof(char));
-    wcstombs(string, wstring, len_wstr);
-    #endif
-    return string;
-}
-
-SDL_Texture* mplayer_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t* text_info) {
-    if(!text_info->text) {
-        printf("mplayer_rendertext(): the text given is equal to NULL\n");
-        return NULL;
-    } 
-    SDL_Rect text_canvas = text_info->text_canvas;
-    TTF_SetFontSize(font, text_info->font_size);
-    if(TTF_SizeText(font, text_info->text, &text_canvas.w, &text_canvas.h)) {
-    }
-    SDL_Surface* surface = TTF_RenderText_Blended(font, text_info->text, text_info->text_color);
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(mplayer->renderer, surface);
-    SDL_FreeSurface(surface);
-    text_info->text_canvas = text_canvas;
-    return texture;
-}
-
-int mplayer_get_textsize(TTF_Font* font, text_info_t* utext_info) {
-    int ret = 0;
-    if((ret = TTF_SetFontSize(font, utext_info->font_size)) < 0) {
-        return ret;
-    }
-    if(utext_info->utext) {
-        ret = TTF_SizeUTF8(font, utext_info->utext, &utext_info->text_canvas.w, &utext_info->text_canvas.h);
-    } else if(utext_info->text) {
-        ret = TTF_SizeText(font, utext_info->text, &utext_info->text_canvas.w, &utext_info->text_canvas.h);
-    }
-    return ret;
-}
-
-SDL_Texture* mplayer_renderunicode_text(mplayer_t* mplayer, TTF_Font* font, text_info_t* utext_info) {
-    if(!utext_info->utext) {
-        return NULL;
-    }
-    if(mplayer_get_textsize(font, utext_info) == -1) {
-        printf("mplayer_get_textsize(): failed because %s\n", SDL_GetError());
-        return NULL;
-    }
-    SDL_Surface* surface = TTF_RenderUTF8_Blended(font, utext_info->utext, utext_info->text_color);
-    if(surface == NULL) {
-        printf("TTF_RenderUTF8_BLENDED(): Failed because %s\n", SDL_GetError());
-        return NULL;
-    }
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(mplayer->renderer, surface);
-    SDL_FreeSurface(surface); surface = NULL;
-    return texture;
-}
-
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info) {
     SDL_Rect text_canvas = tab_info->text_canvas;
     TTF_SetFontSize(mplayer->font, tab_info->font_size);
@@ -599,42 +414,6 @@ void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info) {
     }
 }
 
-void mplayer_centertext(mplayer_t* mplayer, text_info_t* text_info) {
-    SDL_Rect text_canvas = text_info->text_canvas;
-    text_canvas.x = (WIDTH - text_canvas.w) / 2, text_canvas.y = (WIDTH - text_canvas.h) / 2;
-    text_info->text_canvas = text_canvas;
-}
-
-void mplayer_centerx(mplayer_t* mplayer, text_info_t* text_info) {
-    SDL_Rect text_canvas = text_info->text_canvas;
-    text_canvas.x = (WIDTH- text_canvas.w) /2;
-    text_info->text_canvas = text_canvas;
-}
-
-void mplayer_centery(mplayer_t* mplayer, text_info_t* text_info) {
-    SDL_Rect text_canvas = text_info->text_canvas;
-    text_canvas.y = (WIDTH - text_canvas.h)/2;
-    text_info->text_canvas = text_canvas;
-}
-
-void mplayer_destroytextures(SDL_Texture** textures, size_t n) {
-    if(textures == NULL) {
-        return;
-    }
-    for(size_t i=0;i<n;i++) {
-        if(textures[i] != NULL) {
-            SDL_DestroyTexture(textures[i]);
-            textures[i] = NULL;
-        }
-    }
-}
-
-void mplayer_menu_freetext(mplayer_t* mplayer, int menu_option) {
-    free(mplayer->menus[menu_option].texts);
-    mplayer->menus[menu_option].texts = NULL;
-    mplayer->menus[menu_option].text_count = 0;
-}
-
 void mplayer_destroyapp(mplayer_t* mplayer) {
     // Close the Fonts used by the program to render text
     TTF_CloseFont(mplayer->font);
@@ -650,24 +429,24 @@ void mplayer_destroyapp(mplayer_t* mplayer) {
     mplayer->musicsearchbar_datalen = 0;
 
     // Free music resources used by program
-    mplayer_freemusic_list(mplayer);
-    mplayer_freemusicpath_info(mplayer);
+    mplayer_filemanager_freemusic_list(mplayer);
+    mplayer_filemanager_freemusicpath_info(mplayer);
 
     // free the text informations
-    mplayer_menu_freetext(mplayer, MPLAYER_DEFAULT_MENU);
-    mplayer_menu_freetext(mplayer, MPLAYER_SETTINGS_MENU);
+    mplayer_menumanager_menu_freetext(mplayer, MPLAYER_DEFAULT_MENU);
+    mplayer_menumanager_menu_freetext(mplayer, MPLAYER_SETTINGS_MENU);
 
     // free texture objects for default menu
-    mplayer_destroytextures(mplayer->menus[MPLAYER_DEFAULT_MENU].textures[MPLAYER_TEXT_TEXTURE],
+    mplayer_texturemanager_destroytextures(mplayer->menus[MPLAYER_DEFAULT_MENU].textures[MPLAYER_TEXT_TEXTURE],
         mplayer->menus[MPLAYER_DEFAULT_MENU].texture_sizes[MPLAYER_TEXT_TEXTURE]);
-    mplayer_destroytextures(mplayer->menus[MPLAYER_DEFAULT_MENU].textures[MPLAYER_BUTTON_TEXTURE],
+    mplayer_texturemanager_destroytextures(mplayer->menus[MPLAYER_DEFAULT_MENU].textures[MPLAYER_BUTTON_TEXTURE],
         mplayer->menus[MPLAYER_DEFAULT_MENU].texture_sizes[MPLAYER_BUTTON_TEXTURE]);
 
     // free texture objects for setting menu
-    mplayer_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].textures[MPLAYER_TEXT_TEXTURE],
+    mplayer_texturemanager_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].textures[MPLAYER_TEXT_TEXTURE],
         mplayer->menus[MPLAYER_SETTINGS_MENU].texture_sizes[MPLAYER_TEXT_TEXTURE]);
 
-    mplayer_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].textures[MPLAYER_BUTTON_TEXTURE],
+    mplayer_texturemanager_destroytextures(mplayer->menus[MPLAYER_SETTINGS_MENU].textures[MPLAYER_BUTTON_TEXTURE],
         mplayer->menus[MPLAYER_SETTINGS_MENU].texture_sizes[MPLAYER_BUTTON_TEXTURE]);
 
     for(size_t i=0;i<MENU_COUNT;i++) {
@@ -764,9 +543,9 @@ void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures
             target_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MUSIC_PLAYBTN];
             if(Mix_PlayingMusic() && !Mix_PausedMusic()) {
                 target_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][MUSIC_PAUSEBTN];
-                mplayer_rendertooltip(mplayer, &musicbtn_tooltip);
+                mplayer_tooltip_render(mplayer, &musicbtn_tooltip);
             } else if(Mix_PlayingMusic() && i == MUSIC_PLAYBTN) {
-                mplayer_rendertooltip(mplayer, &musicbtn_tooltip);
+                mplayer_tooltip_render(mplayer, &musicbtn_tooltip);
             }
             if(music_btns[i].clicked) {
                 if(Mix_PlayingMusic() && Mix_PausedMusic() && music_btns[MUSIC_PLAYBTN].clicked) {
@@ -781,13 +560,13 @@ void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures
         } else if(i == MUSIC_REPEATALLBTN || i == MUSIC_REPEATONEBTN || i == MUSIC_REPEATOFFBTN) {
             target_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][mplayer->repeat_id];
             if(i == mplayer->repeat_id) {
-                mplayer_rendertooltip(mplayer, &musicbtn_tooltip);
+                mplayer_tooltip_render(mplayer, &musicbtn_tooltip);
             }
             SDL_RenderCopy(mplayer->renderer, target_texture, NULL, &music_btns[mplayer->repeat_id].btn_canvas);
             continue;
         }
         if(Mix_PlayingMusic()) {
-            mplayer_rendertooltip(mplayer, &musicbtn_tooltip);
+            mplayer_tooltip_render(mplayer, &musicbtn_tooltip);
         }
         SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][i],
             NULL, &music_btns[i].btn_canvas);
@@ -816,7 +595,7 @@ void mplayer_createsearch_bar(mplayer_t* mplayer) {
     text_info_t *placeholder = &text_info[1], *searchbar_data = &mplayer->musicsearchbar_datainfo;
     SDL_Texture* texture = NULL;
     if(!mplayer->musicsearchbar_data && !mplayer->musicsearchbar_clicked) {
-        texture = mplayer_rendertext(mplayer, mplayer->music_font, placeholder);
+        texture = mplayer_textmanager_rendertext(mplayer, mplayer->music_font, placeholder);
         placeholder->text_canvas.y = mplayer->music_searchbar.y + ((mplayer->music_searchbar.h -
             placeholder->text_canvas.h) / 2),
         placeholder->text_canvas.x = mplayer->music_searchbar.x + ((mplayer->music_searchbar.w -
@@ -861,7 +640,7 @@ void mplayer_createsearch_bar(mplayer_t* mplayer) {
         searchbar_data->text_color = white;
         searchbar_data->text_canvas.x = mplayer->music_searchbar.x + 1,
         searchbar_data->utext = NULL;
-        texture = mplayer_rendertext(mplayer, mplayer->music_font, searchbar_data);
+        texture = mplayer_textmanager_rendertext(mplayer, mplayer->music_font, searchbar_data);
         searchbar_data->text_canvas.y = mplayer->music_searchbar.y + ((mplayer->music_searchbar.h -
             searchbar_data->text_canvas.h) / 2);
         SDL_RenderCopy(mplayer->renderer, texture, NULL, &searchbar_data->text_canvas);
@@ -928,162 +707,6 @@ void mplayer_createsongs_box(mplayer_t* mplayer) {
     SDL_RenderDrawRect(mplayer->renderer, &songs_box);
 }
 
-void mplayer_menu_appendtext(mplayer_t* mplayer, text_info_t text) {
-    if(!mplayer->menu->texts) {
-        mplayer->menu->texts = calloc(1, sizeof(text_info_t));
-        mplayer->menu->texts[0] = text;
-        mplayer->menu->text_count++;
-        return;
-    }
-    mplayer->menu->text_count++;
-    mplayer->menu->texts = realloc(mplayer->menu->texts,
-        (mplayer->menu->text_count) * sizeof(text_info_t));
-    mplayer->menu->texts[mplayer->menu->text_count-1] = text;
-}
-
-SDL_Texture** mplayer_createtexture_list(size_t amount) {
-    SDL_Texture** objtexture_list = calloc(amount, sizeof(SDL_Texture*));
-    return objtexture_list;
-}
-
-void mplayer_realloctexture(SDL_Texture*** texture_objs, size_t* amount) {
-    (*amount)++;
-    (*texture_objs) = realloc(*texture_objs, (*amount) * sizeof(SDL_Texture*));
-    (*texture_objs)[(*amount)-1] = NULL;
-}
-
-void mplayer_createmenu_texture(mplayer_t* mplayer, int texture_type, size_t amount) {
-    mplayer->menu->textures[texture_type] = mplayer_createtexture_list(amount);
-    mplayer->menu->texture_canvases[texture_type] = calloc(amount, sizeof(SDL_Rect));
-    mplayer->menu->texture_sizes[texture_type] = amount;
-}
-
-void mplayer_addmenu_texture(mplayer_t* mplayer, int texture_type) {
-    size_t *amount = &mplayer->menu->texture_sizes[texture_type];
-    mplayer_realloctexture(&mplayer->menu->textures[texture_type],
-       amount);
-    mplayer->menu->texture_canvases[texture_type] = realloc(mplayer->menu->texture_canvases[texture_type],
-        (*amount) * sizeof(SDL_Rect));
-    memset(mplayer->menu->texture_canvases[texture_type], 0, (*amount) * sizeof(SDL_Rect));
-}
-
-void mplayer_menuplace_texture(mplayer_t* mplayer, int type, SDL_Texture* texture, SDL_Rect canvas) {
-    size_t texture_size = mplayer->menu->texture_sizes[type];
-    mplayer->menu->textures[type][texture_size-1] = texture;
-    mplayer->menu->texture_canvases[type][texture_size-1] = canvas;
-}
-
-void mplayer_menuadd_canvas(mplayer_t* mplayer, SDL_Rect canvas) {
-    size_t* canvas_count = &mplayer->menu->canvas_count;
-    if(canvas_count == 0) {
-        mplayer->menu->canvases = calloc(1, sizeof(SDL_Rect));
-        mplayer->menu->canvases[(*canvas_count)++] = canvas;
-        return;
-    }
-    mplayer->menu->canvases = realloc(mplayer->menu->canvases, ((*canvas_count)+1) * sizeof(SDL_Rect));
-    mplayer->menu->canvases[*canvas_count] = canvas;
-    (*canvas_count)++;
-}
-
-void mplayer_drawcheckbox(mplayer_t* mplayer, mcheckbox_t* checkbox_info) {
-    int mid_x1 = checkbox_info->checkbox_canvas.x,
-        mid_y1 = checkbox_info->checkbox_canvas.y,
-        mid_x2 = checkbox_info->checkbox_canvas.x + checkbox_info->checkbox_canvas.w,
-        mid_y2 = checkbox_info->checkbox_canvas.y + checkbox_info->checkbox_canvas.h;
-    SDL_Color box_color = checkbox_info->box_color, tick_color = checkbox_info->tk_color,
-        fill_color = checkbox_info->fill_color;
-    SDL_SetRenderDrawColor(mplayer->renderer, box_color.r, box_color.g, box_color.b, box_color.a);
-    SDL_RenderDrawRect(mplayer->renderer, &checkbox_info->checkbox_canvas);
-    if(checkbox_info->fill) {
-        SDL_SetRenderDrawColor(mplayer->renderer, fill_color.r, fill_color.g, fill_color.b, fill_color.a);
-        SDL_RenderFillRect(mplayer->renderer, &checkbox_info->checkbox_canvas);
-    }
-    if(checkbox_info->tick) {
-        SDL_SetRenderDrawColor(mplayer->renderer, tick_color.r, tick_color.g, tick_color.b, tick_color.a);
-        // draw longest line for tick
-        int y = 10, y2 = 6;
-        for(int i=0;i<2;i++) {
-            int k = mid_x1+10;
-            for(int j=mid_y2-y;j>=mid_y1+5;j--) {
-                SDL_RenderDrawPoint(mplayer->renderer, k, j);
-                k++;
-            }
-            y--;
-        }
-        y = 10;
-        for(int i=0;i<2;i++) {
-            int k = mid_x1+10;
-            for(int j=mid_y2-y;j>=(mid_y2-y2)-y;j--) {
-                SDL_RenderDrawPoint(mplayer->renderer, k, j);
-                k--;
-            }
-            y--; y2--;
-        }
-    }
-}
-
-void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color, SDL_Color fill_color,
-    bool fill, SDL_Color tick_color, bool check) {
-    size_t music_id = mplayer->music_id;
-    mcheckbox_t checkbox_info = {0};
-    checkbox_info.checkbox_canvas = checkbox_size;
-    checkbox_info.box_color = box_color;
-    checkbox_info.tk_color = tick_color;
-    checkbox_info.tick = check;
-    checkbox_info.fill = fill;
-    mplayer_drawcheckbox(mplayer, &checkbox_info);
-}
-
-void mplayer_rendertooltip(mplayer_t* mplayer, mplayer_tooltip_t* tooltip) {
-    // Ensure that the tooltip pops up only when the user hovers of the particular elements canvas such as a button
-    // or icon on screen
-    if(!mplayer_rect_hover(mplayer, tooltip->element_canvas)) {
-        return;
-    }
-    SDL_Rect tooltip_canvas = {
-        tooltip->element_canvas.x, // The horizontal position for the tooltip
-        tooltip->element_canvas.y, // The vertical position for the tooltip
-        tooltip->margin_x * 2, // Width of the tooltip
-        tooltip->margin_y * 2  // Height of the tooltip
-    };
-    // Get the width and the height of the text so we can determine the tooltip box dimensions
-    TTF_SetFontSize(tooltip->font, tooltip->font_size);
-    int tooltip_text_w = 0, tooltip_text_h = 0;
-    TTF_SizeText(tooltip->font, tooltip->text, &tooltip_text_w, &tooltip_text_h);
-    tooltip_canvas.w += tooltip_text_w;
-    tooltip_canvas.h += tooltip_text_h;
-
-    if(tooltip->x < 0) {
-        tooltip_canvas.x -= tooltip_canvas.w + (-tooltip->x);
-    } else {
-        tooltip_canvas.x += tooltip->x + tooltip->element_canvas.w;
-    }
-
-    if(tooltip->y < 0) {
-        tooltip_canvas.y -= tooltip_canvas.h + (-tooltip->y);
-    } else if(tooltip->y > 0) {
-        tooltip_canvas.y -= tooltip_canvas.h + tooltip->y;
-    }
-
-    // TODO: IMPLEMENT BALLOON TOOLTIP and also the delay functionality
-    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(tooltip->background_color));
-    SDL_RenderDrawRect(mplayer->renderer, &tooltip_canvas);
-    SDL_RenderFillRect(mplayer->renderer, &tooltip_canvas);
-
-    SDL_Rect tooltip_textcanvas = {
-        tooltip_canvas.x + tooltip->margin_x,
-        tooltip_canvas.y + tooltip->margin_y,
-        tooltip_text_w,
-        tooltip_text_h
-    };
-
-    SDL_Surface* tooltip_surface = TTF_RenderText_Blended(tooltip->font, tooltip->text, tooltip->text_color);
-    SDL_Texture* tooltip_texture = SDL_CreateTextureFromSurface(mplayer->renderer, tooltip_surface);
-    SDL_RenderCopy(mplayer->renderer, tooltip_texture, NULL, &tooltip_textcanvas);
-    SDL_FreeSurface(tooltip_surface); tooltip_surface = NULL;
-    SDL_DestroyTexture(tooltip_texture); tooltip_texture = NULL;
-}
-
 void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration) {
     text_info_t duration_texts[2] = {
         // The current duration of the music being played
@@ -1114,7 +737,7 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
     sprintf(duration_texts[0].text, "%02d:%02d:%02d", curr_duration.hrs, curr_duration.mins, curr_duration.secs);
     sprintf(duration_texts[1].text, "%02d:%02d:%02d", full_duration.hrs, full_duration.mins, full_duration.secs);
     for(int i=0;i<2;i++) {
-        textures[i] = mplayer_rendertext(mplayer, mplayer->music_font, &duration_texts[i]);
+        textures[i] = mplayer_textmanager_rendertext(mplayer, mplayer->music_font, &duration_texts[i]);
     }
     
     mplayer->progress_bar.w = WIDTH - (duration_texts[0].text_canvas.w * 2) - 20,
@@ -1132,7 +755,7 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
         text_info_t music_name = {18, NULL, NULL, white, {20, 0, 0, 0}};
         music_name.text_canvas.y = prevbtn_canvas->y - 10;
         music_name.utext = mplayer->current_music->music_name;
-        SDL_Texture* texture = mplayer_renderunicode_text(mplayer, mplayer->music_font, &music_name);
+        SDL_Texture* texture = mplayer_textmanager_renderunicode(mplayer, mplayer->music_font, &music_name);
         // As long as the texture returned is not NULL then we copy the texture to the renderer
         if(texture) {
             SDL_RenderCopy(mplayer->renderer, texture, NULL, &music_name.text_canvas);
@@ -1264,7 +887,7 @@ void mplayer_displayprogression_control(mplayer_t* mplayer) {
         curr_durationsecs = Mix_GetMusicPosition(mplayer->current_music->music);
         full_durationsecs = mplayer->current_music->music_durationsecs;
         full_duration = mplayer->current_music->music_duration;
-        curr_duration = mplayer_music_gettime(curr_durationsecs);
+        curr_duration = mplayer_filemanager_music_gettime(curr_durationsecs);
         if(full_durationsecs > 0.0) {
             progress = (int)(curr_durationsecs / full_durationsecs * 100.0);
         }
@@ -1764,85 +1387,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
     free(music_renderlist); music_renderlist = NULL;
 }
 
-void mplayer_setup_menu(mplayer_t* mplayer) {
-    bool menu_initialized = false;
-    mplayer_menu_t* menu = &mplayer->menus[mplayer->menu_opt];
-    mplayer->menu = menu;
-    // If the menu is already initialized then we won't reinitialize it
-    if(menu->textures[MPLAYER_TEXT_TEXTURE] || menu->textures[MPLAYER_BUTTON_TEXTURE]
-        || menu->textures[MPLAYER_TAB_TEXTURE]) {
-        return;
-    }
-    if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
-        mplayer_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_info_size-1);
-        mplayer_createmenu_texture(mplayer, MPLAYER_TAB_TEXTURE, tab_info_size);
-        mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, MUSICBTN_COUNT/*MTOTALBTN_COUNT*/);
-        // Load Button Textures and Canvas's
-        for(int i=0;i<MUSICBTN_COUNT;i++) {
-            menu->textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, music_btns[i].imgbtn_path);
-            menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = music_btns[i].btn_canvas;
-            music_btns[i].texture_idx = i;
-        }
-        
-        // Add a texture for the add folder icon button
-        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
-        music_addfolderbtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
-        menu->textures[MPLAYER_BUTTON_TEXTURE][music_addfolderbtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
-            music_addfolderbtn.imgbtn_path);
-        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_addfolderbtn.texture_idx] = music_addfolderbtn.btn_canvas;
-
-        // Add a texture for settings icon button
-        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
-        setting_iconbtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
-        menu->textures[MPLAYER_BUTTON_TEXTURE][setting_iconbtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
-            setting_iconbtn.imgbtn_path);
-        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][setting_iconbtn.texture_idx] = setting_iconbtn.btn_canvas;
-
-        // music list play button icon
-        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
-        music_listplaybtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
-        menu->textures[MPLAYER_BUTTON_TEXTURE][music_listplaybtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
-            music_listplaybtn.imgbtn_path);
-        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_listplaybtn.texture_idx] = music_listplaybtn.btn_canvas;
-
-        // Add music to playlist button
-        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
-        music_addplaylistbtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
-        menu->textures[MPLAYER_BUTTON_TEXTURE][music_addplaylistbtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
-            music_addplaylistbtn.imgbtn_path);
-        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_addplaylistbtn.texture_idx] = music_addplaylistbtn.btn_canvas;
-
-        // Add add to button used for adding music to play queue or new playlist as long as they are selected
-        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
-        music_addtobtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
-        menu->textures[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
-            music_addtobtn.imgbtn_path);
-        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx] = music_addtobtn.btn_canvas;
-        if(menu->textures[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx] == NULL) {
-            printf("FAILED TO LOAD IMAGE FOR MUSIC_ADDTOBTN: %s\n", IMG_GetError());
-        } else {
-            printf("Successfully loaded image for MUSIC_ADDTOBTN\n");
-        }
-    } else if(mplayer->menu_opt == MPLAYER_SETTINGS_MENU) {
-        mplayer_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, setting_textinfo_size);
-        mplayer_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, SETTINGSBTN_COUNT);
-        for(size_t i=0;i<SETTINGSBTN_COUNT;i++) {
-            menu->textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, setting_btns[i].imgbtn_path);
-            menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = setting_btns[i].btn_canvas;
-            setting_btns[i].texture_idx = i;
-        }
-
-        // music location remove button
-        mplayer_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
-        music_removebtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
-        menu->textures[MPLAYER_BUTTON_TEXTURE][music_removebtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
-            music_removebtn.imgbtn_path);
-        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_removebtn.texture_idx] = music_removebtn.btn_canvas;
-    }
-}
-
 void mplayer_run(mplayer_t* mplayer) {
-    mplayer_setup_menu(mplayer);
+    mplayer_menumanager_setup_menu(mplayer);
     while(!mplayer->quit) {
         if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
             mplayer_defaultmenu(mplayer);
@@ -1975,10 +1521,10 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             }
         } else if(mplayer->e.type == SDL_MOUSEMOTION) {
             mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
-            if(mplayer_ibutton_hover(mplayer, setting_iconbtn)) {
+            if(mplayer_buttonmanager_ibutton_hover(mplayer, setting_iconbtn)) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
                 setting_iconbtn.hover = true;
-            } else if(mplayer_ibutton_hover(mplayer, music_addfolderbtn)) {
+            } else if(mplayer_buttonmanager_ibutton_hover(mplayer, music_addfolderbtn)) {
                 mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
                 music_addfolderbtn.hover = true;
             } else if(mplayer_tabs_hover(mplayer, tab_info, &tab_hoverid, tab_info_size) && TAB_INIT) {
@@ -2017,15 +1563,15 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 active_tab = tab_hoverid;
             } else if(mplayer_progressbar_hover(mplayer) && Mix_PlayingMusic()) {
                 mplayer->progressbar_clicked = true;
-            } else if(mplayer_ibutton_hover(mplayer, setting_iconbtn)) {
+            } else if(mplayer_buttonmanager_ibutton_hover(mplayer, setting_iconbtn)) {
                 mplayer->menu_opt = MPLAYER_SETTINGS_MENU;
-                mplayer_setup_menu(mplayer);
+                mplayer_menumanager_setup_menu(mplayer);
                 return;
-            } else if(mplayer_ibutton_hover(mplayer, music_addfolderbtn)) {
-                mplayer_browsefolder(mplayer);
+            } else if(mplayer_buttonmanager_ibutton_hover(mplayer, music_addfolderbtn)) {
+                mplayer_filemanager_browsefolder(mplayer);
                 mplayer->mouse_clicked = false;
                 return;
-            } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_PLAYBTN])) {
+            } else if(mplayer_buttonmanager_ibutton_hover(mplayer, music_btns[MUSIC_PLAYBTN])) {
                 // since the pause and play button will be in the same position we
                 // can just check if we clicked in the position for the play button
                 switch(music_btns[MUSIC_PLAYBTN].clicked) {
@@ -2042,11 +1588,11 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                         break;
 
                 }
-            } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_PREVBTN])) {
+            } else if(mplayer_buttonmanager_ibutton_hover(mplayer, music_btns[MUSIC_PREVBTN])) {
                 music_btns[MUSIC_PREVBTN].clicked = true;
-            } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_SKIPBTN])) {
+            } else if(mplayer_buttonmanager_ibutton_hover(mplayer, music_btns[MUSIC_SKIPBTN])) {
                 music_btns[MUSIC_SKIPBTN].clicked = true;
-            } else if(mplayer_ibutton_hover(mplayer, music_btns[MUSIC_REPEATALLBTN])) {
+            } else if(mplayer_buttonmanager_ibutton_hover(mplayer, music_btns[MUSIC_REPEATALLBTN])) {
                 if(mplayer->repeat_id == MUSIC_REPEATOFFBTN) {
                     mplayer->repeat_id = MUSIC_REPEATALLBTN;
                     break;
@@ -2068,7 +1614,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     SDL_GetWindowSize(mplayer->window, &WIDTH, &HEIGHT);
     mplayer_set_window_color(mplayer->renderer, window_color);
     if(!mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0]) {
-        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0] = mplayer_rendertext(mplayer, mplayer->font, &text_info[0]);
+        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0] = mplayer_textmanager_rendertext(mplayer, mplayer->font, &text_info[0]);
     }
     mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][0] = text_info[0].text_canvas;
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0], NULL,
@@ -2110,7 +1656,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         .font = mplayer->music_font,
         .font_size = 18
     };
-    mplayer_rendertooltip(mplayer, &add_folder_tooltip);
+    mplayer_tooltip_render(mplayer, &add_folder_tooltip);
 
     // Create settings button on screen
     setting_iconbtn.btn_canvas.x = WIDTH - setting_iconbtn.btn_canvas.w - 2;
@@ -2132,9 +1678,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         .font = mplayer->music_font,
         .font_size = 18
     };
-    mplayer_rendertooltip(mplayer, &settings_button_tooltip);
+    mplayer_tooltip_render(mplayer, &settings_button_tooltip);
     if(!mplayer->music_list) {
-        mplayer_loadmusics(mplayer);
+        mplayer_filemanager_loadmusics(mplayer);
         printf("Successfully loaded all musics\n");
         if(mplayer->musicsearchbar_data && mplayer->music_list) {
             mplayer->music_newsearch = true;

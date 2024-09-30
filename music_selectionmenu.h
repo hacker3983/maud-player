@@ -1,6 +1,8 @@
 #ifndef _MPLAYER_SELECTIONMENU_H
 #define _MPLAYER_SELECTIONMENU_H
 #include "music_player.h"
+#include "music_checkboxes.h"
+#include "music_textmanager.h"
 
 void mplayer_selectionmenu_create(mplayer_t* mplayer);
 void mplayer_selectionmenu_display_addbtn(mplayer_t* mplayer, SDL_Rect playbtn_background);

@@ -8,11 +8,18 @@ LINK_FILES += "-lm -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image -lSDL2_mixer"
 
 C_FILES = [
     "music_player.c",
+    "music_string.c",
+    "music_tooltips.c",
+    "music_checkboxes.c",
+    "music_menumanager.c",
     "music_filemanager.c",
+    "music_textmanager.c",
+    "music_texturemanager.c",
     "music_scrollcontainers.c",
     "music_selectionmenu.c",
     "music_settingsmenu.c",
-    "music_playerscroll_types.c"
+    "music_playerscroll_types.c",
+    "music_playerbutton_manager.c"
 ]
 
 O_FILES = " ".join(C_FILES).replace(".c", ".o")
