@@ -128,6 +128,13 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->music_selectionmenu_checkbox_fillall = false;
     mplayer->music_selectionmenu_checkbox_tickall = false;
     mplayer->music_selectionmenu_checkbox_clicked = false;
+    mplayer->music_selectionmenu_addtobtn_clicked = false;
+    mplayer->music_selectionmenu_addtobtn_dropdown_clicked = false;
+
+    mplayer->music_selectionmenu_addtocanvas = (SDL_Rect){0};
+    mplayer->music_selectionmenu_addto_dropdown = (SDL_Rect){0};
+    mplayer->music_selectionmenu_addto_dropdown_color = window_color;
+
     mplayer->settingmenu_scrollcontainers = NULL;
     mplayer->settingmenu_scrollcontainer_index = 0;
     mplayer->settingmenu_scrollcontainer_count = 0;
@@ -559,7 +566,8 @@ void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures
             continue;
         } else if(i == MUSIC_REPEATALLBTN || i == MUSIC_REPEATONEBTN || i == MUSIC_REPEATOFFBTN) {
             target_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][mplayer->repeat_id];
-            if(i == mplayer->repeat_id) {
+            if(i == mplayer->repeat_id && !mplayer->music_selectionmenu_addtobtn_clicked
+                && !music_addplaylistbtn.clicked) {
                 mplayer_tooltip_render(mplayer, &musicbtn_tooltip);
             }
             SDL_RenderCopy(mplayer->renderer, target_texture, NULL, &music_btns[mplayer->repeat_id].btn_canvas);
@@ -1036,8 +1044,9 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
         if(music_rendercount <= max_rendercount) {
             music_renderlist[music_rendercount] = i;
             // Handling scroll events
-            if(mplayer->scroll && mplayer_rect_hover(mplayer, songs_box)
-                && (mplayer->music_searchresult || !mplayer->musicsearchbar_data)) {
+            if(!music_addplaylistbtn.clicked && !mplayer->music_selectionmenu_addtobtn_clicked && mplayer->scroll
+                && mplayer_rect_hover(mplayer, songs_box) && (mplayer->music_searchresult ||
+                    !mplayer->musicsearchbar_data)) {
                 size_t index = music_renderlist[music_rendercount];
                 bool *music_renderstatus = (mplayer->music_searchresult) ? &music_list[i].search_render :
                                         &music_list[i].render;
@@ -1136,7 +1145,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
             SDL_Rect hoverbg_canvas = {0};
             if(mplayer->music_searchresult || !mplayer->musicsearchbar_data) {
                 // check if we hover over the play button and we haven't ticked any checkbox
-                if(mplayer_musiclist_playbutton_hover(mplayer) && !mplayer->tick_count) {
+                if(mplayer_musiclist_playbutton_hover(mplayer) && !mplayer->music_selectionmenu_addtobtn_clicked
+                    && !mplayer->tick_count) {
                     hoverbg_canvas = music_listplaybtn.btn_canvas;
                     hoverbg_canvas.x -= 5, hoverbg_canvas.w += 5;
                     hoverbg_canvas.h = outer_canvas.h, hoverbg_canvas.y = outer_canvas.y;
@@ -1209,7 +1219,8 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                     }
                 }
                 music_btns[MUSIC_SKIPBTN].clicked = false;
-            } else if(mplayer_music_hover(mplayer, i) && (mplayer->music_searchresult || !mplayer->musicsearchbar_data)) {
+            } else if(!music_addplaylistbtn.clicked && !mplayer->music_selectionmenu_addtobtn_clicked
+                    && mplayer_music_hover(mplayer, i) && (mplayer->music_searchresult || !mplayer->musicsearchbar_data)) {
                 // check if the mouse is hovered over the music
                 if(mplayer_checkbox_hovered(mplayer)) {
                     if(mplayer->mouse_clicked) {
@@ -1241,7 +1252,9 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                     }
                     cursor = MPLAYER_CURSOR_POINTER;
                     mplayer_setcursor(mplayer, cursor);
-                } else if(mplayer_musiclist_playbutton_hover(mplayer) && !mplayer->tick_count) {
+                } else if(mplayer_musiclist_playbutton_hover(mplayer) && !music_addplaylistbtn.clicked &&
+                    !mplayer->music_selectionmenu_addtobtn_clicked
+                    && !mplayer->tick_count) {
                     if(mplayer->mouse_clicked) {
                         /* whenever we hover over the playbutton on the music
                            we determine if we should restart the current playing music or play a new music
@@ -1274,7 +1287,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                     }
                     cursor = MPLAYER_CURSOR_POINTER;
                     mplayer_setcursor(mplayer, cursor);
-                } else if(mplayer->mouse_clicked) {
+                } else if(mplayer->mouse_clicked && !music_addplaylistbtn.clicked && !mplayer->music_selectionmenu_addtobtn_clicked) {
                     // whenever we click the music without clicking any of its elements
                     // we set clicked equal to false to prevent it from performing any action that we do not want
                     if(music_list[i].checkbox_ticked) {
@@ -1298,7 +1311,7 @@ void mplayer_rendersongs(mplayer_t* mplayer) {
                 }
                 mplayer_setcursor(mplayer, cursor);
             }
-            if(mplayer->music_searchresult || !mplayer->musicsearchbar_data) {
+            if((!mplayer->music_selectionmenu_addtobtn_clicked && !music_addplaylistbtn.clicked) && mplayer->music_searchresult || !mplayer->musicsearchbar_data) {
                 if(mplayer->tick_count) {
                     // whenever any checkbox is ticked we determine whether to render the current music as ticked or not
                     if(!music_list[i].checkbox_ticked && !mplayer_music_hover(mplayer, i)) {
@@ -1556,6 +1569,10 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         } else if(mplayer->e.type == SDL_MOUSEBUTTONUP) {
             mplayer->mouse_buttondown = false;
             mplayer->mouse_x = mplayer->e.button.x, mplayer->mouse_y = mplayer->e.button.y;
+            if(mplayer->music_selectionmenu_addtobtn_clicked || music_addplaylistbtn.clicked) {
+                mplayer->mouse_clicked = true;
+                break;
+            }
             if(mplayer_tabs_hover(mplayer, tab_info, &tab_hoverid, tab_info_size) && TAB_INIT) {
                 tab_info[prev_tab].active = false;
                 tab_info[tab_hoverid].underline_color = underline_color;
@@ -1656,8 +1673,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         .font = mplayer->music_font,
         .font_size = 18
     };
-    mplayer_tooltip_render(mplayer, &add_folder_tooltip);
-
+    if(!mplayer->music_selectionmenu_addtobtn_clicked || !music_addplaylistbtn.clicked) {
+        mplayer_tooltip_render(mplayer, &add_folder_tooltip);
+    }
     // Create settings button on screen
     setting_iconbtn.btn_canvas.x = WIDTH - setting_iconbtn.btn_canvas.w - 2;
     mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][setting_iconbtn.texture_idx] =
@@ -1678,7 +1696,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         .font = mplayer->music_font,
         .font_size = 18
     };
-    mplayer_tooltip_render(mplayer, &settings_button_tooltip);
+    if(!mplayer->music_selectionmenu_addtobtn_clicked || !music_addplaylistbtn.clicked) {
+        mplayer_tooltip_render(mplayer, &settings_button_tooltip);
+    }
     if(!mplayer->music_list) {
         mplayer_filemanager_loadmusics(mplayer);
         printf("Successfully loaded all musics\n");
@@ -1713,6 +1733,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         // render songs so we can set the new music position based on the percentage of the music we are in
         // whether in the search result or the regular music list
         mplayer_rendersongs(mplayer);
+        mplayer_selectionmenu_display_addtoplaylist_modal(mplayer);
+        mplayer_selectionmenu_handle_addtobtn(mplayer);
+        mplayer->mouse_clicked = false;
     } else if(active_tab == ALBUMS_TAB) {
     } else if(active_tab == QUEUES_TAB) {
     }

@@ -6,6 +6,8 @@
 
 void mplayer_selectionmenu_create(mplayer_t* mplayer);
 void mplayer_selectionmenu_display_addbtn(mplayer_t* mplayer, SDL_Rect playbtn_background);
+void mplayer_selectionmenu_display_addtoplaylist_modal(mplayer_t* mplayer);
+void mplayer_selectionmenu_handle_addtobtn(mplayer_t* mplayer);
 void mplayer_selectionmenu_display_playbtn(mplayer_t* mplayer, text_info_t songs_selectioninfo,
     SDL_Rect* playbtn_backgroundref);
 void mplayer_selectionmenu_display_songselectioninfo(mplayer_t* mplayer, text_info_t* songs_selectioninfo);

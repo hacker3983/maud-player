@@ -77,6 +77,12 @@ typedef struct music {
     size_t location_index;
 } music_t;
 
+typedef struct mplayer_playlist {
+    char* name;
+    music_t* music_list;
+    size_t music_count;
+} mplayer_playlist_t;
+
 typedef struct music_location {
     #ifdef _WIN32
     wchar_t* path;
@@ -164,10 +170,15 @@ typedef struct mplayer {
          music_selectionmenu_checkbox_fillall,
          music_selectionmenu_checkbox_tickall,
          music_selectionmenu_checkbox_clicked,
+         music_selectionmenu_addtobtn_clicked,
+         music_selectionmenu_addtobtn_dropdown_clicked,
          hover_object,
          settingmenu_scrollcontainer_init;
+    SDL_Color music_selectionmenu_addto_dropdown_color;
     SDL_Rect progress_bar, progress_count, music_searchbar,
-        music_selectionmenu, music_searchbar_cursor;
+        music_selectionmenu, music_selectionmenu_addtocanvas,
+        music_selectionmenu_addto_dropdown,
+        music_searchbar_cursor;
 } mplayer_t;
 
 void mplayer_init();
