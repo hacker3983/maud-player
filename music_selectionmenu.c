@@ -194,7 +194,12 @@ void mplayer_selectionmenu_display_addtoplaylist_modal(mplayer_t* mplayer) {
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE]
                     [music_addplaylistbtn.texture_idx], NULL, &newplaylist_imagecanvas);
 
+    mplayer->playlist_inputbox.inputbox_canvas.x = modal.x + (modal.w -
+        mplayer->playlist_inputbox.inputbox_canvas.w) / 2,
+    mplayer->playlist_inputbox.inputbox_canvas.y = newplaylist_imagecanvas.y + newplaylist_imagecanvas.h + 30;
     // TODO: Implement input box for typing the playlist name that should be created
+    mplayer_inputbox_display(mplayer, &mplayer->playlist_inputbox);
+
     // Add the create button to the new playlist modal box
     text_info_t createbtn = {
         .font_size = 20,

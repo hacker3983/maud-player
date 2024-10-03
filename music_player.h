@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <wctype.h>
 #include <pthread.h>
+#include "music_inputboxesdef.h"
 #include "music_playerbutton_types.h"
 #include "music_playertexture_types.h"
 #include "music_scrollcontainers.h"
@@ -162,6 +163,7 @@ typedef struct mplayer {
         music_failcount, music_maxrenderpos, match_maxrenderpos, music_renderinit,
         musicpending_removalcount, musiclocation_count, current_musicsearch_querylen,
         populate_index;
+    mplayer_inputbox_t playlist_inputbox;
     mplayer_scrollcontainer_t* settingmenu_scrollcontainers;
     size_t settingmenu_scrollcontainer_index, settingmenu_scrollcontainer_count;
     bool mouse_clicked, musicsearchbar_clicked, musicsearchcursor_blink, music_hover, music_newsearch, music_playing,

@@ -1,6 +1,7 @@
 #include "music_player.h"
 #include "music_tooltips.h"
 #include "music_checkboxes.h"
+#include "music_inputboxes.h"
 #include "music_textmanager.h"
 #include "music_filemanager.h"
 #include "music_menumanager.h"
@@ -139,6 +140,18 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer->settingmenu_scrollcontainer_index = 0;
     mplayer->settingmenu_scrollcontainer_count = 0;
     mplayer->settingmenu_scrollcontainer_init = false;
+
+    const char* placeholder_text = "New playlist name here...";
+    SDL_Rect inputbox_canvas = {
+        .x = 0, .y = 0,
+        .w = 300, .h = 50
+    };
+    SDL_Color placeholder_color = {0xff, 0xff, 0xff, 0xff},
+              input_datacolor = {0xff, 0xff, 0xff, 0xff},
+              input_boxcolor = {0x00, 0x00, 0x00, 0x00};
+    mplayer->playlist_inputbox = mplayer_inputbox_create(mplayer->font, mplayer->font,
+        inputbox_canvas, placeholder_text,
+        placeholder_color, input_boxcolor, input_datacolor);
 
     // create music information
     mplayer_filemanager_getmusicpath_info(mplayer);

@@ -2,6 +2,7 @@
 #define _MPLAYER_SELECTIONMENU_H
 #include "music_player.h"
 #include "music_checkboxes.h"
+#include "music_inputboxes.h"
 #include "music_textmanager.h"
 
 void mplayer_selectionmenu_create(mplayer_t* mplayer);
