@@ -148,10 +148,11 @@ void mplayer_createapp(mplayer_t* mplayer) {
     };
     SDL_Color placeholder_color = {0xff, 0xff, 0xff, 0xff},
               input_datacolor = {0xff, 0xff, 0xff, 0xff},
-              input_boxcolor = {0x00, 0x00, 0x00, 0x00};
-    mplayer->playlist_inputbox = mplayer_inputbox_create(mplayer->font, mplayer->font,
+              input_boxcolor = {0x00, 0x00, 0x00, 0x00},
+              cursor_color = {0x00, 0xff, 0x00, 0xff};
+    mplayer->playlist_inputbox = mplayer_inputbox_create(mplayer->music_font, mplayer->font,
         inputbox_canvas, placeholder_text,
-        placeholder_color, input_boxcolor, input_datacolor);
+        placeholder_color, input_boxcolor, input_datacolor, cursor_color);
 
     // create music information
     mplayer_filemanager_getmusicpath_info(mplayer);
@@ -1435,6 +1436,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         } else if(mplayer->e.type == SDL_WINDOWEVENT && mplayer->e.window.event == SDL_WINDOWEVENT_RESIZED) {
             mplayer->window_resized = true;
         }  else if(mplayer->e.type == SDL_TEXTINPUT) {
+            mplayer_inputbox_handleinputs(mplayer, &mplayer->playlist_inputbox);
             if(mplayer->musicsearchbar_clicked) {
                 if(mplayer->searchthread_created) {
                     pthread_join(mplayer->search_thread, NULL);
@@ -1489,6 +1491,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 temp_text = NULL; temp2_text = NULL;
             }
         } else if(mplayer->e.type == SDL_KEYDOWN) {
+            mplayer_inputbox_handleinputs(mplayer, &mplayer->playlist_inputbox);
             switch(mplayer->e.key.keysym.scancode) {
                 case SDL_SCANCODE_BACKSPACE:
                     if(mplayer->musicsearchbar_clicked && mplayer->musicsearchbar_datalen > 0) {
@@ -1570,7 +1573,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             mplayer_scrolltype_getmousewheel_scrolltype(mplayer->e, &mplayer->scroll_type);
             mplayer->scroll = true;
         } else if(Mix_PlayingMusic() && mplayer->e.type == SDL_KEYUP) {
-            if(mplayer->e.key.keysym.sym == SDLK_SPACE && !mplayer->musicsearchbar_clicked)
+            if(mplayer->e.key.keysym.sym == SDLK_SPACE && !music_addplaylistbtn.clicked && !mplayer->musicsearchbar_clicked)
                 if(Mix_PausedMusic()) {
                     Mix_ResumeMusic();
                 } else {

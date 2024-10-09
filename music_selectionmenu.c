@@ -265,7 +265,11 @@ void mplayer_selectionmenu_display_addtoplaylist_modal(mplayer_t* mplayer) {
     SDL_RenderFillRect(mplayer->renderer, &cancelbtn_canvas);
     SDL_RenderCopy(mplayer->renderer, cancelbtn_texture, NULL, &cancelbtn.text_canvas);
     SDL_DestroyTexture(cancelbtn_texture); cancelbtn_texture = NULL;
+    
+    // Whenever we click out of the new playlist modal / dialog we will set the new playst button
+    // clicked state to true and destroy / clear out the data tha is present within it
     if(!mplayer_rect_hover(mplayer, modal) && mplayer->mouse_clicked) {
+        mplayer_inputbox_clear(&mplayer->playlist_inputbox);
         music_addplaylistbtn.clicked = false;
     }
 }

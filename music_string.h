@@ -16,5 +16,6 @@ char* mplayer_widetoutf8(wchar_t* wstring);
 char* mplayer_strcasestr(char* haystack, char* needle);
 char* mplayer_dupstr(const char* string, size_t len);
 char* mplayer_getutf8_char(const char* utf8_string, size_t* index, size_t utf8_stringlen);
+bool mplayer_concatstr(char** destination_string, const char* source_string);
 bool mplayer_isascii(int c);
 #endif

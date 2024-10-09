@@ -11,6 +11,7 @@ C_FILES = [
     "music_string.c",
     "music_tooltips.c",
     "music_checkboxes.c",
+    "music_inputboxes.c",
     "music_menumanager.c",
     "music_filemanager.c",
     "music_textmanager.c",

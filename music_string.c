@@ -91,7 +91,7 @@ char* mplayer_dupstr(const char* string, size_t len) {
     return new_dupstr;
 }
 
-char* mplayer_getutf8_char(const char* utf8_string, size_t* index, size_t utf8_stringlen) {
+char* mplayer_getutf8_charunixlike(const char* utf8_string, size_t* index, size_t utf8_stringlen) {
     mbstate_t state = {0};
     wchar_t widechar = L'\0';
     int num_bytes = 0;
@@ -103,11 +103,71 @@ char* mplayer_getutf8_char(const char* utf8_string, size_t* index, size_t utf8_s
     if(utf8_char) {
         strncpy(utf8_char, utf8_string+(*index), num_bytes);
         utf8_char[num_bytes] = '\0';
-        (*index) += num_bytes;
+        (*index) += num_bytes-1;
     }
+    return utf8_char;
+}
+
+char* mplayer_getutf8_charwindows(const char* utf8_string, size_t* index, size_t utf8_stringlen) {
+    wchar_t wchar = L'\0';
+    int num_bytes = 0;
+    char* utf8_char = NULL;
+    if(*index >= utf8_stringlen) {
+        return NULL;
+    }
+    // Determine the length of the UTF-8 character
+    if ((utf8_string[*index] & 0x80) == 0) {
+        num_bytes = 1; // 1 byte character (ASCII)
+    } else if ((utf8_string[*index] & 0xE0) == 0xC0) {
+        num_bytes = 2; // 2 byte character
+    } else if ((utf8_string[*index] & 0xF0) == 0xE0) {
+        num_bytes = 3; // 3 byte character
+    } else if ((utf8_string[*index] & 0xF8) == 0xF0) {
+        num_bytes = 4; // 4 byte character
+    } else {
+        return NULL; // Invalid UTF-8 start byte
+    }
+    utf8_char = (char*)malloc(num_bytes+1);
+    if(utf8_char) {
+        strncpy(utf8_char, utf8_string+(*index), num_bytes);
+        utf8_char[num_bytes] = '\0';
+    }
+    *index += num_bytes-1;
+    return utf8_char;
+}
+
+char* mplayer_getutf8_char(const char* utf8_string, size_t* index, size_t utf8_stringlen) {
+    char* utf8_char = NULL;
+    #ifdef _WIN32
+    utf8_char = mplayer_getutf8_charwindows(utf8_string, index, utf8_stringlen);
+    #else
+    utf8_char = mplayer_getutf8_charunixlike(utf8_string, index, utf8_stringlen);
+    #endif
     return utf8_char;
 }
 
 bool mplayer_isascii(int c) {
     return !(c & 0x80);
+}
+
+bool mplayer_concatstr(char** destination_string, const char* source_string) {
+    size_t destination_stringlen = 0, source_stringlen = 0;
+    if(!(*destination_string) && !source_string) {
+        return true;
+    }
+    if(source_string) {
+        source_stringlen = strlen(source_string);
+    }
+    if(*destination_string) {
+        destination_stringlen = strlen(*destination_string);
+    }
+    size_t new_size = source_stringlen + destination_stringlen;
+    char* new_ptr = (char*)realloc(*destination_string, new_size+1);
+    if(!new_ptr) {
+        return false;
+    }
+    strncpy(new_ptr+destination_stringlen, source_string, source_stringlen);
+    new_ptr[new_size] = '\0';
+    *destination_string = new_ptr;
+    return true;
 }
