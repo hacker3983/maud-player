@@ -132,7 +132,7 @@ char* mplayer_getutf8_charwindows(const char* utf8_string, size_t* index, size_t
         strncpy(utf8_char, utf8_string+(*index), num_bytes);
         utf8_char[num_bytes] = '\0';
     }
-    *index += num_bytes-1;
+    (*index) += num_bytes-1;
     return utf8_char;
 }
 

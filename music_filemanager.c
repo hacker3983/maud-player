@@ -412,7 +412,6 @@ void mplayer_filemanager_copymusicinfo_fromsearchindex(mplayer_t* mplayer, size_
     #endif
     music_info->music_position.hrs = 0, music_info->music_position.mins = 0,
     music_info->music_position.secs = 0;
-    music_info->music_playing = 0;
     music_info->music_durationsecs = music_durationsecs;
     music_info->music_duration = mplayer_filemanager_music_gettime(music_durationsecs);
     music_info->search_match = mplayer->music_list[index].search_match;
@@ -432,7 +431,6 @@ void mplayer_filemanager_copymusic_info(music_t* src_info, music_t* dest_info) {
     dest_info->music_position = src_info->music_position;
     dest_info->music_duration = src_info->music_duration;
     dest_info->music_durationsecs = src_info->music_durationsecs;
-    dest_info->music_playing = src_info->music_playing;
     dest_info->render = src_info->render;
     dest_info->search_render = src_info->search_render;
     dest_info->music_name = src_info->music_name;
@@ -492,23 +490,24 @@ void mplayer_filemanager_removemusics_pendingremoval(mplayer_t* mplayer) {
         // iterate through the music list and whenever we find a music that was marked for removal we check if that
         // current music is playing if it is playing then we halt it and set the playing status and the playing status
         // to false
-        if(mplayer->music_list[i].remove) {
+        /*if(mplayer->music_list[i].remove) {
+            TODO: REIMPLEMENT THIS
             if(Mix_PlayingMusic() && mplayer->playid == i) {
                 Mix_HaltMusic();
-                mplayer->music_list[i].music_playing = false;
-                mplayer->current_music = NULL;
+//                mplayer->music_list[i].music_playing = false;
+//                mplayer->current_music = NULL;
             }
             mplayer->music_list[i].remove = false;       
             mplayer_filemanager_freemusic(&mplayer->music_list[i]);
             continue;
-        }
+        }*/
         /* whenever a music is being played that was not marked for removal we preserve the playid for that music by
            assigning a new playid for that currently playing music since we are deallocating the music list which can
            happen in any random position.
         */
-        if(Mix_PlayingMusic() && mplayer->playid == i) {
+        /*if(Mix_PlayingMusic() && mplayer->playid == i) {
             new_playid = j; preserve_playid = true;
-        }
+        }*/
 
         /* As long as the file count in the current location index is greater than zero then we increment the file
            count by 1 each time we are iterating and also adding the new music path to the new music list
@@ -550,8 +549,8 @@ void mplayer_filemanager_removemusics_pendingremoval(mplayer_t* mplayer) {
         }
         if(preserve_playid) {
             // set the current music pointer to be equal to newmusic_list[new_playid] before chaning the mplayer->playid
-            mplayer->current_music = &newmusic_list[new_playid];
-            mplayer->playid = new_playid;
+  //          mplayer->current_music = &newmusic_list[new_playid];
+            //mplayer->playid = new_playid;
         }
         
         if(resume_playing) {
@@ -585,7 +584,6 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
         mplayer_filemanager_removemusics_pendingremoval(mplayer);
         if(mplayer->musicsearchbar_data) {
             mplayer->music_newsearch = true;
-            mplayer->update_searchresults = true;
         }
         return;
     }
@@ -605,7 +603,7 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
         printf("Reallocating memory\n");
         mplayer->music_list = (music_t*)realloc(mplayer->music_list, mplayer->total_filecount * sizeof(music_t));
         if(Mix_PlayingMusic()) {
-            mplayer->current_music = &mplayer->music_list[mplayer->playid];
+//            mplayer->current_music = &mplayer->music_list[mplayer->playid];
         }
         if(mplayer->music_list == NULL) {
             printf("Realloc failed\n");
@@ -652,8 +650,7 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
                 music_list[music_count].music_position.hrs = 0,
                 music_list[music_count].music_position.mins = 0,
                 music_list[music_count].music_position.secs = 0,
-                music_list[music_count].music_playing = 0;
-    
+  
                 music_durationsecs = Mix_MusicDuration(music);
                 music_list[music_count].music_durationsecs = music_durationsecs;
                 music_list[music_count].music_duration = mplayer_filemanager_music_gettime(music_durationsecs);
@@ -702,12 +699,15 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
     if(music_list) {
         mplayer->music_list = music_list;
         mplayer->music_count = mplayer->total_filecount;
+
+        mplayer->music_lists[0] = mplayer->music_list;
+        mplayer->music_counts[0] = mplayer->music_count;
         // as long as data is present in the search bar then we set new search equal to true so when we return back to the
         // default menu the music search results gets updated if a music location was removed vice versa.
-        if(mplayer->musicsearchbar_data) {
+        /*if(mplayer->musicsearchbar_data) {
             mplayer->music_newsearch = true;
             mplayer->update_searchresults = true;
-        }
+        }*/
     }
 }
 
@@ -860,12 +860,6 @@ mtime_t mplayer_filemanager_music_gettime(double seconds) {
     return music_time;
 }
 
-void mplayer_filemanager_freecurrmusic(mplayer_t* mplayer) {
-    Mix_Music* current_music = mplayer->current_music->music;
-    Mix_FreeMusic(current_music);
-    mplayer->current_music = NULL;
-}
-
 void mplayer_filemanager_freemusic_searchresult(music_t** music_searchresult, size_t* music_resultcount) {
     if(!(*music_searchresult)) {
         return;
@@ -915,11 +909,11 @@ void mplayer_filemanager_freemusic_list(mplayer_t* mplayer) {
     for(size_t i=0;i<mplayer->music_count;i++) {
         mplayer_filemanager_freemusic(&mplayer->music_list[i]);
     }
-    mplayer_filemanager_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
+    //mplayer_filemanager_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
     free(mplayer->music_list); mplayer->music_list = NULL; mplayer->music_count = 0;
     mplayer->musicpending_removalcount = 0;
     mplayer->music_renderpos = 0;
     mplayer->music_maxrenderpos = 0;
-    mplayer->match_maxrenderpos = 0;
-    mplayer->music_searchrenderpos = 0;
+    //mplayer->match_maxrenderpos = 0;
+    //mplayer->music_searchrenderpos = 0;
 }

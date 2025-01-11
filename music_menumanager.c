@@ -54,13 +54,29 @@ void mplayer_menumanager_setup_menu(mplayer_t* mplayer) {
         menu->textures[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
             music_addtobtn.imgbtn_path);
         menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx] = music_addtobtn.btn_canvas;
-        if(menu->textures[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx] == NULL) {
-            printf("FAILED TO LOAD IMAGE FOR MUSIC_ADDTOBTN: %s\n", IMG_GetError());
-        } else {
-            printf("Successfully loaded image for MUSIC_ADDTOBTN\n");
-        }
+
+        // Add the circle add to button to the texture list
+        mplayer_menumanager_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
+        music_addtocirclebtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
+        menu->textures[MPLAYER_BUTTON_TEXTURE][music_addtocirclebtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
+            music_addtocirclebtn.imgbtn_path);
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_addtocirclebtn.texture_idx] = music_addtocirclebtn.
+            btn_canvas;
+
+        // Add play queue btn used for adding music to play queue
+        mplayer_menumanager_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
+        music_playqueuebtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
+        menu->textures[MPLAYER_BUTTON_TEXTURE][music_playqueuebtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
+            music_playqueuebtn.imgbtn_path);
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_playqueuebtn.texture_idx] = music_playqueuebtn.btn_canvas;
+
+        // Add playlist btn to the texture list
+        mplayer_menumanager_addmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE);
+        music_playlistbtn.texture_idx = menu->texture_sizes[MPLAYER_BUTTON_TEXTURE]-1;
+        menu->textures[MPLAYER_BUTTON_TEXTURE][music_playlistbtn.texture_idx] = IMG_LoadTexture(mplayer->renderer,
+            music_playlistbtn.imgbtn_path);
+        menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_playlistbtn.texture_idx] = music_playlistbtn.btn_canvas;
     } else if(mplayer->menu_opt == MPLAYER_SETTINGS_MENU) {
-        mplayer_menumanager_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, setting_textinfo_size);
         mplayer_menumanager_createmenu_texture(mplayer, MPLAYER_BUTTON_TEXTURE, SETTINGSBTN_COUNT);
         for(size_t i=0;i<SETTINGSBTN_COUNT;i++) {
             menu->textures[MPLAYER_BUTTON_TEXTURE][i] = IMG_LoadTexture(mplayer->renderer, setting_btns[i].imgbtn_path);

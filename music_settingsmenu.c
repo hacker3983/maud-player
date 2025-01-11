@@ -1,41 +1,17 @@
 #include "music_settingsmenu.h"
 
 void mplayer_settingmenu(mplayer_t* mplayer) {
-    mplayer_scrollcontainer_t scroll_container = {0};
-    SDL_Rect* canvas = NULL,
-              /* The current element canvas will be used to identify each element on the screen
-                 for example buttons, images, text, etc. This information will be used by the scroll container
-                 in order to manipulate the canvas positions for each element on the screen
-              */
-              current_element_canvas = {0};
-    size_t *scrollcontainer_index = &mplayer->settingmenu_scrollcontainer_index;
-    int btn_id = 0,
-        disappear_x = 0, disappear_y = 0;
-    bool mouse_clicked = false;
+    mplayer_settingmenu_navbar_t navbar = {0};
+    mplayer_settingmenu_librarycategory_t music_librarycategory = {0};
+    mplayer_settingmenu_personalizationcategory_t personalization_category = {0};
     while(SDL_PollEvent(&mplayer->e)) {
         if(mplayer->e.type == SDL_QUIT) {
-            mplayer->quit = 1;
-            break;
-        } else if(mplayer->e.type == SDL_WINDOWEVENT && mplayer->e.window.event == SDL_WINDOWEVENT_RESIZED) {
-            mplayer->window_resized = true;
+            mplayer->quit = true; break;
         } else if(mplayer->e.type == SDL_MOUSEMOTION) {
             mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
-            if(mplayer_buttonmanager_ibuttons_hover(mplayer, setting_btns, &btn_id, SETTINGSBTN_COUNT)) {
-                mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
-            } else {
-                mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
-            }
-        } else if(mplayer->e.type == SDL_MOUSEBUTTONUP) {
+        } else if(mplayer->e.type == SDL_MOUSEBUTTONDOWN) {
             mplayer->mouse_x = mplayer->e.button.x, mplayer->mouse_y = mplayer->e.button.y;
-            if(mplayer_buttonmanager_ibuttons_hover(mplayer, setting_btns, &btn_id, SETTINGSBTN_COUNT)) {
-                if(btn_id == BACK_BUTTON) {
-                    mplayer->menu_opt = MPLAYER_DEFAULT_MENU;
-                    mplayer_menumanager_setup_menu(mplayer);
-                    mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
-                    return;
-                }
-            }
-            mouse_clicked = true, mplayer->mouse_clicked = true;
+            mplayer->mouse_clicked = true;
         } else if(mplayer->e.type == SDL_MOUSEWHEEL) {
             mplayer_scrolltype_getmousewheel_scrolltype(mplayer->e, &mplayer->scroll_type);
             mplayer->scroll = true;
@@ -44,268 +20,191 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     mplayer_set_window_title(mplayer, SETTING_TITLE);
     mplayer_set_window_color(mplayer->renderer, setting_wincolor);
     SDL_GetWindowSize(mplayer->window, &WIDTH, &HEIGHT);
-    mplayer_displayprogression_control(mplayer);
-    // create buttons text, normal and display on the screen
-    for(size_t i=0;i<setting_textinfo_size;i++) {
-        mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][i] = mplayer_textmanager_rendertext(mplayer, mplayer->font, &setting_textinfo[i]);
-    }
-
-    // set the canvas x position of the text "Go Back To Home" beside the back button 
-    canvas = &setting_textinfo[0].text_canvas;
-    canvas->x = setting_btns[0].btn_canvas.x + setting_btns[0].btn_canvas.w + 5;
-
-    SDL_Rect navbar_canvas = {0}, bg_canvas;
-    SDL_Color navbar_canvascolor = (SDL_Color){0x83, 0x22, 0x32, 0xFF}/*black(SDL_Color){0x75, 0x0D, 0x37, 0xFF}*/,
-              bg_canvascolor = {0};
-    navbar_canvas.w = WIDTH,
-    navbar_canvas.h = setting_btns[0].btn_canvas.y + setting_btns[0].btn_canvas.h + SETTING_LINESPACING;
-    if(mplayer->scroll && mplayer->settingmenu_scrollcontainer_init) {
-        mplayer_scrollcontainer_areainfo_t scrollarea_info = {
-            .mouse_x = mplayer->mouse_x,
-            .mouse_y = mplayer->mouse_y,
-            .scroll_area = {.x = 0, .y = navbar_canvas.y + navbar_canvas.h, .w = WIDTH,
-                    .h = HEIGHT - navbar_canvas.h - navbar_canvas.y}
-        };
-        mplayer_scrollcontainers_performscroll(mplayer->settingmenu_scrollcontainers, mplayer->scroll_type,
-            SETTING_LINESPACING * 3, mplayer->settingmenu_scrollcontainer_count, scrollarea_info);
+    if(mplayer->scroll) {
+        mplayer_scrollcontainer_performscroll(mplayer, &mplayer->settingmenu_scrollcontainer);
         mplayer->scroll = false;
     }
-    // Set the vertical scroll minimum height to stop rendering content on the screen
-    disappear_y = navbar_canvas.y;
-    
-    // tooltip for back button
-    mplayer_tooltip_t backbtn_tooltip = {
-        .background_color = {0x1D, 0x26, 0x3B, 0xFF},
-        .text_color = {0x30, 0x66, 0xBE, 0xFF},
-        .text = setting_btns[0].tooltip_text,
-        .x = 1,
-        .y = 0,
-        .margin_x = 10,
-        .margin_y = 10,
-        .delay_secs = 0,
-        .duration_secs = 0,
-        .element_canvas = setting_btns[0].btn_canvas,
-        .font = mplayer->music_font,
-        .font_size = 18,
-    };
 
-    canvas->y = roundf((float)(navbar_canvas.h - canvas->h) / (float)2);
-    setting_btns[0].btn_canvas.y = roundf((float)(navbar_canvas.h - setting_btns[0].btn_canvas.h) / (float)2);
-   
-    for(size_t i=1;i<setting_textinfo_size;i++) {
-        setting_textinfo[i].text_canvas.y = setting_textinfo[i-1].text_canvas.y +
-                        setting_textinfo[i-1].text_canvas.h + SETTING_LINESPACING;
-    }
-    // Draw a background for the Music Location category
-    canvas = &setting_textinfo[1].text_canvas;
-    bg_canvascolor = black /*(SDL_Color){0x5A, 0x9D, 0xA6, 0xFF}*/;
-    bg_canvas = (SDL_Rect){0};
-    bg_canvas.x = setting_textinfo[1].text_canvas.x - 5, bg_canvas.y = canvas->y;
-    bg_canvas.w = setting_textinfo[1].text_canvas.w + 10/*WIDTH*/, bg_canvas.h = canvas->h + SETTING_LINESPACING;
-    canvas->x = 20;
-    if(mplayer->settingmenu_scrollcontainer_init) {
-        bg_canvas.y = mplayer->settingmenu_scrollcontainers[*scrollcontainer_index].scroll_canvas.y;
-    }
-    canvas->y = bg_canvas.y + roundf((float)(bg_canvas.h - setting_textinfo[1].text_canvas.h) / (float)2);
-    if(mplayer->settingmenu_scrollcontainer_init) {
-        if(mplayer->settingmenu_scrollcontainers[*scrollcontainer_index].render) {
-            SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
-            SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
-            SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
-        }
+    // Create the navigation bar and handle its components
+    mplayer_settingmenu_create_navigationbar(mplayer, &navbar);
+    if(mplayer_settingmenu_handle_backbtn(mplayer, &navbar)) {
+        return;
     }
 
-    // set the current element canvas to equal to the Music Location category of elements
-    current_element_canvas.x = bg_canvas.x, current_element_canvas.y = bg_canvas.y;
-    current_element_canvas.w = bg_canvas.w,
-    current_element_canvas.h = bg_canvas.h; // Set the maximum height the current elements on screen
-
-    // Draw a canvas to hold the button in and set the canvas position for the add folder button
-    canvas = &setting_btns[1].btn_canvas;
-    canvas->x = WIDTH - canvas->w;
-    canvas->y = bg_canvas.y + roundf((float)(bg_canvas.h - canvas->h)/(float)2);
-
-    setting_textinfo[2].text_canvas.x = canvas->x - setting_textinfo[2].text_canvas.w - 10;
-    setting_textinfo[2].text_canvas.y = bg_canvas.y + roundf((float)(bg_canvas.h - setting_textinfo[2].text_canvas.h)
-        / (float)2);
-
-    bg_canvascolor = black/*(SDL_Color){0x81, 0x17, 0x1B, 0xFF}*/;
-    bg_canvas.w = canvas->w + setting_textinfo[2].text_canvas.w + 10, bg_canvas.h = canvas->h;
-    bg_canvas.x = setting_textinfo[2].text_canvas.x - 5;
-    if(!mplayer->settingmenu_scrollcontainer_init) {
-        bg_canvas.y = setting_textinfo[1].text_canvas.y + roundf((float)(bg_canvas.h - (canvas->h - SETTING_LINESPACING))
-        / (float)2);
-    } else {
-        bg_canvas.y = mplayer->settingmenu_scrollcontainers[(*scrollcontainer_index)++].scroll_canvas.y;
-    }
-    // Get the width in pixel in between the Add Folder button and Music Location background text
-    // This will give us the total width of each elements on screen so we can perform the scrolling operations on them
-    current_element_canvas.w += bg_canvas.x - current_element_canvas.w + bg_canvas.w;
-
-    // Finally we use this calculation and append it to the scroll container
-    scroll_container = mplayer_scrollcontainer_create(current_element_canvas, disappear_y,
-        true, true);
-    if(!mplayer->settingmenu_scrollcontainer_init) {
-        printf("Scroll container was created for Music Location Category:\n");
-        mplayer_scrollcontainer_printinfo(scroll_container);
-    }
-    mplayer_settingmenu_tryappend_scrollcontainer(mplayer, scroll_container);
-
-    if(mplayer_rect_hover(mplayer, bg_canvas)) {
-        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
-        if(mouse_clicked) {
-            size_t prev_location_count = mplayer->location_count;
-            mplayer_filemanager_browsefolder(mplayer);
-            if(prev_location_count != mplayer->location_count) {
-                mplayer_settingmenu_scrollcontainer_update(mplayer);
-                return;
-            }
-        }
+    mplayer->settingmenu_scrollcontainer_index = 0;
+    if(!mplayer->settingmenu_scrollcontainer.init) {
+        SDL_Rect scroll_area = {
+            .x = 0, .y = 0,
+            .w = WIDTH, .h = HEIGHT
+        };
+        mplayer_scrollcontainer_init(&mplayer->settingmenu_scrollcontainer, scroll_area, SETTING_LINESPACING * 2);
     }
 
-    if(mplayer->settingmenu_scrollcontainer_init) {
-        if(mplayer->settingmenu_scrollcontainers[0].render) {
-            SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
-            SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
-            SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
-        }
-    }
+    mplayer_settingmenu_render_musiclibrary(mplayer, navbar, &music_librarycategory);
+    //mplayer_settingmenu_render_personalization(mplayer, music_librarycategory.text_info.text_canvas,
+    //    &personalization_category);
+    //mplayer_settingmenu_render_about(mplayer, personalization_category);
 
-    // Render each music location from the music paths info file
-    mplayer_settingmenu_render_musiclocations(mplayer, canvas, disappear_y);
-
-    // copy each texture on its particular canvas
-    for(size_t i=1;i<setting_textinfo_size;i++) {
-        mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][i] = setting_textinfo[i].text_canvas;
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][i], NULL,
-            &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][i]);
-    }
-
-    // render buttons on screen
-    mplayer_settingmenu_render_settingbtns(mplayer);
-    mplayer_settingmenu_render_navigationbar(mplayer, &navbar_canvas, navbar_canvascolor);
-    
-    // Render tooltip onto the screen whenever the user hovers over the back button    
-    mplayer_tooltip_render(mplayer, &backbtn_tooltip);
-
+    // Render the navigation bar
+    mplayer_settingmenu_render_navigationbar(mplayer, &navbar);
     if(!mplayer->settingmenu_scrollcontainer_init) {
         mplayer->settingmenu_scrollcontainer_init = true;
     }
+    mplayer->mouse_clicked = false;
+    // Activate the cursor that was set if none was set then we will just use the default cursor
+    mplayer_activatecursor(mplayer);
+    mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
     SDL_RenderPresent(mplayer->renderer);
-    mplayer_texturemanager_destroytextures(mplayer->menu->textures[MPLAYER_TEXT_TEXTURE],
-        mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]);
-    mplayer_menumanager_menu_freetext(mplayer, MPLAYER_SETTINGS_MENU);
-    mplayer->settingmenu_scrollcontainer_index = 0;
 }
 
-void mplayer_settingmenu_render_navigationbar(mplayer_t* mplayer, SDL_Rect* navbar_canvas, SDL_Color navbar_canvascolor) {
-    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(navbar_canvascolor));
-    SDL_RenderDrawRect(mplayer->renderer, navbar_canvas);
-    SDL_RenderFillRect(mplayer->renderer, navbar_canvas);
+void mplayer_settingmenu_create_navigationbar(mplayer_t* mplayer, mplayer_settingmenu_navbar_t* navbar_ref) {
+    mplayer_textmanager_sizetext(mplayer->font, &setting_textinfo[0]);
+    int max_navbarheight = (setting_btns[0].btn_canvas.h > setting_textinfo[0].text_canvas.h) ?
+            setting_btns[0].btn_canvas.h : setting_textinfo[0].text_canvas.h;
 
-    mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][0] = setting_btns[0].btn_canvas;
-    SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][0], NULL,
-        &mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][0]);
+    navbar_ref->color = (SDL_Color){0x39, 0x2F, 0x5A, 0xFF}/*{0x5E, 0xB1, 0xBF, 0xFF}{0x04, 0x2A, 0x2B, 0xFF}{0x00, 0xA6, 0x76, 0xff}*/;
+    navbar_ref->canvas.x = 0, navbar_ref->canvas.y = 0;
+    navbar_ref->canvas.w = WIDTH, navbar_ref->canvas.h = max_navbarheight;
 
-    mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][0] = setting_textinfo[0].text_canvas;
-    SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][0], NULL,
-        &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][0]);
-}
+    // Center the settings button vertically on the navigation bar
+    setting_btns[0].btn_canvas.y = navbar_ref->canvas.y + (navbar_ref->canvas.h - setting_btns[0].btn_canvas.h)/2;
 
-void mplayer_settingmenu_render_settingbtns(mplayer_t* mplayer) {
-    for(size_t i=1;i<SETTINGSBTN_COUNT;i++) {
-        mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][i] = setting_btns[i].btn_canvas;
-        SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][i], NULL,
-            &setting_btns[i].btn_canvas);
-    }
-}
+    // Set "Settings" text position to come after the back button icons and center it vertically
+    setting_textinfo[0].text_canvas.x = setting_btns[0].btn_canvas.x + setting_btns[0].btn_canvas.w + 10;
+    setting_textinfo[0].text_canvas.y = navbar_ref->canvas.y + (navbar_ref->canvas.h -
+        setting_textinfo[0].text_canvas.h)/2;
 
-void mplayer_settingmenu_render_musiclocations(mplayer_t* mplayer, SDL_Rect* previous_canvas, int disappear_y) {
-    bool *mouse_clicked = &mplayer->mouse_clicked;
-    mplayer_scrollcontainer_t scroll_container = {0};
-    text_info_t music_location = {24,
-        NULL,
-        NULL,
-        {0xE9, 0x76, 0x5B, 0xFF}/*white*/,
-        {0}
+    navbar_ref->backbtn_canvas = setting_btns[0].btn_canvas;
+    navbar_ref->backbtn_textinfo = setting_textinfo[0];
+
+    mplayer_tooltip_t backbtn_tooltip = {
+        .font = mplayer->music_font,
+        .font_size = 20,
+        .text = setting_btns[0].tooltip_text,
+        .x = setting_btns[0].btn_canvas.x + setting_btns[0].btn_canvas.w,
+        .y = 0,
+        .margin_x = 10,
+        .margin_y = 10,
+        .background_color = {0xC1, 0x62, 0x00, 0xFF},
+        .delay_secs = 0,
+        .duration_secs = 0,
+        .element_canvas = navbar_ref->backbtn_canvas,
+        .wrap_length = WIDTH,
+        .wrap_spacing = 5
     };
-    SDL_Color bg_canvascolor = {0x3C, 0x2C, 0x44, 0xFF};
-    SDL_Rect bg_canvas = {
-        .x = 0, .y = music_location.text_canvas.y
-    },
-    *canvas = {0},
-    current_element_canvas = {0};
+    navbar_ref->backbtn_tooltip = backbtn_tooltip;
+}
 
-    music_location.text_canvas.x = 50;
-    music_location.text_canvas.y = previous_canvas->y + previous_canvas->h + SETTING_LINESPACING;
-    bg_canvas.x = 0, bg_canvas.y = music_location.text_canvas.y;
-    bg_canvascolor = (SDL_Color){0x3C, 0x2C, 0x44, 0xFF};
+bool mplayer_settingmenu_handle_backbtn(mplayer_t* mplayer, mplayer_settingmenu_navbar_t* navbar_ref) {
+    if(mplayer_rect_hover(mplayer, navbar_ref->backbtn_canvas)) {
+        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+        if(mplayer->mouse_clicked) {
+            mplayer->menu_opt = MPLAYER_DEFAULT_MENU;
+            mplayer_menumanager_setup_menu(mplayer);
+            mplayer->mouse_clicked = false;
+            return true;
+        }
+    }
+    return false;
+}
 
-    /*(SDL_Color){0x0F, 0x52, 0x57, 0xFF}(SDL_Color){0x81, 0x17, 0x1B, 0xFF}(SDL_Color){0x1E, 0x96, 0xFC, 0xFF}{0x58, 0x72, 0x91, 0xFF}*/;
-    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(bg_canvascolor));
+void mplayer_settingmenu_render_navigationbar(mplayer_t* mplayer, mplayer_settingmenu_navbar_t* navbar_ref) {
+    SDL_Texture* backbtn_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][setting_btns[0].texture_idx];
+    SDL_Texture* backbtn_text_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font, &setting_textinfo[0]);
+
+    // Render the background for the navigation bar
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(navbar_ref->color));
+    SDL_RenderDrawRect(mplayer->renderer, &navbar_ref->canvas);
+    SDL_RenderFillRect(mplayer->renderer, &navbar_ref->canvas);
+
+    // Render the contents of the navigation bar onto it's background
+    SDL_RenderCopy(mplayer->renderer, backbtn_texture, NULL, &navbar_ref->backbtn_canvas);
+    SDL_RenderCopy(mplayer->renderer, backbtn_text_texture, NULL, &navbar_ref->backbtn_textinfo.text_canvas);
+    mplayer_tooltip_render(mplayer, &navbar_ref->backbtn_tooltip);
+}
+
+
+void mplayer_settingmenu_render_musiclibrary(mplayer_t* mplayer, mplayer_settingmenu_navbar_t navbar,
+    mplayer_settingmenu_librarycategory_t* library_category) {    
+    library_category->text_info = setting_textinfo[1];
+    if(!mplayer->settingmenu_scrollcontainer_init) {
+        library_category->text_info.text_canvas.y = navbar.canvas.y + navbar.canvas.h + SETTING_LINESPACING;
+        mplayer_textmanager_sizetext(mplayer->font, &library_category->text_info);
+        music_scrollcontaineritem_t scroll_item = {
+            .disappear_y = -setting_textinfo[1].text_canvas.h,
+            .initial_canvas = library_category->text_info.text_canvas,
+            .vertical_scroll = true
+        };
+        mplayer_scrollcontainer_appenditem(&mplayer->settingmenu_scrollcontainer, scroll_item);
+    }
+    // Render music library text
+    if(mplayer->settingmenu_scrollcontainer.items[mplayer->settingmenu_scrollcontainer_index].render) {
+        SDL_Texture* library_text_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font,
+            &library_category->text_info);
+        SDL_RenderCopy(mplayer->renderer, library_text_texture, NULL,
+            &mplayer->settingmenu_scrollcontainer.items[mplayer->settingmenu_scrollcontainer_index].scroll_canvas);
+        SDL_DestroyTexture(library_text_texture);
+    }   
+    mplayer->settingmenu_scrollcontainer_index++;
+    // Render the music locations that contain the musics
+    mplayer_settingmenu_render_musiclocations(mplayer, library_category->text_info.text_canvas);
+}
+
+void mplayer_settingmenu_render_musiclocations(mplayer_t* mplayer, SDL_Rect previous_canvas) {
+    text_info_t music_location = {
+        .font_size = 20,
+        .text = NULL,
+        .text_canvas = {
+            .x = 10, .y = previous_canvas.y + previous_canvas.h + SETTING_LINESPACING,
+            .w = 0, .h = 0
+        },
+        .text_color = {0xFF, 0xFF, 0xFF, 0xFF},
+        .utext = NULL
+    };
     for(size_t i=0;i<mplayer->location_count;i++) {
-        /*if(!mplayer->locations[i].render) {
-            continue;
-        }*/
-        #ifdef _WIN32
-        music_location.utext = mplayer_widetoutf8(mplayer->locations[i].path); 
-        #else
-        music_location.utext = mplayer->locations[i].path;
-        #endif
-        mplayer_textmanager_sizetext(mplayer->music_font, &music_location);
-        bg_canvas.w = WIDTH, bg_canvas.h = music_location.text_canvas.h + SETTING_LINESPACING;
-        if(mplayer->settingmenu_scrollcontainer_init) {
-            bg_canvas.y = mplayer->settingmenu_scrollcontainers[i+1].scroll_canvas.y;
+        if(!mplayer->locations[i].path) {
+            return;
         }
-        music_location.text_canvas.y = bg_canvas.y + roundf((float)(bg_canvas.h - music_location.text_canvas.h) / (float)2);
-        canvas = &music_removebtn.btn_canvas;
-        canvas->x = WIDTH - (canvas->w * 2);
-        canvas->y = music_location.text_canvas.y;
-
-        current_element_canvas = bg_canvas;
+        music_location.utext = mplayer_widetoutf8(mplayer->locations[i].path);
+        mplayer_textmanager_sizetext(mplayer->font, &music_location);
         if(!mplayer->settingmenu_scrollcontainer_init) {
-            scroll_container = mplayer_scrollcontainer_create(current_element_canvas, disappear_y, true, true);
-            printf("Scroll container has been created for the music location %ls:\n",
-                mplayer->locations[i].path);
-            mplayer_scrollcontainer_printinfo(scroll_container);
+            music_scrollcontaineritem_t scroll_item = {
+                .disappear_y = -music_location.text_canvas.h,
+                .initial_canvas = music_location.text_canvas,
+                .vertical_scroll = true
+            };
+            mplayer_scrollcontainer_appenditem(&mplayer->settingmenu_scrollcontainer, scroll_item);
         }
-        mplayer_settingmenu_tryappend_scrollcontainer(mplayer, scroll_container);
-        if(mplayer_buttonmanager_ibutton_hover(mplayer, music_removebtn)) {
-            mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
-            if(*mouse_clicked) {
-                printf("removing music location %ls along with related musics\n", mplayer->locations[i].path);
-                mplayer_filemanager_delmusic_locationindex(mplayer, i);;
-                *mouse_clicked = false;
-                continue;
-            }
+        if(mplayer->settingmenu_scrollcontainer.items[mplayer->settingmenu_scrollcontainer_index].render) {
+            SDL_Texture* location_texture = mplayer_textmanager_renderunicode(mplayer, mplayer->font, &music_location);
+            SDL_RenderCopy(mplayer->renderer, location_texture, NULL,
+                &mplayer->settingmenu_scrollcontainer.items[mplayer->settingmenu_scrollcontainer_index].scroll_canvas);
+            SDL_DestroyTexture(location_texture); location_texture = NULL;
         }
-        if(mplayer->settingmenu_scrollcontainers[i+1].render) {
-            SDL_Texture* texture = mplayer_textmanager_renderunicode(mplayer, mplayer->music_font, &music_location);
-            SDL_RenderDrawRect(mplayer->renderer, &bg_canvas);
-            SDL_RenderFillRect(mplayer->renderer, &bg_canvas);
-            mplayer_menumanager_addmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE);
-            mplayer_menumanager_menuplace_texture(mplayer, MPLAYER_TEXT_TEXTURE, texture, music_location.text_canvas);
-            bg_canvas.y = bg_canvas.y + bg_canvas.h + SETTING_LINESPACING;
-            SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][music_removebtn.texture_idx],
-                NULL, canvas);
-            SDL_RenderCopy(mplayer->renderer,
-                mplayer->menu->textures[MPLAYER_TEXT_TEXTURE][mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]-1], NULL,
-                &mplayer->menu->texture_canvases[MPLAYER_TEXT_TEXTURE][mplayer->menu->texture_sizes[MPLAYER_TEXT_TEXTURE]
-                - 1]);
-        }
+        music_location.text_canvas.y += music_location.text_canvas.h + SETTING_LINESPACING;
+        mplayer->settingmenu_scrollcontainer_index++;
+        free(music_location.utext); music_location.utext = NULL;
     }
 }
 
-void mplayer_settingmenu_tryappend_scrollcontainer(mplayer_t* mplayer, mplayer_scrollcontainer_t container) {
-    if(mplayer->settingmenu_scrollcontainer_init) {
-        return;
-    }
-    mplayer_scrollcontainer_append(&mplayer->settingmenu_scrollcontainers, container, &mplayer->settingmenu_scrollcontainer_count);
+void mplayer_settingmenu_render_personalization(mplayer_t* mplayer, SDL_Rect previous_canvas,
+    mplayer_settingmenu_personalizationcategory_t* personalization_category) {
+    personalization_category->text_info = setting_textinfo[2];
+    personalization_category->text_info.text_canvas.y = previous_canvas.y + previous_canvas.h + SETTING_LINESPACING;
+    SDL_Texture* personalization_text_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font,
+        &personalization_category->text_info);
+    SDL_RenderCopy(mplayer->renderer, personalization_text_texture, NULL,
+        &personalization_category->text_info.text_canvas);
+    SDL_DestroyTexture(personalization_text_texture); personalization_text_texture = NULL;
 }
-
-void mplayer_settingmenu_scrollcontainer_update(mplayer_t* mplayer) {
-    mplayer_scrollcontainer_destroylist(&mplayer->settingmenu_scrollcontainers,
-    &mplayer->settingmenu_scrollcontainer_count);
-    mplayer->settingmenu_scrollcontainer_init = false;
-    printf("mplayer->settingmenu_scrollcontainer was updated\n");
+void mplayer_settingmenu_render_about(mplayer_t* mplayer,
+    mplayer_settingmenu_personalizationcategory_t personalization_category) {
+    setting_textinfo[3].text_canvas.y = personalization_category.text_info.text_canvas.y +
+        personalization_category.text_info.text_canvas.h + SETTING_LINESPACING;
+    mplayer_settingmenu_aboutcategory_t about = {
+        .text_info = setting_textinfo[3]
+    };
+    SDL_Texture* about_text_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font, &about.text_info);
+    SDL_RenderCopy(mplayer->renderer, about_text_texture, NULL, &about.text_info.text_canvas);
+    SDL_DestroyTexture(about_text_texture); about_text_texture = NULL;
 }

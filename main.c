@@ -5,7 +5,7 @@
 #include "music_player.h"
 
 int main(int argc, char** argv) {
-    mplayer_t mplayer;
+    mplayer_t mplayer = {0};
     mplayer_init();
     mplayer_createapp(&mplayer);
     mplayer_run(&mplayer);
