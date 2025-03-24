@@ -18,8 +18,10 @@ typedef struct input_data {
 typedef struct music_inputbox {
     TTF_Font *placeholder_font, *input_datafont;
     input_data_t input;
-    size_t start_renderpos;
-    
+    size_t start_renderpos,
+           end_renderpos;
+    bool update_renderpos;
+
     SDL_Color input_datacolor;
     char* placeholder;
     SDL_Rect placeholder_canvas;

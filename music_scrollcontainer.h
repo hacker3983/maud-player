@@ -2,8 +2,8 @@
 #define _MUSIC_SCROLLCONTAINER_H
 #include "music_player.h"
 
-// Initialize the scroll container
-void mplayer_scrollcontainer_init(music_scrollcontainer_t* container, SDL_Rect scroll_area, int scroll_speed);
+// Initialize the scroll container properties
+void mplayer_scrollcontainer_setprops(music_scrollcontainer_t* container, SDL_Rect scroll_area, int scroll_speed);
 
 // Append an new item to the scroll container. it must be initialized with with mplayer_scrollcontainer_init
 void mplayer_scrollcontainer_appenditem(music_scrollcontainer_t* container, music_scrollcontaineritem_t scroll_item);

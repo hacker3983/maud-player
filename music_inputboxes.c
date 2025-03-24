@@ -82,7 +82,6 @@ bool mplayer_inputbox_getinput_aftercursor(mplayer_inputbox_t* input_box, input_
         char* utf8_char = malloc(utf8_charsize + 1);
         strncpy(utf8_char, input->data + start_index, utf8_charsize);
         utf8_char[utf8_charsize] = '\0';
-        printf("Input after_char: %s\n", utf8_char);
         mplayer_concatstr(&new_input.data, utf8_char);
         mplayer_inputdata_addbyte_position(&new_input, start_index, end_index);
         new_input.cursor_pos++;
@@ -90,7 +89,6 @@ bool mplayer_inputbox_getinput_aftercursor(mplayer_inputbox_t* input_box, input_
         new_input.datasize += utf8_charsize;
         free(utf8_char);
     }
-    printf("input->after = %s\n", new_input.data);
     *input_after = new_input;
     return true;
 }
@@ -126,9 +124,7 @@ bool mplayer_inputbox_addinput_data(mplayer_inputbox_t* input_box, const char* u
         input_after = {0};
     size_t utf8_inputsize = strlen(utf8_input);
     mplayer_inputbox_getinput_beforecursor(input_box, &input_before);
-    printf("Input before is now %s, datalen = %zu\n", input_before.data, input_before.datalen);
     mplayer_inputbox_getinput_aftercursor(input_box, &input_after);
-    printf("input after is now %s, datalen = %zu\n", input_after.data, input_after.datalen);
     for(size_t i=0;i<utf8_inputsize;i++) {
         char* utf8_char = mplayer_getutf8_char(utf8_input, &i, utf8_inputsize);
         size_t utf8_charsize = strlen(utf8_char);
@@ -144,12 +140,14 @@ bool mplayer_inputbox_addinput_data(mplayer_inputbox_t* input_box, const char* u
     mplayer_inputdata_destroy(input);
     mplayer_inputdata_destroy(&input_after);
     input_box->input = input_before;
-    printf("Input: %s\n", input_box->input.data);
     return true;
 }
 
 void mplayer_inputbox_renderplaceholder(mplayer_t* mplayer, mplayer_inputbox_t* input_box) {
     if(input_box->input.data) {
+        return;
+    }
+    if(!input_box->placeholder) {
         return;
     }
     text_info_t placeholder_textinfo = {
@@ -159,16 +157,41 @@ void mplayer_inputbox_renderplaceholder(mplayer_t* mplayer, mplayer_inputbox_t* 
         .text_color = input_box->placeholder_color,
         .utext = NULL
     };
+    char* truncated_placeholder = mplayer_textmanager_truncatetext(input_box->placeholder_font, &placeholder_textinfo,
+        input_box->inputbox_canvas.w - 10);
+    if(truncated_placeholder) {
+        placeholder_textinfo.text = truncated_placeholder;
+    }
     SDL_Texture* placeholder_texture = mplayer_textmanager_rendertext(mplayer, input_box->placeholder_font,
         &placeholder_textinfo);
     placeholder_textinfo.text_canvas.x = input_box->inputbox_canvas.x + 10;
-    placeholder_textinfo.text_canvas.y = input_box->inputbox_canvas.y + 10;
+    placeholder_textinfo.text_canvas.y = input_box->inputbox_canvas.y + (input_box->inputbox_canvas.h -
+        placeholder_textinfo.text_canvas.h) / 2;
     SDL_RenderCopy(mplayer->renderer, placeholder_texture, NULL, &placeholder_textinfo.text_canvas);
-    SDL_DestroyTexture(placeholder_texture); placeholder_texture = NULL;    
+    SDL_DestroyTexture(placeholder_texture); placeholder_texture = NULL;   
+    free(truncated_placeholder); 
 }
 
 void mplayer_inputbox_renderinputdata(mplayer_t* mplayer, mplayer_inputbox_t* input_box) {
-    
+    input_data_t* input = &input_box->input;
+    char* data = input->data;
+    text_info_t input_text = {
+        .font_size = 18,
+        .text = NULL,
+        .text_canvas = {
+            .x = input_box->inputbox_canvas.x + 5, .y = 0,
+            .w = 0, .h = 0
+        },
+        .text_color = input_box->input_datacolor,
+        .utext = input->data
+    };
+    mplayer_textmanager_sizetext(mplayer->music_font, &input_text);
+    input_text.text_canvas.y = input_box->inputbox_canvas.y + (input_box->inputbox_canvas.h -
+        input_text.text_canvas.h) / 2;
+    SDL_Texture* texture = mplayer_textmanager_renderunicode(mplayer, mplayer->music_font, &input_text);
+    SDL_RenderCopy(mplayer->renderer, texture, NULL, &input_text.text_canvas);
+    SDL_DestroyTexture(texture);
+    texture = NULL;
 }
 
 void mplayer_inputbox_rendercursor(mplayer_t* mplayer, mplayer_inputbox_t* input_box) {
@@ -187,15 +210,42 @@ void mplayer_inputbox_display(mplayer_t* mplayer, mplayer_inputbox_t* input_box)
     mplayer_inputbox_rendercursor(mplayer, input_box);
 }
 
+void mplayer_inputbox_backspace(mplayer_t* mplayer, mplayer_inputbox_t* input_box) {
+    input_data_t before = {0},
+                 after = {0},
+                 input = input_box->input;
+    if(!input_box->input.cursor_pos) {
+        return;
+    }
+    input_box->input.cursor_pos--;
+    mplayer_inputbox_getinput_beforecursor(input_box, &before);
+    mplayer_inputbox_getinput_aftercursor(input_box, &after);
+    for(size_t i=2;i<after.byte_positionlen;i+=2) {
+        size_t start_index = after.byte_positions[i], end_index = after.byte_positions[i+1],
+               utf8_charsize = end_index - start_index;
+        size_t new_startindex = before.datasize, new_endindex = before.datasize + utf8_charsize;
+        char* utf8_char = malloc(utf8_charsize+1);
+        strncpy(utf8_char, input.data+start_index, utf8_charsize);
+        utf8_char[utf8_charsize] = '\0';
+        mplayer_concatstr(&before.data, utf8_char);
+        mplayer_inputdata_addbyte_position(&before, new_startindex, new_endindex);
+        before.datalen++;
+        before.datasize += utf8_charsize;
+        free(utf8_char);
+        utf8_char = NULL;
+    }
+    mplayer_inputdata_destroy(&after);
+    mplayer_inputdata_destroy(&input_box->input);
+    input_box->input = before;
+}
+
 void mplayer_inputbox_handleinputs(mplayer_t* mplayer, mplayer_inputbox_t* input_box) {
     char* current_data = NULL;
     switch(mplayer->e.type) {
         case SDL_TEXTINPUT:
-            if(mplayer_inputbox_addinput_data(input_box, mplayer->e.text.text)) {
-                printf("Success\n");
-            } else {
-                printf("Failure\n");
-            }
+            mplayer_inputbox_addinput_data(input_box, mplayer->e.text.text);
+            printf("Cursor position becomes %zu\n", input_box->input.cursor_pos);
+            input_box->update_renderpos = true;
             break;
         case SDL_KEYDOWN:
             switch(mplayer->e.key.keysym.sym) {
@@ -203,14 +253,19 @@ void mplayer_inputbox_handleinputs(mplayer_t* mplayer, mplayer_inputbox_t* input
                     if(input_box->input.cursor_pos) {
                         input_box->input.cursor_pos--;
                     }
+                    input_box->update_renderpos = true;
                     break;
                 case SDLK_RIGHT:
                     if(input_box->input.cursor_pos < input_box->input.datalen) {
                         input_box->input.cursor_pos++;
                     }
+                    input_box->update_renderpos = true;
+                    break;
+                case SDLK_BACKSPACE:
+                    mplayer_inputbox_backspace(mplayer, input_box);
                     break;
             }
-            printf("input_box->input.cursor_pos becomes %zu\n", input_box->input.cursor_pos);        
+            printf("Cursor position becomes %zu\n", input_box->input.cursor_pos);        
             break;
     }
 }

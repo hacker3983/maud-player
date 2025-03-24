@@ -89,7 +89,12 @@ bool mplayer_queue_addmusicfrom_queue(music_queue_t* destination_queue, music_qu
             return false;
         }
         for(size_t i=old_itemcount, j=0;i<destination_queue->item_count;i++, j++) {
-            new_items[i] = source_queue->items[j];
+            mplayer_queue_reallocmusicid_listby(&new_items[i].music_ids, source_queue->items[j].music_count,
+                &new_items[i].music_count);
+            for(size_t k=0;k<new_items[i].music_count;k++) {
+                new_items[i].music_ids[k] = source_queue->items[j].music_ids[k];
+            }
+            //new_items[i] = source_queue->items[j];
             destination_queue->totalmusic_count += source_queue->items[j].music_count;
         }
         destination_queue->items = new_items;
@@ -123,7 +128,11 @@ bool mplayer_queue_addmusicfrom_queue(music_queue_t* destination_queue, music_qu
         }
         destination_queue->items = new_items;
         for(size_t i=1;i<source_queue->item_count;i++) {
-            destination_queue->items[old_itemcount+(i-1)] = source_queue->items[i];
+            mplayer_queue_reallocmusicid_listby(&new_items[old_itemcount+(i-1)].music_ids,
+                source_queue->items[i].music_count, &new_items[i].music_count);
+            for(size_t j=0;j<new_items[old_itemcount+(i-1)].music_count;j++) {
+                new_items[old_itemcount].music_ids[j] = source_queue->items[i].music_ids[j];
+            }
             destination_queue->totalmusic_count += source_queue->items[i].music_count;
         }
     }
@@ -287,14 +296,18 @@ size_t mplayer_queue_getmusic_count(music_queue_t queue) {
 
 void mplayer_queue_display(mplayer_t* mplayer, music_queue_t queue) {
     text_info_t music_name = {
-        .font_size = 20,
+        .font_size = 18,
         .text = NULL,
         .text_canvas = {
-            .x = 20, .y = songs_box.y + 10,
+            .x = 0, .y = 0,
             .w = 0, .h = 0
         },
         .text_color = white,
         .utext = NULL
+    };
+    SDL_Rect outer_canvas = {
+        .x = songs_box.x + 2, .y = songs_box.y + 1,
+        .w = WIDTH - scrollbar.w - 5, .h = 0
     };
     for(size_t i=0;i<queue.item_count;i++) {
         for(size_t j=0;j<queue.items[i].music_count;j++) {
@@ -303,11 +316,30 @@ void mplayer_queue_display(mplayer_t* mplayer, music_queue_t queue) {
             music_name.utext = mplayer->music_lists[music_listindex][music_id].music_name;
             SDL_Texture* music_nametexture = mplayer_textmanager_renderunicode(mplayer,
                 mplayer->music_font, &music_name);
+            outer_canvas.h = music_name.text_canvas.h + 22;
+            music_name.text_canvas.x = outer_canvas.x + 50;
+            music_name.text_canvas.y = outer_canvas.y + (outer_canvas.h - music_name.text_canvas.h)/2;
+            SDL_SetRenderDrawColor(mplayer->renderer, 0, 42, 50, 0xFF /*0x3B, 0x35, 0x61, 0xFF*/);
+            SDL_RenderDrawRect(mplayer->renderer, &outer_canvas);
+            SDL_RenderFillRect(mplayer->renderer, &outer_canvas);
             SDL_RenderCopy(mplayer->renderer, music_nametexture, NULL, &music_name.text_canvas);
             SDL_DestroyTexture(music_nametexture); music_nametexture = NULL;
-            music_name.text_canvas.y += music_name.text_canvas.h + 20;
+            outer_canvas.y += outer_canvas.h + 3;
         }
     }
+     // scroll bar related information
+    mplayer_scrollbar_t songsbox_scrollbar = {
+        .rect = scrollbar,
+        .displacement = 0.0,
+        .orientation = 0,
+        .start_pos = 0,
+        .final_pos = mplayer_queue_getmusic_count(queue),
+        .padding_x = -2,
+        .padding_y = -(2 + (int)((double)scrollbar.h / 2.0)),
+        .scroll_area = songs_box
+    };
+    mplayer->scroll = false;
+    mplayer_renderscroll_bar(mplayer, &songsbox_scrollbar, 12);
 }
 
 void mplayer_queue_print(mplayer_t* mplayer, music_queue_t queue) {

@@ -35,7 +35,7 @@ text_info_t text_info[] = {
     {18, "Type here to search for music", NULL, white, {0, 0}}
 },
 setting_textinfo[] = {
-    {30, "Settings - This was created by Dujohn", NULL, {0xFF, 0xFF, 0xFF, 0xFF}/*{0x01, 0x00, 0x01, 0xFF}{0xE3, 0xE3, 0x6A, 0xFF}{0xEA, 0xF2, 0x7C, 0xFF}{0xE5, 0x58, 0x12, 0xFF}{0x95, 0xC6, 0x23, 0xFF}{0xF9, 0x62, 0x7D, 0xFF}{0x0C, 0xF5, 0x74, 0xFF}*/,
+    {30, "Settings", NULL, {0xFF, 0xFF, 0xFF, 0xFF}/*{0x01, 0x00, 0x01, 0xFF}{0xE3, 0xE3, 0x6A, 0xFF}{0xEA, 0xF2, 0x7C, 0xFF}{0xE5, 0x58, 0x12, 0xFF}{0x95, 0xC6, 0x23, 0xFF}{0xF9, 0x62, 0x7D, 0xFF}{0x0C, 0xF5, 0x74, 0xFF}*/,
         {10, 0}},
     {30, "Music Library", NULL, {0xFF, 0xFF, 0xFF, 0xFF} /*{0xF9, 0x62, 0x7D, 0xFF}{0xAD, 0x2E, 0x24, 0xFF}{0x0C, 0xF5, 0x74, 0xFF}{0xF7, 0xF9, 0xF9, 0xFF}{0x58, 0x72, 0x91, 0xFF}*/,
         {10, 0}},
@@ -47,7 +47,8 @@ setting_textinfo[] = {
 tabinfo_t tab_info[] = {
     {28, "Songs", text2_color, underline_color, {0, 9}, SONGS_TAB, true, false},
     {28, "Play Queue", text2_color, {0}, {0, 9}, QUEUES_TAB, false, false},
-    {28, "Playlists", text2_color, {0}, {0, 9}, PLAYLISTS_TAB, false, false}};
+    {28, "Playlists", text2_color, {0}, {0, 9}, PLAYLISTS_TAB, false, false}
+};
 int active_tab = SONGS_TAB, prev_tab = -1;
 
 ibtn_t music_btns[] = {
@@ -82,7 +83,7 @@ setting_btns[] = {
 setting_iconbtn = {"images/settings (5).png", "Settings", SETTING_BUTTON, {0, 9, 45, 45}, false, false, 0};
 SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},
          img_border = {10, 0, 80, 70};
-SDL_Rect scrollbar = {0, 0, 20, 50}, music_status = {0, 0, 0, 150},
+SDL_Rect scrollbar = {0, 0, 20, 50}, music_status = {0, 0, 0, 0},
          songs_box = {0, 0, 0, 0};
 SDL_Rect checkbox_size = {0, 0, 30, 50},
          music_selectionmenu_checkbox_size = {0, 0, 30, 40};

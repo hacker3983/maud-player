@@ -33,6 +33,22 @@ bool mplayer_playlist_create(mplayer_playlist_t** playlists, size_t* playlist_co
     return true;
 }
 
+bool mplayer_playlist_rename(mplayer_playlist_t** playlists, size_t playlist_count, const char* playlist_name, const char* new_name) {
+    if(!mplayer_playlist_exists(*playlists, playlist_count, playlist_name)) {
+        return false;
+    }
+    for(size_t i=0;i<playlist_count;i++) {
+        if(strcmp((*playlists)[i].name, playlist_name) == 0) {
+            free((*playlists)[i].name);
+            size_t new_namelen = strlen(new_name);
+            (*playlists)[i].name = calloc(new_namelen + 1, sizeof(char));
+            strcpy((*playlists)[i].name, new_name);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool mplayer_playlist_remove(mplayer_playlist_t** playlists, size_t* playlist_count, const char* playlist_name) {
     if(!mplayer_playlist_exists(*playlists, *playlist_count, playlist_name)) {
         return false;

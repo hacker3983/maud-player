@@ -265,6 +265,41 @@ void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info) {
 }
 
 void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures[]*/) {
+    text_info_t current_music = {
+        .font_size = 18,
+        .text = NULL,
+        .text_canvas = {0},
+        .text_color = white,
+        .utext = NULL
+    };
+    /*
+    music name
+    progress bar
+    controls
+    */
+    mplayer_getcurrent_musicplaying_sizetext(mplayer, &current_music);
+    mplayer_setprogressbar_size(mplayer);
+    // create music bar
+    music_status.w = WIDTH,
+    music_status.h = 50 + current_music.text_canvas.h +
+        mplayer->progress_bar.h + music_btns[MUSIC_PLAYBTN].btn_canvas.h;
+    if(current_music.utext) {
+        music_status.h += 10;
+    }
+    music_status.y = HEIGHT - music_status.h, music_status.w = WIDTH;
+    if(current_music.utext) {
+        current_music.text_canvas.y = music_status.y + 10;
+        mplayer->progress_bar.y = current_music.text_canvas.y + current_music.text_canvas.h + 20;
+    };
+    mplayer_setcontrolbtns_position(mplayer);
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(music_statusbar_color));
+    SDL_RenderFillRect(mplayer->renderer, &music_status);
+    SDL_RenderDrawRect(mplayer->renderer, &music_status);
+    mplayer_displayprogression_control(mplayer);
+    mplayer_rendercontrol_btns(mplayer);
+}
+
+void mplayer_setcontrolbtns_position(mplayer_t* mplayer) {
     playbtn_canvas = &music_btns[MUSIC_PLAYBTN].btn_canvas,
     skipbtn_canvas = &music_btns[MUSIC_SKIPBTN].btn_canvas,
     prevbtn_canvas = &music_btns[MUSIC_PREVBTN].btn_canvas;
@@ -273,39 +308,38 @@ void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures
     repeatoffbtn_canvas = &music_btns[MUSIC_REPEATOFFBTN].btn_canvas;
     repeatallbtn_canvas = &music_btns[MUSIC_REPEATALLBTN].btn_canvas;
     repeatonebtn_canvas = &music_btns[MUSIC_REPEATONEBTN].btn_canvas;
-    
-    // create music bar
-    music_status.y = HEIGHT - music_status.h, music_status.w = WIDTH;
-    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(music_statusbar_color));
-    SDL_RenderFillRect(mplayer->renderer, &music_status);
-    SDL_RenderDrawRect(mplayer->renderer, &music_status);
+    SDL_Rect container = {
+        .x = 0,
+        .y = mplayer->progress_bar.y + mplayer->progress_bar.h + 10,
+        .w = playbtn_canvas->w * 5 + 40,
+        .h = playbtn_canvas->h
+    };
+    container.x = (music_status.w - container.w) / 2;
+    shufflebtn_canvas->x = container.x,
+    shufflebtn_canvas->y = container.y;
 
-    // place the play, previous and skip button in the middle of the music status
-    playbtn_canvas->x = (WIDTH - playbtn_canvas->w)/2, playbtn_canvas->y = HEIGHT -
-        (playbtn_canvas->h + (playbtn_canvas->h/2));
-    
-    pausebtn_canvas->x = playbtn_canvas->x, pausebtn_canvas->y = playbtn_canvas->y;
+    prevbtn_canvas->x = shufflebtn_canvas->x + shufflebtn_canvas->w + 10;
+    prevbtn_canvas->y = container.y;
 
-    /*prevbtn_canvas->x = ((WIDTH - prevbtn_canvas->w)/4), prevbtn_canvas->y = HEIGHT - (prevbtn_canvas->h +
-       (prevbtn_canvas->h/2));*/
-    shufflebtn_canvas->x = ((WIDTH - shufflebtn_canvas->w)/2) - shufflebtn_canvas->w - 60,
-    shufflebtn_canvas->y = HEIGHT - (shufflebtn_canvas->h + (shufflebtn_canvas->h/2));
-    prevbtn_canvas->x = ((WIDTH - prevbtn_canvas->w)/2) - prevbtn_canvas->w - 10, prevbtn_canvas->y = HEIGHT - (prevbtn_canvas->h +
-       (prevbtn_canvas->h/2));
+    playbtn_canvas->x = prevbtn_canvas->x + prevbtn_canvas->w + 10;
+    playbtn_canvas->y = container.y;
+    pausebtn_canvas->x = playbtn_canvas->x,
+    pausebtn_canvas->y = playbtn_canvas->y;
 
-    /*skipbtn_canvas->x = (WIDTH - (skipbtn_canvas->w))/2 + (WIDTH - skipbtn_canvas->w)/4, skipbtn_canvas->y = HEIGHT -
-        (skipbtn_canvas->h + (skipbtn_canvas->h/2));*/
-    skipbtn_canvas->x = ((WIDTH - (skipbtn_canvas->w))/2) + skipbtn_canvas->w + 10, skipbtn_canvas->y = HEIGHT -
-        (skipbtn_canvas->h + (skipbtn_canvas->h/2));
+    skipbtn_canvas->x = playbtn_canvas->x + playbtn_canvas->w + 10;
+    skipbtn_canvas->y = container.y;
 
     repeatallbtn_canvas->x = skipbtn_canvas->x + skipbtn_canvas->w + 10,
-    repeatallbtn_canvas->y = skipbtn_canvas->y;
+    repeatallbtn_canvas->y = container.y;
 
     repeatonebtn_canvas->x = repeatallbtn_canvas->x,
-    repeatonebtn_canvas->y = repeatallbtn_canvas->y;
+    repeatonebtn_canvas->y = container.y;
 
     repeatoffbtn_canvas->x = repeatonebtn_canvas->x,
-    repeatoffbtn_canvas->y = repeatonebtn_canvas->y;
+    repeatoffbtn_canvas->y = container.y;
+}
+
+void mplayer_rendercontrol_btns(mplayer_t* mplayer) {
     SDL_Texture* target_texture = NULL;
     // render all buttons on music status bar
     for(int i=0;i<MUSICBTN_COUNT;i++) {
@@ -342,13 +376,13 @@ void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures
                 musicbtn_tooltip.y = music_btns[i].btn_canvas.y - musicbtn_tooltip.h;
                 musicbtn_tooltip.x = music_btns[i].btn_canvas.x - ((musicbtn_tooltip.w -
                     music_btns[i].btn_canvas.w) / 2);
-                mplayer_tooltip_render(mplayer, &musicbtn_tooltip);
+                mplayer_tooltip_renderhover(mplayer, &musicbtn_tooltip);
             } else if(Mix_PlayingMusic() && i == MUSIC_PLAYBTN) {
                mplayer_tooltip_getsize(&musicbtn_tooltip);
                 musicbtn_tooltip.y = music_btns[i].btn_canvas.y - musicbtn_tooltip.h;
                 musicbtn_tooltip.x = music_btns[i].btn_canvas.x - ((musicbtn_tooltip.w -
                     music_btns[i].btn_canvas.w) / 2); 
-                mplayer_tooltip_render(mplayer, &musicbtn_tooltip);
+                mplayer_tooltip_renderhover(mplayer, &musicbtn_tooltip);
             }
             if(music_btns[i].clicked) {
                 if(Mix_PlayingMusic() && Mix_PausedMusic() && music_btns[MUSIC_PLAYBTN].clicked) {
@@ -368,7 +402,7 @@ void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures
                 musicbtn_tooltip.y = music_btns[i].btn_canvas.y - musicbtn_tooltip.h;
                 musicbtn_tooltip.x = music_btns[i].btn_canvas.x - ((musicbtn_tooltip.w -
                     music_btns[i].btn_canvas.w) / 2);
-                mplayer_tooltip_render(mplayer, &musicbtn_tooltip);
+                mplayer_tooltip_renderhover(mplayer, &musicbtn_tooltip);
             }
             SDL_RenderCopy(mplayer->renderer, target_texture, NULL, &music_btns[mplayer->repeat_id].btn_canvas);
             continue;
@@ -378,7 +412,7 @@ void mplayer_createmusicbar(mplayer_t* mplayer/*, SDL_Texture* musicbtn_textures
             musicbtn_tooltip.y = music_btns[i].btn_canvas.y - musicbtn_tooltip.h;
             musicbtn_tooltip.x = music_btns[i].btn_canvas.x - ((musicbtn_tooltip.w -
             music_btns[i].btn_canvas.w) / 2);         
-            mplayer_tooltip_render(mplayer, &musicbtn_tooltip);
+            mplayer_tooltip_renderhover(mplayer, &musicbtn_tooltip);
         }
         SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][i],
             NULL, &music_btns[i].btn_canvas);
@@ -511,7 +545,28 @@ void mplayer_createsongs_box(mplayer_t* mplayer) {
     SDL_RenderDrawRect(mplayer->renderer, &songs_box);
 }
 
-void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration) {
+
+void mplayer_getcurrent_musicplaying_sizetext(mplayer_t* mplayer, text_info_t* current_music) {
+    music_queue_t* play_queue = &mplayer->play_queue;
+    if(!play_queue->items) {
+        return;
+    }
+    size_t play_itemindex = play_queue->play_itemindex, playid = play_queue->playid,
+           playmusic_count = play_queue->items[play_queue->play_itemindex].music_count,
+           music_listindex = play_queue->items[play_queue->play_itemindex].music_listindex,
+           music_id = play_queue->items[play_itemindex].music_ids[playid];
+
+    music_t **music_lists = mplayer->music_lists,
+            *music_list = music_lists[music_listindex];
+    if(Mix_PlayingMusic()) {
+        current_music->utext = music_lists[music_listindex][music_id].music_name;
+        mplayer_textmanager_sizetext(mplayer->music_font, current_music);
+    }
+}
+
+void mplayer_setprogressbar_size(mplayer_t* mplayer) {
+    mtime_t curr_duration = {0}, full_duration = {0};
+    mplayer_getduration_progression(mplayer, &curr_duration, &full_duration);
     text_info_t duration_texts[2] = {
         // The current duration of the music being played
         {
@@ -540,65 +595,105 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
     SDL_Texture* textures[2] = {0};
     sprintf(duration_texts[0].text, "%02d:%02d:%02d", curr_duration.hrs, curr_duration.mins, curr_duration.secs);
     sprintf(duration_texts[1].text, "%02d:%02d:%02d", full_duration.hrs, full_duration.mins, full_duration.secs);
+    mplayer_textmanager_sizetext(mplayer->music_font, &duration_texts[0]);
+    mplayer->progress_bar.w = WIDTH - (duration_texts[0].text_canvas.w * 2) - 20,
+    mplayer->progress_bar.h = duration_texts[0].text_canvas.h;
+}
+
+void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration) {
+    text_info_t duration_texts[2] = {
+        // The current duration of the music being played
+        {
+            .font_size = 14,
+            // cast the current duration to a character array since pointers on the stack cannot be modified
+            .text = (char[]){"00:00:00"},
+            .text_canvas = {
+                .x = music_status.x + 1,
+                .y = music_status.y + 20
+            },
+            .text_color = white
+        },
+        // The final duration of music being played 
+        {
+            .font_size = 14,
+            // cast the final duration to a character array since pointers to string literals on the stack
+            // cannot be modified because they are constant
+            .text = (char[]){"00:00:00"},
+            .text_canvas = {
+                .x = music_status.x + music_status.w,
+                .y = music_status.y + 20
+            },
+            .text_color = white
+        }
+    };
+    SDL_Texture* textures[2] = {0};
+    sprintf(duration_texts[0].text, "%02d:%02d:%02d", curr_duration.hrs, curr_duration.mins, curr_duration.secs);
+    sprintf(duration_texts[1].text, "%02d:%02d:%02d", full_duration.hrs, full_duration.mins, full_duration.secs);
     for(int i=0;i<2;i++) {
         textures[i] = mplayer_textmanager_rendertext(mplayer, mplayer->music_font, &duration_texts[i]);
     }
-    
-    mplayer->progress_bar.w = WIDTH - (duration_texts[0].text_canvas.w * 2) - 20,
     mplayer->progress_bar.x = duration_texts[0].text_canvas.x + duration_texts[0].text_canvas.w + 6;
-    mplayer->progress_bar.y = music_status.y+10, mplayer->progress_bar.h = duration_texts[0].text_canvas.h;
+    mplayer->progress_bar.y = music_status.y+20;
     duration_texts[1].text_canvas.x = mplayer->progress_bar.x + mplayer->progress_bar.w + 6;
-    for(int i=0;i<2;i++) {
-        SDL_RenderCopy(mplayer->renderer, textures[i], NULL, &duration_texts[i].text_canvas);
-        SDL_DestroyTexture(textures[i]);
-    }
-    music_queue_t* play_queue = &mplayer->play_queue;
-    if(!play_queue->items) {
-        return;
-    }
-    size_t play_itemindex = play_queue->play_itemindex, playid = play_queue->playid,
+    if(Mix_PlayingMusic()) {
+        music_queue_t* play_queue = &mplayer->play_queue;
+        size_t play_itemindex = play_queue->play_itemindex, playid = play_queue->playid,
            playmusic_count = play_queue->items[play_queue->play_itemindex].music_count,
            music_listindex = play_queue->items[play_queue->play_itemindex].music_listindex,
-           music_id = play_queue->items[play_itemindex].music_ids[playid],
-           nextmusic_queueindex = play_itemindex,
-           next_playid = playid+1,
-           nextmusic_id = 0,
-           nextmusic_listindex = 0;
-
-    if(next_playid == playmusic_count) {
-        next_playid = 0;
-        nextmusic_queueindex++;
-        nextmusic_queueindex %= play_queue->item_count;
-        nextmusic_listindex = play_queue->items[nextmusic_queueindex].music_listindex;
-    }
-    nextmusic_id = play_queue->items[play_itemindex].music_ids[next_playid];
-    music_t **music_lists = mplayer->music_lists,
-            *music_list = music_lists[music_listindex];
-
-    if(Mix_PlayingMusic()) {
-        int repeatbtn_endpos = music_btns[mplayer->repeat_id].btn_canvas.x +
-                               music_btns[mplayer->repeat_id].btn_canvas.w;
-        text_info_t music_name = {18, NULL, NULL, white, {10, 0, 0, 0}},
-                    nextmusic_name = {18, NULL, NULL, white, {WIDTH - 20, 0, 0, 0}};
-        music_name.text_canvas.y = mplayer->progress_bar.y + mplayer->progress_bar.h + 20;
-        music_name.utext = music_list[music_id].music_name;
-        SDL_Texture* music_nametexture = mplayer_textmanager_renderunicode(mplayer, mplayer->music_font,
-            &music_name);
-        // As long as the texture returned is not NULL then we copy the texture to the renderer
-        if(music_nametexture) {
-            SDL_RenderCopy(mplayer->renderer, music_nametexture, NULL, &music_name.text_canvas);
-            SDL_DestroyTexture(music_nametexture); music_nametexture = NULL;
+           music_id = play_queue->items[play_itemindex].music_ids[playid];
+        music_t **music_lists = mplayer->music_lists;
+        text_info_t music_name = {18, NULL, NULL, white, {0, 0, 0, 0}};
+        music_name.utext = music_lists[music_listindex][music_id].music_name;
+        mplayer_textmanager_sizetext(mplayer->music_font, &music_name);
+        char* truncated_name = NULL;
+        if(music_name.text_canvas.x + music_name.text_canvas.w > WIDTH) {
+            truncated_name = mplayer_textmanager_truncatetext(mplayer->music_font, &music_name,
+                WIDTH);
         }
-        nextmusic_name.utext = music_lists[nextmusic_listindex][nextmusic_id].music_name;
-        SDL_Texture* nextmusic_nametexture = mplayer_textmanager_renderunicode(mplayer, mplayer->music_font,
-            &nextmusic_name);
-        nextmusic_name.text_canvas.x -= nextmusic_name.text_canvas.w;
-        nextmusic_name.text_canvas.y = mplayer->progress_bar.y + mplayer->progress_bar.h + 20;
-        if(nextmusic_nametexture) {
-            SDL_RenderCopy(mplayer->renderer, nextmusic_nametexture, NULL, &nextmusic_name.text_canvas);
-            SDL_DestroyTexture(nextmusic_nametexture); nextmusic_nametexture = NULL;
+        music_name.text_canvas.y = music_status.y + 10;
+        if(truncated_name) {
+            char* original_name = music_name.utext;
+            music_name.utext = truncated_name;
+            mplayer_textmanager_sizetext(mplayer->music_font, &music_name);
+            mplayer_tooltip_t music_nametooltip = {
+                .background_color = {0},
+                .delay_secs = 0.5,
+                .duration_secs = 0,
+                .element_canvas = music_name.text_canvas,
+                .font = mplayer->music_font,
+                .font_size = 16,
+                .margin_x = 5,
+                .margin_y = 10,
+                .text = original_name,
+                .text_color = green,
+                .wrap_length = WIDTH - 10,
+                .wrap_spacing = 10,
+                .x = 0,
+                .y = 0,
+            };
+            mplayer_tooltip_getsize(&music_nametooltip);
+            music_nametooltip.x = music_name.text_canvas.x;
+            music_nametooltip.y = music_name.text_canvas.y - music_nametooltip.h;
+            if(mplayer_rect_hover(mplayer, music_name.text_canvas)) {
+                mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+            }
+            mplayer->music_tooltip = music_nametooltip;
+            mplayer->display_musictooltip = true;
+        } else {
+            mplayer->display_musictooltip = false;
         }
-    }
+        mplayer->progress_bar.y = music_name.text_canvas.y + music_name.text_canvas.h + 10;
+        duration_texts[0].text_canvas.y = mplayer->progress_bar.y,
+        duration_texts[1].text_canvas.y = mplayer->progress_bar.y;
+        SDL_Texture* texture = mplayer_textmanager_renderunicode(mplayer, mplayer->music_font, &music_name);
+        SDL_RenderCopy(mplayer->renderer, texture, NULL, &music_name.text_canvas);
+        free(truncated_name);
+        truncated_name = NULL;
+   }
+   for(int i=0;i<2;i++) {
+        SDL_RenderCopy(mplayer->renderer, textures[i], NULL, &duration_texts[i].text_canvas);
+        SDL_DestroyTexture(textures[i]);
+   }
 }
 
 void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Color line_color, 
@@ -746,6 +841,21 @@ void mplayer_getcurrentmusic_progression(mplayer_t* mplayer) {
     }
 }
 
+void mplayer_getduration_progression(mplayer_t* mplayer, mtime_t* curr_duration,
+    mtime_t* full_duration) {
+    music_queue_t* play_queue = &mplayer->play_queue;
+    size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
+            music_listindex = 0, music_id = 0;
+    music_t **music_lists = mplayer->music_lists, *music_list = NULL;
+    if(play_queue->items) {
+        music_listindex = play_queue->items[*play_itemindex].music_listindex,
+        music_id = play_queue->items[*play_itemindex].music_ids[*playid],
+        music_list = music_lists[music_listindex];
+        *curr_duration = music_list[music_id].music_position,
+        *full_duration = music_list[music_id].music_duration;
+    }
+}
+
 void mplayer_displayprogression_control(mplayer_t* mplayer) {
     music_queue_t* play_queue = &mplayer->play_queue;
     mtime_t curr_duration = {0}, full_duration = {0};
@@ -844,6 +954,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             } else if(mplayer->playlist_manager.button_bar.new_playlistbtn.clicked) {
                 mplayer_inputbox_handleinputs(mplayer, &mplayer->playlist_manager.playlist_inputbox);
                 break;
+            } else if(mplayer->playlist_manager.rename_clicked) {
+                mplayer_inputbox_handleinputs(mplayer, &mplayer->playlist_manager.rename_inputbox);
+                break;
             }
             if(mplayer->musicsearchbar_clicked) {
                 char* temp_text = NULL, *temp2_text = NULL;
@@ -896,6 +1009,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 break;
             } else if(mplayer->playlist_manager.button_bar.new_playlistbtn.clicked) {
                 mplayer_inputbox_handleinputs(mplayer, &mplayer->playlist_manager.playlist_inputbox);
+                break;
+            } else if(mplayer->playlist_manager.rename_clicked) {
+                mplayer_inputbox_handleinputs(mplayer, &mplayer->playlist_manager.rename_inputbox);
                 break;
             }
             switch(mplayer->e.key.keysym.scancode) {
@@ -969,12 +1085,14 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             mplayer_scrolltype_getmousewheel_scrolltype(mplayer->e, &mplayer->scroll_type);
             mplayer->scroll = true;
         } else if(Mix_PlayingMusic() && mplayer->e.type == SDL_KEYUP) {
-            if(mplayer->e.key.keysym.sym == SDLK_SPACE && !music_addplaylistbtn.clicked && !mplayer->musicsearchbar_clicked)
+            if(mplayer->e.key.keysym.sym == SDLK_SPACE && !mplayer->playlist_manager.button_bar.new_playlistbtn.clicked
+                && !music_addplaylistbtn.clicked && !mplayer->musicsearchbar_clicked && !mplayer->playlist_manager.rename_clicked) {
                 if(Mix_PausedMusic()) {
                     Mix_ResumeMusic();
                 } else {
                     Mix_PauseMusic();
                 }
+            }
         } else if(mplayer->e.type == SDL_MOUSEBUTTONDOWN) {
             mplayer->mouse_x = mplayer->e.button.x, mplayer->mouse_y = mplayer->e.button.y;
             mplayer->mouse_buttondown = true;
@@ -1094,7 +1212,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     if(!mplayer->music_selectionmenu_addtobtn_clicked || !music_addplaylistbtn.clicked) {
         mplayer_tooltip_getsize(&add_folder_tooltip);
         add_folder_tooltip.x = music_addfolderbtn.btn_canvas.x - add_folder_tooltip.w;
-        mplayer_tooltip_render(mplayer, &add_folder_tooltip);
+        mplayer_tooltip_renderhover(mplayer, &add_folder_tooltip);
     }
     // Create settings button on screen
     setting_iconbtn.btn_canvas.x = WIDTH - setting_iconbtn.btn_canvas.w - 2;
@@ -1120,7 +1238,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     if(!mplayer->music_selectionmenu_addtobtn_clicked || !music_addplaylistbtn.clicked) {
         mplayer_tooltip_getsize(&settings_button_tooltip);
         settings_button_tooltip.x = setting_iconbtn.btn_canvas.x - settings_button_tooltip.w;
-        mplayer_tooltip_render(mplayer, &settings_button_tooltip);
+        mplayer_tooltip_renderhover(mplayer, &settings_button_tooltip);
     }
     if(!mplayer->music_list) {
         mplayer_filemanager_loadmusics(mplayer);
@@ -1132,9 +1250,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     }
     /* Create music bar */
     mplayer_createmusicbar(mplayer);
-    mplayer_displayprogression_control(mplayer);
     if(active_tab != PLAYLISTS_TAB && mplayer->playlist_manager.playlist_selected) {
         mplayer->playlist_manager.playlist_selected = false;
+        mplayer->playlist_manager.rename_clicked = false;
     }
     if(active_tab == SONGS_TAB) {
         /* Create the search bar for searching for music */
@@ -1169,8 +1287,13 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer_queue_print(mplayer, mplayer->play_queue);
         mplayer->mouse_clicked = false;
     } else if(active_tab == PLAYLISTS_TAB) {
+        mplayer_songsmanager_handleprevbutton(mplayer);
+        mplayer_songsmanager_handleskipbutton(mplayer);
         mplayer_playlistmanager_display(mplayer);
         mplayer->mouse_clicked = false;
+    }
+    if(mplayer->display_musictooltip) {
+        mplayer_tooltip_renderhover(mplayer, &mplayer->music_tooltip);
     }
     prev_tab = active_tab;
     mplayer_activatecursor(mplayer);

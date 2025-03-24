@@ -35,6 +35,9 @@ typedef struct mplayer_playlistmanager {
     button_bar_t button_bar;
     mplayer_tooltip_t playlist_tooltip;
     mplayer_inputbox_t playlist_inputbox;
+    bool createplaylistbtn_clicked, playlistname_empty;
+    mplayer_inputbox_t rename_inputbox;
+    bool rename_clicked, rename_inputinited;
     SDL_Rect layoutbtn;
     int layout_type;
     size_t playlist_count;  // The number of playlists that were created / parsed

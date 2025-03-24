@@ -20,24 +20,10 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     mplayer_set_window_title(mplayer, SETTING_TITLE);
     mplayer_set_window_color(mplayer->renderer, setting_wincolor);
     SDL_GetWindowSize(mplayer->window, &WIDTH, &HEIGHT);
-    if(mplayer->scroll) {
-        mplayer_scrollcontainer_performscroll(mplayer, &mplayer->settingmenu_scrollcontainer);
-        mplayer->scroll = false;
-    }
-
     // Create the navigation bar and handle its components
     mplayer_settingmenu_create_navigationbar(mplayer, &navbar);
     if(mplayer_settingmenu_handle_backbtn(mplayer, &navbar)) {
         return;
-    }
-
-    mplayer->settingmenu_scrollcontainer_index = 0;
-    if(!mplayer->settingmenu_scrollcontainer.init) {
-        SDL_Rect scroll_area = {
-            .x = 0, .y = 0,
-            .w = WIDTH, .h = HEIGHT
-        };
-        mplayer_scrollcontainer_init(&mplayer->settingmenu_scrollcontainer, scroll_area, SETTING_LINESPACING * 2);
     }
 
     mplayer_settingmenu_render_musiclibrary(mplayer, navbar, &music_librarycategory);
@@ -120,31 +106,21 @@ void mplayer_settingmenu_render_navigationbar(mplayer_t* mplayer, mplayer_settin
     // Render the contents of the navigation bar onto it's background
     SDL_RenderCopy(mplayer->renderer, backbtn_texture, NULL, &navbar_ref->backbtn_canvas);
     SDL_RenderCopy(mplayer->renderer, backbtn_text_texture, NULL, &navbar_ref->backbtn_textinfo.text_canvas);
-    mplayer_tooltip_render(mplayer, &navbar_ref->backbtn_tooltip);
+    mplayer_tooltip_renderhover(mplayer, &navbar_ref->backbtn_tooltip);
 }
 
 
 void mplayer_settingmenu_render_musiclibrary(mplayer_t* mplayer, mplayer_settingmenu_navbar_t navbar,
     mplayer_settingmenu_librarycategory_t* library_category) {    
     library_category->text_info = setting_textinfo[1];
-    if(!mplayer->settingmenu_scrollcontainer_init) {
-        library_category->text_info.text_canvas.y = navbar.canvas.y + navbar.canvas.h + SETTING_LINESPACING;
-        mplayer_textmanager_sizetext(mplayer->font, &library_category->text_info);
-        music_scrollcontaineritem_t scroll_item = {
-            .disappear_y = -setting_textinfo[1].text_canvas.h,
-            .initial_canvas = library_category->text_info.text_canvas,
-            .vertical_scroll = true
-        };
-        mplayer_scrollcontainer_appenditem(&mplayer->settingmenu_scrollcontainer, scroll_item);
-    }
+    library_category->text_info.text_canvas.y = navbar.canvas.y + navbar.canvas.h + SETTING_LINESPACING;
+    mplayer_textmanager_sizetext(mplayer->font, &library_category->text_info);
+
     // Render music library text
-    if(mplayer->settingmenu_scrollcontainer.items[mplayer->settingmenu_scrollcontainer_index].render) {
-        SDL_Texture* library_text_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font,
-            &library_category->text_info);
-        SDL_RenderCopy(mplayer->renderer, library_text_texture, NULL,
-            &mplayer->settingmenu_scrollcontainer.items[mplayer->settingmenu_scrollcontainer_index].scroll_canvas);
-        SDL_DestroyTexture(library_text_texture);
-    }   
+    SDL_Texture* library_text_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font,
+        &library_category->text_info);
+    SDL_RenderCopy(mplayer->renderer, library_text_texture, NULL, &library_category->text_info.text_canvas);
+    SDL_DestroyTexture(library_text_texture);
     mplayer->settingmenu_scrollcontainer_index++;
     // Render the music locations that contain the musics
     mplayer_settingmenu_render_musiclocations(mplayer, library_category->text_info.text_canvas);
@@ -165,22 +141,12 @@ void mplayer_settingmenu_render_musiclocations(mplayer_t* mplayer, SDL_Rect prev
         if(!mplayer->locations[i].path) {
             return;
         }
+        printf("mplayer->locations[%zu].path = %ls\n", i, mplayer->locations[i].path);
         music_location.utext = mplayer_widetoutf8(mplayer->locations[i].path);
         mplayer_textmanager_sizetext(mplayer->font, &music_location);
-        if(!mplayer->settingmenu_scrollcontainer_init) {
-            music_scrollcontaineritem_t scroll_item = {
-                .disappear_y = -music_location.text_canvas.h,
-                .initial_canvas = music_location.text_canvas,
-                .vertical_scroll = true
-            };
-            mplayer_scrollcontainer_appenditem(&mplayer->settingmenu_scrollcontainer, scroll_item);
-        }
-        if(mplayer->settingmenu_scrollcontainer.items[mplayer->settingmenu_scrollcontainer_index].render) {
-            SDL_Texture* location_texture = mplayer_textmanager_renderunicode(mplayer, mplayer->font, &music_location);
-            SDL_RenderCopy(mplayer->renderer, location_texture, NULL,
-                &mplayer->settingmenu_scrollcontainer.items[mplayer->settingmenu_scrollcontainer_index].scroll_canvas);
-            SDL_DestroyTexture(location_texture); location_texture = NULL;
-        }
+        SDL_Texture* location_texture = mplayer_textmanager_renderunicode(mplayer, mplayer->font, &music_location);
+        SDL_RenderCopy(mplayer->renderer, location_texture, NULL, &music_location.text_canvas);
+        SDL_DestroyTexture(location_texture); location_texture = NULL;
         music_location.text_canvas.y += music_location.text_canvas.h + SETTING_LINESPACING;
         mplayer->settingmenu_scrollcontainer_index++;
         free(music_location.utext); music_location.utext = NULL;

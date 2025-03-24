@@ -14,6 +14,7 @@ enum playlist_layoutmode {
 };
 
 void mplayer_playlistmanager_initialize_playlistinput(mplayer_t* mplayer);
+void mplayer_playlistmanager_initialize_renameinput(mplayer_t* mplayer, const char* input_data);
 SDL_Texture* mplayer_playlistmanager_getlayouticon(mplayer_t* mplayer, int type);
 SDL_Texture* mplayer_playlistmanager_getcurrentlayouticon(mplayer_t* mplayer);
 static char* mplayer_playlistmanager_getlayoutname(int type);
@@ -57,6 +58,10 @@ void mplayer_playlistmanager_setplaylist_cardposition(mplayer_t* mplayer, SDL_Re
 void mplayer_playlistmanager_display_playlistlayout_toggleswitch(mplayer_t* mplayer);
 // Display the new playlist button
 void mplayer_playlistmanager_display_newplaylistbutton(mplayer_t* mplayer);
+// Diplay input for renaming playlists
+void mplayer_playlistmanager_displayrename_input(mplayer_t* mplayer);
+// Display the validation message on screen whenever playlist input field is empty
+void mplayer_playlistmanager_display_playlistname_validation(mplayer_t* mplayer);
 // Display all the button elements such as the new playlist button in the playlist tab
 void mplayer_playlistmanager_display_buttonbar(mplayer_t* mplayer);
 // Display playlists on screen

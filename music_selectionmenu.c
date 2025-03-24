@@ -110,10 +110,8 @@ void mplayer_selectionmenu_handle_addtobtn(mplayer_t* mplayer) {
     int playqueue_btn_maxheight = (playqueue_btncanvas.h > playqueue_btntext.text_canvas.h) ?
                                     playqueue_btncanvas.h : playqueue_btntext.text_canvas.h;
     SDL_Rect playqueue_btncombo = {
-        .x = playqueue_btncanvas.x, .y = playqueue_btncanvas.y,
-        .w = playqueue_btncanvas.w +
-            (playqueue_btntext.text_canvas.w - playqueue_btncanvas.w)
-            + playqueue_btntext.text_canvas.w, .h = playqueue_btn_maxheight
+        .x = drop_downmenu.x, .y = playqueue_btncanvas.y,
+        .w = drop_downmenu.w, .h = playqueue_btn_maxheight
     };
 
     SDL_Rect new_playlistbtn_canvas = {
@@ -142,21 +140,25 @@ void mplayer_selectionmenu_handle_addtobtn(mplayer_t* mplayer) {
                                     new_playlistbtn_canvas.h : new_playlistbtn_text.text_canvas.h;
 
     SDL_Rect new_playlistbtn_combo = {
-        .x = new_playlistbtn_canvas.x,
+        .x = drop_downmenu.x,
         .y = new_playlistbtn_canvas.y,
-        .w = new_playlistbtn_canvas.w + new_playlistbtn_text.text_canvas.w +
-             (new_playlistbtn_text.text_canvas.x + new_playlistbtn_text.text_canvas.w)
-                - (new_playlistbtn_canvas.x + new_playlistbtn_canvas.w),
+        .w = drop_downmenu.w,
         .h = new_playlistbtn_maxheight
     };
-    if(mplayer_rect_hover(mplayer, playqueue_btncombo) && mplayer->mouse_clicked) {
-        printf("You clicked the play queue button within the drop down menu\n");
-        music_playqueuebtn.clicked = true;
-        mplayer->music_selectionmenu_addtobtn_clicked = false; mplayer->mouse_clicked = false;
-    } else if(mplayer_rect_hover(mplayer, new_playlistbtn_combo) && mplayer->mouse_clicked) {
-        music_addplaylistbtn.clicked = true;
-        printf("You clicked the new playlist button within the drop down menu\n");
-        mplayer->music_selectionmenu_addtobtn_clicked = false; mplayer->mouse_clicked = false;
+    if(mplayer_rect_hover(mplayer, playqueue_btncombo)) {
+        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+        if(mplayer->mouse_clicked) {
+            printf("You clicked the play queue button within the drop down menu\n");
+            music_playqueuebtn.clicked = true;
+            mplayer->music_selectionmenu_addtobtn_clicked = false; mplayer->mouse_clicked = false;
+        }
+    } else if(mplayer_rect_hover(mplayer, new_playlistbtn_combo)) {
+        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+        if(mplayer->mouse_clicked) {
+            music_addplaylistbtn.clicked = true;
+            printf("You clicked the new playlist button within the drop down menu\n");
+            mplayer->music_selectionmenu_addtobtn_clicked = false; mplayer->mouse_clicked = false;
+        }
     } else if(mplayer->mouse_clicked && mplayer->music_selectionmenu_addtobtn_clicked) {
         mplayer->music_selectionmenu_addtobtn_clicked = false;
         mplayer->mouse_clicked = false;

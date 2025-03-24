@@ -30,13 +30,10 @@ C_FILES = [
     "music_songsmanager.c"
 ]
 
-O_FILES = " ".join(C_FILES).replace(".c", ".o")
-
 print("Building music player...")
-os.system(f"gcc -c {' '.join(C_FILES)}")
+os.system(f"gcc main.c {' '.join(C_FILES)} {LINK_FILES} -o mplayer")
 print("Running music player...")
-
-if platform.system() != "Windows":
-    os.system(f"gcc main.c {O_FILES} {LINK_FILES} -o mplayer && ./mplayer")
+if platform.system() == "Linux":
+    os.system("./mplayer")
 else:
-    os.system(f"gcc -ggdb main.c {O_FILES} {LINK_FILES} -o mplayer.exe && .\\mplayer.exe")
+    os.system(f"mplayer.exe")

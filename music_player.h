@@ -151,6 +151,9 @@ typedef struct mplayer {
     music_queue_t play_queue, selection_queue;
     mplayer_playlistmanager_t playlist_manager;
 
+    mplayer_tooltip_t music_tooltip;
+    bool display_musictooltip;
+
     int repeat_id, mouse_x, mouse_y, scroll_type, scroll_y;
     char* musicsearchbar_data, *current_musicsearch_query, *additional_musicsearch_query;
     text_info_t musicsearchbar_datainfo;
@@ -178,6 +181,13 @@ typedef struct mplayer {
 void mplayer_init();
 void mplayer_createsearch_bar(mplayer_t* mplayer);
 void mplayer_createsongs_box(mplayer_t* mplayer);
+void mplayer_setcontrolbtns_position(mplayer_t* mplayer);
+void mplayer_setprogressbar_size(mplayer_t* mplayer);
+void mplayer_rendercontrol_btns(mplayer_t* mplayer);
+void mplayer_getduration_progression(mplayer_t* mplayer, mtime_t* curr_duration,
+    mtime_t* full_duration);
+void mplayer_getcurrent_musicplaying_sizetext(mplayer_t* mplayer, text_info_t* current_music);
+void mplayer_rendercontrol_btns(mplayer_t* mplayer);
 void mplayer_createmusicbar(mplayer_t* mplayer);
 void mplayer_createapp(mplayer_t* mplayer);
 int mplayer_getsize_t_length(size_t number);
@@ -214,6 +224,8 @@ void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Col
 SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
 void mplayer_getcurrentmusic_progression(mplayer_t* mplayer);
 void mplayer_controlmusic_progression(mplayer_t* mplayer);
+void mplayer_setmusicname_position(mplayer_t* mplayer, text_info_t* current_music,
+    text_info_t* next_musicname);
 void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration);
 void mplayer_displayprogression_control(mplayer_t* mplayer);
 void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);

@@ -1,13 +1,11 @@
 #include "music_scrollcontainer.h"
 
-void mplayer_scrollcontainer_init(music_scrollcontainer_t* container, SDL_Rect scroll_area,
+void mplayer_scrollcontainer_setprops(music_scrollcontainer_t* container, SDL_Rect scroll_area,
     int scroll_speed) {
     container->items = NULL;
     container->item_count = 0;
     container->scroll_area = scroll_area;
     container->scroll_speed = scroll_speed;
-    container->init = true;
-    printf("container->init = true\n");
 }
 
 void mplayer_scrollcontainer_appenditem(music_scrollcontainer_t* container, music_scrollcontaineritem_t scroll_item) {

@@ -87,11 +87,6 @@ void mplayer_tooltip_getcontents(mplayer_tooltip_t* tooltip, SDL_Rect tooltip_ca
 }
 
 void mplayer_tooltip_render(mplayer_t* mplayer, mplayer_tooltip_t* tooltip) {
-    // Ensure that the tooltip pops up only when the user hovers of the particular elements canvas such as a button
-    // or icon on screen
-    if(!mplayer_rect_hover(mplayer, tooltip->element_canvas)) {
-        return;
-    }
     mplayer_tooltip_getsize(tooltip);
     SDL_Rect tooltip_canvas = {
         tooltip->x, // The horizontal position for the tooltip
@@ -110,6 +105,15 @@ void mplayer_tooltip_render(mplayer_t* mplayer, mplayer_tooltip_t* tooltip) {
     mplayer_tooltip_displaycontents(mplayer, tooltip);
     mplayer_tooltip_printcontents(tooltip);
     mplayer_tooltip_destroycontents(tooltip);
+}
+
+void mplayer_tooltip_renderhover(mplayer_t* mplayer, mplayer_tooltip_t* tooltip) {
+    // Ensure that the tooltip pops up only when the user hovers of the particular elements canvas such as a button
+    // or icon on screen
+    if(!mplayer_rect_hover(mplayer, tooltip->element_canvas)) {
+        return;
+    }
+    mplayer_tooltip_render(mplayer, tooltip);
 }
 
 void mplayer_tooltip_displaycontents(mplayer_t* mplayer, mplayer_tooltip_t* tooltip) {

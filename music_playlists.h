@@ -14,6 +14,8 @@ typedef struct music_playlist {
 bool mplayer_playlist_create(mplayer_playlist_t** playlists, size_t* playlist_count, const char* playlist_name);
 // Determine whether a playlist exists or not
 bool mplayer_playlist_exists(mplayer_playlist_t* playlists, size_t playlist_count, const char* playlist_name);
+// Rename a playlist
+bool mplayer_playlist_rename(mplayer_playlist_t** playlists, size_t playlist_count, const char* playlist_name, const char* change_name);
 // Remove a playlist from the list of playlists
 bool mplayer_playlist_remove(mplayer_playlist_t** playlists, size_t* playlist_count, const char* playlist_name);
 // Add a music from queue to the playlist
