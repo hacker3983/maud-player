@@ -1,4 +1,5 @@
 #include "music_queue.h"
+#include "music_scrollcontainer.h"
 
 void mplayer_queue_init(music_queue_t* queue) {
     queue->items = NULL;
@@ -295,6 +296,7 @@ size_t mplayer_queue_getmusic_count(music_queue_t queue) {
 }
 
 void mplayer_queue_display(mplayer_t* mplayer, music_queue_t queue) {
+    music_scrollcontainer_t* queue_scrollcontainer = &mplayer->play_queuescrollcontainer;
     text_info_t music_name = {
         .font_size = 18,
         .text = NULL,
@@ -305,20 +307,42 @@ void mplayer_queue_display(mplayer_t* mplayer, music_queue_t queue) {
         .text_color = white,
         .utext = NULL
     };
-    SDL_Rect outer_canvas = {
+    SDL_Rect scroll_area = {
         .x = songs_box.x + 2, .y = songs_box.y + 1,
+        .w = WIDTH, .h = songs_box.h
+    };
+    SDL_RenderSetClipRect(mplayer->renderer, &scroll_area);
+    mplayer_scrollcontainer_setprops(queue_scrollcontainer, scroll_area, 20, 0, queue.totalmusic_count);
+    SDL_Rect outer_canvas = {
+        .x = songs_box.x + 2, .y = queue_scrollcontainer->scroll_y,
         .w = WIDTH - scrollbar.w - 5, .h = 0
     };
+    SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
+        fill_color = {0xFF, 0xA5, 0x00, 0xff};
+    checkbox_size.x = outer_canvas.x+5;
+    checkbox_size.h = outer_canvas.h-10;
+    checkbox_size.y = outer_canvas.y + ((outer_canvas.h - checkbox_size.h)/2);
+    size_t content_renderpos = 0;;
     for(size_t i=0;i<queue.item_count;i++) {
+        size_t music_listindex = queue.items[i].music_listindex;
         for(size_t j=0;j<queue.items[i].music_count;j++) {
-            size_t music_listindex = queue.items[i].music_listindex,
-                   music_id = queue.items[i].music_ids[j];
+            if(content_renderpos < queue_scrollcontainer->content_renderpos) {
+                content_renderpos++;
+                continue;
+            }
+            size_t music_id = queue.items[i].music_ids[j];
             music_name.utext = mplayer->music_lists[music_listindex][music_id].music_name;
-            SDL_Texture* music_nametexture = mplayer_textmanager_renderunicode(mplayer,
-                mplayer->music_font, &music_name);
+            mplayer_textmanager_sizetext(mplayer->font, &music_name);
             outer_canvas.h = music_name.text_canvas.h + 22;
             music_name.text_canvas.x = outer_canvas.x + 50;
             music_name.text_canvas.y = outer_canvas.y + (outer_canvas.h - music_name.text_canvas.h)/2;
+            if(outer_canvas.y < scroll_area.y + scroll_area.h) {
+                mplayer_scrollcontainer_appenditem(queue_scrollcontainer, outer_canvas);
+            } else {
+                break;
+            }
+            SDL_Texture* music_nametexture = mplayer_textmanager_renderunicode(mplayer,
+                mplayer->music_font, &music_name);
             SDL_SetRenderDrawColor(mplayer->renderer, 0, 42, 50, 0xFF /*0x3B, 0x35, 0x61, 0xFF*/);
             SDL_RenderDrawRect(mplayer->renderer, &outer_canvas);
             SDL_RenderFillRect(mplayer->renderer, &outer_canvas);
@@ -327,19 +351,25 @@ void mplayer_queue_display(mplayer_t* mplayer, music_queue_t queue) {
             outer_canvas.y += outer_canvas.h + 3;
         }
     }
-     // scroll bar related information
+    // scroll bar related information
     mplayer_scrollbar_t songsbox_scrollbar = {
         .rect = scrollbar,
         .displacement = 0.0,
         .orientation = 0,
-        .start_pos = 0,
+        .start_pos = queue_scrollcontainer->content_renderpos + 1,
         .final_pos = mplayer_queue_getmusic_count(queue),
         .padding_x = -2,
         .padding_y = -(2 + (int)((double)scrollbar.h / 2.0)),
-        .scroll_area = songs_box
+        .scroll_area = scroll_area
     };
-    mplayer->scroll = false;
-    mplayer_renderscroll_bar(mplayer, &songsbox_scrollbar, 12);
+    SDL_RenderSetClipRect(mplayer->renderer, NULL);
+    mplayer_renderscroll_bar(mplayer, &songsbox_scrollbar, 8);
+    if(mplayer->scroll) {
+        mplayer_scrollcontainer_performscroll(mplayer, queue_scrollcontainer);
+        mplayer->scroll = false;
+    } else {
+        mplayer_scrollcontainer_init(queue_scrollcontainer);
+    }
 }
 
 void mplayer_queue_print(mplayer_t* mplayer, music_queue_t queue) {

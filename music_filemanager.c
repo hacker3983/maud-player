@@ -247,7 +247,7 @@ void mplayer_filemanager_addmusic_location(mplayer_t* mplayer, void* locationv) 
     location_length = strlen(location);
     #endif
 
-    printf("Adding music location location %s:\n", location);
+    printf("Adding music location %s:\n", location);
 
     // write the location to the MUSIC PATHS FILE and close it
     fwrite(location, sizeof(char), location_length, f);
@@ -260,9 +260,12 @@ void mplayer_filemanager_addmusic_location(mplayer_t* mplayer, void* locationv) 
     #endif
 
     // reload the music locations, also the music list
+    printf("Freeing music path info\n");
     mplayer_filemanager_freemusicpath_info(mplayer);
+    printf("Getting music path info\n");
     mplayer_filemanager_getmusicpath_info(mplayer);
     mplayer->music_locationadded = true;
+    printf("Reloading musics\n");
     mplayer_filemanager_loadmusics(mplayer);
     mplayer->music_locationadded = false;
     printf("Successfully added music locations and reloaded the musics:\n");
@@ -617,7 +620,9 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
         }
     }
     if(mplayer->music_locationadded) {
-        mplayer->settingmenu_scrollcontainer_init = false;
+        free(mplayer->settingmenu_scrollcontainer.items);
+        mplayer->settingmenu_scrollcontainer.items = NULL;
+        mplayer->settingmenu_scrollcontainer.init = false;
         music_count = mplayer->music_count;
         startlocation_index = mplayer->location_count-1;
     }

@@ -49,6 +49,6 @@ void mplayer_settingmenu_render_personalization(mplayer_t* mplayer, SDL_Rect pre
     mplayer_settingmenu_personalizationcategory_t* personalization_category);
 void mplayer_settingmenu_render_about(mplayer_t* mplayer,
     mplayer_settingmenu_personalizationcategory_t personalization_category);
-void mplayer_settingmenu_scrollcontainer_tryappend_scrollitem(mplayer_t* mplayer, music_scrollcontaineritem_t container);
+void mplayer_settingmenu_scrollcontainer_tryappend_scrollitem(mplayer_t* mplayer, SDL_Rect item);
 void mplayer_settingmenu_scrollcontainer_update(mplayer_t* mplayer);
 #endif

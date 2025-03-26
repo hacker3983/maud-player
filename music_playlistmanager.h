@@ -68,7 +68,10 @@ void mplayer_playlistmanager_display_buttonbar(mplayer_t* mplayer);
 void mplayer_playlistmanager_displayplaylists(mplayer_t* mplayer);
 
 // Display the playlist menu after we have clicked on a playlist
-void mplayer_playlistmanager_display_playlistmenu(mplayer_t* mplayer);
+void mplayer_playlistmanager_display_playlistmenu(mplayer_t* mplayer, SDL_Rect* playlistmenu_canvasref);
+
+// Display the contents of a playlist
+void mplayer_playlistmanager_display_playlistcontent(mplayer_t* mplayer);
 
 // Display all the elements in the playlist tab
 void mplayer_playlistmanager_display(mplayer_t* mplayer);

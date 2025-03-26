@@ -458,6 +458,10 @@ void mplayer_songsmanager_handleprevbutton(mplayer_t* mplayer) {
 
 int mplayer_songsmanager_playmusic(mplayer_t* mplayer) {
     music_queue_t* play_queue = &mplayer->play_queue;
+    if(!play_queue->items) {
+        printf("The program will crash Therefore I will not play music!\n");
+        return -1;
+    }
     size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
            music_listindex = play_queue->items[*play_itemindex].music_listindex,
            music_id = play_queue->items[*play_itemindex].music_ids[*playid],
@@ -484,7 +488,6 @@ void mplayer_songsmanager_togglemusic_playback(mplayer_t* mplayer) {
            playmusic_count = play_queue->items[*play_itemindex].music_count;
     music_t **music_lists = mplayer->music_lists,
             *music_list = music_lists[music_listindex];
-    
     Mix_HaltMusic();
     if(!Mix_PausedMusic()) {
         if(!mplayer_songsmanager_playmusic(mplayer)) {

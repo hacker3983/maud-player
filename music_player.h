@@ -147,9 +147,10 @@ typedef struct mplayer {
     size_t location_count, total_filecount;
 
     music_t *music_list, *music_templist, *music_lists[2];
-    size_t music_counts[2], music_count, music_renderpos, tick_count;;
+    size_t music_counts[2], music_count, music_renderpos, tick_count;
     music_queue_t play_queue, selection_queue;
     mplayer_playlistmanager_t playlist_manager;
+    music_scrollcontainer_t play_queuescrollcontainer;
 
     mplayer_tooltip_t music_tooltip;
     bool display_musictooltip;

@@ -895,6 +895,7 @@ void mplayer_renderscroll_bar(mplayer_t* mplayer, mplayer_scrollbar_t* scrollbar
     /* Calculate the percentage of the music we are at based on the music render position
        the music render position is incremented by 1 when scrolling down and decremented by 1when scrolling up
     */
+
     double percentage = (scroll_startpos / scroll_finalpos);
     if(scroll_finalpos - scroll_startpos == max_textures) {
         percentage = 1.0;
@@ -1105,6 +1106,10 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             }
             if(mplayer_tabs_hover(mplayer, tab_info, &tab_hoverid, tab_info_size) && TAB_INIT) {
                 tab_info[prev_tab].active = false;
+                mplayer_selectionmenu_clearmusic_selection(mplayer);
+                mplayer_scrollcontainer_destroy(&mplayer->play_queuescrollcontainer);
+                mplayer_scrollcontainer_destroy(&mplayer->playlist_manager.playlist_itemcontainer);
+                mplayer_scrollcontainer_destroy(&mplayer->playlist_manager.playlist_container);
                 tab_info[tab_hoverid].underline_color = underline_color;
                 tab_info[tab_hoverid].active = true;
                 active_tab = tab_hoverid;
@@ -1268,8 +1273,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer_selectionmenu_handle_addtoplaylist_modalevents(mplayer);
         mplayer_selectionmenu_handle_addtobtn(mplayer);
         if(mplayer->selection_queue.items && mplayer->music_selected) {
-            printf("The music selection queue looks like this:\n");
-            mplayer_queue_print(mplayer, mplayer->selection_queue);
+            //printf("The music selection queue looks like this:\n");
+            //mplayer_queue_print(mplayer, mplayer->selection_queue);
             mplayer->music_selected = false;
         }
         if(music_playqueuebtn.clicked) {
@@ -1284,7 +1289,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer_songsmanager_handleprevbutton(mplayer);
         mplayer_songsmanager_handleskipbutton(mplayer);
         mplayer_queue_display(mplayer, mplayer->play_queue);
-        mplayer_queue_print(mplayer, mplayer->play_queue);
+        //mplayer_queue_print(mplayer, mplayer->play_queue);
         mplayer->mouse_clicked = false;
     } else if(active_tab == PLAYLISTS_TAB) {
         mplayer_songsmanager_handleprevbutton(mplayer);

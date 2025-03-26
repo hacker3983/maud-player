@@ -5,6 +5,7 @@
 #include "music_tooltipsdef.h"
 #include "music_textinfodef.h"
 #include "music_inputboxesdef.h"
+#include "music_scrollcontainerdef.h"
 
 typedef struct newplaylist_button {
     text_info_t text;
@@ -37,6 +38,8 @@ typedef struct mplayer_playlistmanager {
     mplayer_inputbox_t playlist_inputbox;
     bool createplaylistbtn_clicked, playlistname_empty;
     mplayer_inputbox_t rename_inputbox;
+    music_scrollcontainer_t playlist_itemcontainer,
+        playlist_container;
     bool rename_clicked, rename_inputinited;
     SDL_Rect layoutbtn;
     int layout_type;
