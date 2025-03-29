@@ -1,5 +1,7 @@
 #include "music_queue.h"
 #include "music_scrollcontainer.h"
+#include "music_checkboxes.h"
+#include "music_songsmanager.h"
 
 void mplayer_queue_init(music_queue_t* queue) {
     queue->items = NULL;
@@ -319,12 +321,10 @@ void mplayer_queue_display(mplayer_t* mplayer, music_queue_t queue) {
     };
     SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
         fill_color = {0xFF, 0xA5, 0x00, 0xff};
-    checkbox_size.x = outer_canvas.x+5;
-    checkbox_size.h = outer_canvas.h-10;
-    checkbox_size.y = outer_canvas.y + ((outer_canvas.h - checkbox_size.h)/2);
     size_t content_renderpos = 0;;
     for(size_t i=0;i<queue.item_count;i++) {
         size_t music_listindex = queue.items[i].music_listindex;
+        music_t* music_list = mplayer->music_lists[music_listindex];
         for(size_t j=0;j<queue.items[i].music_count;j++) {
             if(content_renderpos < queue_scrollcontainer->content_renderpos) {
                 content_renderpos++;
@@ -336,16 +336,58 @@ void mplayer_queue_display(mplayer_t* mplayer, music_queue_t queue) {
             outer_canvas.h = music_name.text_canvas.h + 22;
             music_name.text_canvas.x = outer_canvas.x + 50;
             music_name.text_canvas.y = outer_canvas.y + (outer_canvas.h - music_name.text_canvas.h)/2;
+            checkbox_size.x = outer_canvas.x+5;
+            checkbox_size.h = outer_canvas.h-10;
+            checkbox_size.y = outer_canvas.y + ((outer_canvas.h - checkbox_size.h)/2);
             if(outer_canvas.y < scroll_area.y + scroll_area.h) {
-                mplayer_scrollcontainer_appenditem(queue_scrollcontainer, outer_canvas);
+                mplayer_scrollcontainer_additem(queue_scrollcontainer, outer_canvas);
+                mplayer_scrollcontainer_setnext_itemcanvas(queue_scrollcontainer, outer_canvas);
             } else {
                 break;
+            }
+            if(!mplayer->tick_count) {
+                music_listplaybtn.btn_canvas.w = 30, music_listplaybtn.btn_canvas.h = outer_canvas.h - 10;
+                music_listplaybtn.btn_canvas.x = (checkbox_size.x + checkbox_size.w) + 20,
+                music_listplaybtn.btn_canvas.y = checkbox_size.y;
             }
             SDL_Texture* music_nametexture = mplayer_textmanager_renderunicode(mplayer,
                 mplayer->music_font, &music_name);
             SDL_SetRenderDrawColor(mplayer->renderer, 0, 42, 50, 0xFF /*0x3B, 0x35, 0x61, 0xFF*/);
             SDL_RenderDrawRect(mplayer->renderer, &outer_canvas);
             SDL_RenderFillRect(mplayer->renderer, &outer_canvas);
+            
+            if(mplayer_rect_hover(mplayer, outer_canvas)) {
+                mplayer_songsmanager_handlesong_playbutton_hover(mplayer, outer_canvas);
+                if(mplayer_rect_hover(mplayer, music_listplaybtn.btn_canvas)) {
+                    mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+                }
+                if(mplayer_checkbox_hovered(mplayer)) {
+                    mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+                }
+                if(!mplayer->tick_count) {
+                    music_name.text_canvas.x += music_listplaybtn.btn_canvas.w + 20;
+                    SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE]
+                        [music_listplaybtn.texture_idx], NULL, &music_listplaybtn.btn_canvas);
+                }
+            }
+            if(mplayer->tick_count) {
+                // whenever any checkbox is ticked and the current music we are current music we are rendering is not ticked
+                // we ensure that we set the checkbox fill state to false before drawing its checkbox
+                if(!music_list[music_id].checkbox_ticked && !mplayer_rect_hover(mplayer, outer_canvas)) {
+                    music_list[music_id].fill = false;
+                }
+                mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, music_list[music_id].fill, tick_color,
+                    music_list[music_id].checkbox_ticked);
+            } else if(mplayer_rect_hover(mplayer, outer_canvas)) {
+                // whenever no checkbox is ticked and we hover over the music we display the check box
+                // so that the user can click it or select it
+                if(mplayer_checkbox_hovered(mplayer)) {
+                    mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, music_list[music_id].fill, tick_color,
+                        music_list[music_id].checkbox_ticked);
+                } else if(!mplayer_checkbox_hovered(mplayer)) {
+                    mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, false, tick_color, false);
+                }
+            }
             SDL_RenderCopy(mplayer->renderer, music_nametexture, NULL, &music_name.text_canvas);
             SDL_DestroyTexture(music_nametexture); music_nametexture = NULL;
             outer_canvas.y += outer_canvas.h + 3;
@@ -367,9 +409,11 @@ void mplayer_queue_display(mplayer_t* mplayer, music_queue_t queue) {
     if(mplayer->scroll) {
         mplayer_scrollcontainer_performscroll(mplayer, queue_scrollcontainer);
         mplayer->scroll = false;
-    } else {
+    }
+    if(queue_scrollcontainer->item_container.items) {
         mplayer_scrollcontainer_init(queue_scrollcontainer);
     }
+    mplayer_scrollcontainer_resetitem_index(queue_scrollcontainer);
 }
 
 void mplayer_queue_print(mplayer_t* mplayer, music_queue_t queue) {

@@ -163,13 +163,14 @@ typedef struct mplayer {
         music_failcount, music_maxrenderpos, match_maxrenderpos, music_renderinit,
         musicpending_removalcount, musiclocation_count, current_musicsearch_querylen;
     mplayer_inputbox_t playlist_inputbox;
+    music_itemcontainer_t settingmenu_itemcontainer;
     music_scrollcontainer_t settingmenu_scrollcontainer;
-    size_t settingmenu_scrollcontainer_index;
+    size_t settingmenu_contentcount;
     bool mouse_clicked, musicsearchbar_clicked, musicsearchcursor_blink, music_hover, music_newsearch,
          scroll, progressbar_clicked, progressbar_dragged, mouse_buttondown, music_locationremoved,
          music_locationadded, music_selectionmenu_checkbox_fillall, music_selectionmenu_checkbox_tickall,
          music_selectionmenu_checkbox_clicked, music_selectionmenu_addtobtn_clicked,
-         music_selectionmenu_addtobtn_dropdown_clicked, hover_object, settingmenu_scrollcontainer_init,
+         music_selectionmenu_addtobtn_dropdown_clicked, hover_object,
          music_selected;
     
     SDL_Color music_selectionmenu_addto_dropdown_color;

@@ -18,6 +18,7 @@ C_FILES = [
     "music_filemanager.c",
     "music_textmanager.c",
     "music_texturemanager.c",
+    "music_itemcontainer.c",
     "music_scrollcontainer.c",
     "music_selectionmenu.c",
     "music_settingsmenu.c",

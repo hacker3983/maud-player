@@ -39,6 +39,8 @@ typedef struct music_settingmenu_aboutcategory {
 } mplayer_settingmenu_aboutcategory_t;
 
 void mplayer_settingmenu(mplayer_t* mplayer);
+void mplayer_settingmenu_additem(mplayer_t* mplayer, SDL_Rect canvas);
+void mplayer_settingmenu_handleupdate(mplayer_t* mplayer);
 void mplayer_settingmenu_create_navigationbar(mplayer_t* mplayer, mplayer_settingmenu_navbar_t* navbar_ref);
 void mplayer_settingmenu_render_navigationbar(mplayer_t* mplayer, mplayer_settingmenu_navbar_t* navbar_ref);
 bool mplayer_settingmenu_handle_backbtn(mplayer_t* mplayer, mplayer_settingmenu_navbar_t* navbar_ref);

@@ -661,8 +661,9 @@ void mplayer_playlistmanager_displayplaylists(mplayer_t* mplayer) {
                 continue;
             }
             if(playlist_background.y < scroll_area.y + scroll_area.h) {
-                mplayer_scrollcontainer_appenditem(&mplayer->playlist_manager.playlist_container, playlist_background);
                 mplayer_playlistmanager_renderplaylist_listlayout(mplayer, i, &playlist_background);
+                mplayer_scrollcontainer_additem(&mplayer->playlist_manager.playlist_container, playlist_background);
+                mplayer_scrollcontainer_setnext_itemcanvas(&mplayer->playlist_manager.playlist_container, playlist_background);
             } else {
                 break;
             }
@@ -677,9 +678,11 @@ void mplayer_playlistmanager_displayplaylists(mplayer_t* mplayer) {
             printf("Perform scrolling\n");
             mplayer_scrollcontainer_performscroll(mplayer, &mplayer->playlist_manager.playlist_container);
             mplayer->scroll = false;
-        } else {
+        }
+        if(mplayer->playlist_manager.playlist_container.item_container.items) {
             mplayer_scrollcontainer_init(&mplayer->playlist_manager.playlist_container);
         }
+        mplayer_scrollcontainer_resetitem_index(&mplayer->playlist_manager.playlist_container);
     }
     if(show_tooltip) {
         mplayer_tooltip_renderhover(mplayer, &mplayer->playlist_manager.playlist_tooltip);
@@ -1315,7 +1318,8 @@ void mplayer_playlistmanager_display_playlistcontent(mplayer_t* mplayer) {
             outer_canvas.h = music_name.text_canvas.h + 15;
             music_name.text_canvas.y = outer_canvas.y + (outer_canvas.h - music_name.text_canvas.h) / 2;
             if(outer_canvas.y < scroll_area.y + scroll_area.h) {
-                mplayer_scrollcontainer_appenditem(playlist_itemcontainer, music_name.text_canvas);
+                mplayer_scrollcontainer_additem(playlist_itemcontainer, outer_canvas);
+                mplayer_scrollcontainer_setnext_itemcanvas(playlist_itemcontainer, outer_canvas);
             } else {
                 break;
             }
@@ -1332,9 +1336,11 @@ void mplayer_playlistmanager_display_playlistcontent(mplayer_t* mplayer) {
     if(mplayer->scroll) {
         mplayer_scrollcontainer_performscroll(mplayer, playlist_itemcontainer);
         mplayer->scroll = false;
-    } else {
+    }
+    if(playlist_itemcontainer->item_container.items) {
         mplayer_scrollcontainer_init(playlist_itemcontainer);
     }
+    mplayer_scrollcontainer_resetitem_index(playlist_itemcontainer);
     SDL_RenderSetClipRect(mplayer->renderer, NULL);
     if(mplayer->playlist_manager.rename_clicked) {
         mplayer_playlistmanager_displayrename_input(mplayer);

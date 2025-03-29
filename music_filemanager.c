@@ -620,8 +620,8 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
         }
     }
     if(mplayer->music_locationadded) {
-        free(mplayer->settingmenu_scrollcontainer.items);
-        mplayer->settingmenu_scrollcontainer.items = NULL;
+        free(mplayer->settingmenu_scrollcontainer.item_container.items);
+        mplayer->settingmenu_scrollcontainer.item_container.items = NULL;
         mplayer->settingmenu_scrollcontainer.init = false;
         music_count = mplayer->music_count;
         startlocation_index = mplayer->location_count-1;
