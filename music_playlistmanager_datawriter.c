@@ -20,15 +20,12 @@ void mplayer_playlistmanager_write_playlist_tofile(mplayer_t* mplayer, FILE* f, 
     // Write the contents of the playlist 
     music_queue_t queue = playlist.queue;
     for(size_t i=0;i<queue.item_count;i++) {
-        size_t music_listindex = queue.items[i].music_listindex, music_id = 0;
-        for(size_t j=0;j<queue.items[i].music_count;j++) {
-            music_id = queue.items[i].music_ids[j];
-            char* music_name = mplayer_playlistmanager_getmusicnamefrom_index(mplayer, music_listindex,
-                music_id);
-            mplayer_playlistmanager_write_escapedstring_tofile(f, music_name);
-            if(j != queue.items[i].music_count-1) {
-                fputs(", ", f);
-            }               
+        size_t music_listindex = queue.items[i].music_listindex, music_id = queue.items[i].music_id;
+        char* music_name = mplayer_playlistmanager_getmusicnamefrom_index(mplayer, music_listindex,
+            music_id);
+        mplayer_playlistmanager_write_escapedstring_tofile(f, music_name);
+        if(i != queue.item_count-1) {
+            fputs(", ", f);
         }
     }
 }

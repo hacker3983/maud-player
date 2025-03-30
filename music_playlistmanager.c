@@ -3,6 +3,7 @@
 #include "music_playerinfo_extern.h"
 #include "music_string.h"
 #include "music_scrollcontainer.h"
+#include "music_notification.h"
 
 void mplayer_playlistmanager_initialize_playlistinput(mplayer_t* mplayer) {
     if(mplayer->playlist_manager.playlist_inputboxinited) {
@@ -60,6 +61,18 @@ bool mplayer_playlistmanager_createplaylist(mplayer_t* mplayer, const char* play
     bool success = mplayer_playlist_create(&mplayer->playlist_manager.playlists,
         &mplayer->playlist_manager.playlist_count, playlist_name);
     if(success) {
+        size_t msg_len = 20 + strlen(playlist_name);
+        char msg_buff[msg_len + 1];
+        sprintf(msg_buff, "Playlist '%s' created.", playlist_name);
+        msg_buff[msg_len] = '\0';
+        mplayer_notification_push(&mplayer->notification, mplayer->font, 20,
+            (SDL_Color){0x12, 0x12, 0x12, 0xff},
+            msg_buff,
+            white,
+            2,
+            20,
+            20
+        );
         printf("Successfully created playlist: %s\n", playlist_name);
         mplayer_playlistmanager_write_data_tofile(mplayer);
     }
@@ -1093,6 +1106,16 @@ void mplayer_playlistmanager_display_playlistmenu(mplayer_t* mplayer, SDL_Rect* 
             Mix_HaltMusic();
             mplayer_queue_destroy(play_queue);
             mplayer_queue_addmusicfrom_queue(play_queue, &playlists[playlist_selectionindex].queue);
+            if(!playlists[playlist_selectionindex].queue.items) {
+                mplayer_notification_push(&mplayer->notification, mplayer->font, 20,
+                    (SDL_Color){0x12, 0x12, 0x12, 0xff},
+                    "There are no items in the selected playlist.",
+                    white,
+                    2,
+                    20,
+                    20
+                );
+            }
             mplayer_songsmanager_playmusic(mplayer);
             printf("You clicked the play all button\n");
             mplayer->mouse_clicked = false;
@@ -1114,7 +1137,19 @@ void mplayer_playlistmanager_display_playlistmenu(mplayer_t* mplayer, SDL_Rect* 
     } else if(mplayer_rect_hover(mplayer, delete)) {
         mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
         if(mplayer->mouse_clicked) {
+            size_t msg_len = 20 + strlen(playlists[playlist_selectionindex].name);
+            char msg_buff[msg_len+1];
+            sprintf(msg_buff, "Playlist '%s' deleted.", playlists[playlist_selectionindex].name);
+            msg_buff[msg_len] = '\0';
             mplayer_playlistmanager_removeplaylist(mplayer, playlists[playlist_selectionindex].name);
+            mplayer_notification_push(&mplayer->notification, mplayer->font, 20,
+                (SDL_Color){0x12, 0x12, 0x12, 0xff},
+                msg_buff,
+                white,
+                2,
+                20,
+                20  
+            );
             playlist_manager->playlist_selected = false;
             mplayer->mouse_clicked = false;
         }
@@ -1244,10 +1279,22 @@ void mplayer_playlistmanager_displayrename_input(mplayer_t* mplayer) {
             size_t new_namelen = 0;
             char* new_name = rename_inputbox->input.data;
             char* original_name = playlist_manager->playlists[playlist_manager->playlist_selectionindex].name;
+            size_t msg_len = 35 + strlen(original_name) + strlen(new_name);
+            char msg_buff[msg_len+1];
+            sprintf(msg_buff, "Playlist '%s' has been renamed to '%s'.", original_name, new_name);
+            msg_buff[msg_len] = '\0';
             mplayer_playlist_rename(&playlist_manager->playlists, playlist_manager->playlist_count, original_name,
                 new_name);
             mplayer_playlistmanager_write_data_tofile(mplayer);
             mplayer_inputbox_clear(&playlist_manager->rename_inputbox);
+            mplayer_notification_push(&mplayer->notification, mplayer->font, 20,
+                (SDL_Color){0x12, 0x12, 0x12, 0xff},
+                msg_buff,
+                white,
+                2,
+                20,
+                20
+            );
             playlist_manager->rename_clicked = false;
             mplayer->mouse_clicked = false;
         }
@@ -1279,10 +1326,10 @@ void mplayer_playlistmanager_display_playlistcontent(mplayer_t* mplayer) {
         .h = music_status.y - (playlistmenu_canvas.y + playlistmenu_canvas.h + 5)
     };
     SDL_RenderSetClipRect(mplayer->renderer, &scroll_area);
-    if(playlist_itemcontainer->init && playlist_itemcontainer->content_count != playlist_queue.totalmusic_count) {
-        playlist_itemcontainer->content_count = playlist_queue.totalmusic_count;
+    if(playlist_itemcontainer->init && playlist_itemcontainer->content_count != playlist_queue.item_count) {
+        playlist_itemcontainer->content_count = playlist_queue.item_count;
     }
-    mplayer_scrollcontainer_setprops(playlist_itemcontainer, scroll_area, 20, 0, playlist_queue.totalmusic_count);
+    mplayer_scrollcontainer_setprops(playlist_itemcontainer, scroll_area, 20, 0, playlist_queue.item_count);
     text_info_t music_name = {
         .font_size = 20,
         .text = NULL,
@@ -1304,34 +1351,28 @@ void mplayer_playlistmanager_display_playlistcontent(mplayer_t* mplayer) {
         outer_canvas.y = playlist_itemcontainer->scroll_y;
     }
     size_t content_renderpos = 0;
-    for(size_t i=0;i<playlist_queue.item_count;i++) {
+    for(size_t i=playlist_itemcontainer->content_renderpos;i<playlist_queue.item_count;i++) {
         music_queueitem_t item = playlist_queue.items[i];
         size_t music_listindex = item.music_listindex;
-        for(size_t j=0;j<item.music_count;j++) {
-            if(content_renderpos < playlist_itemcontainer->content_renderpos) {
-                content_renderpos++;
-                continue;
-            }
-            size_t music_id = item.music_ids[j];
-            music_name.utext = mplayer->music_lists[music_listindex][music_id].music_name;
-            mplayer_textmanager_sizetext(mplayer->music_font, &music_name);
-            outer_canvas.h = music_name.text_canvas.h + 15;
-            music_name.text_canvas.y = outer_canvas.y + (outer_canvas.h - music_name.text_canvas.h) / 2;
-            if(outer_canvas.y < scroll_area.y + scroll_area.h) {
-                mplayer_scrollcontainer_additem(playlist_itemcontainer, outer_canvas);
-                mplayer_scrollcontainer_setnext_itemcanvas(playlist_itemcontainer, outer_canvas);
-            } else {
-                break;
-            }
-            SDL_SetRenderDrawColor(mplayer->renderer, 0, 42, 50, 0xFF);
-            SDL_RenderDrawRect(mplayer->renderer, &outer_canvas);
-            SDL_RenderFillRect(mplayer->renderer, &outer_canvas);
-            SDL_Texture* music_nametexture = mplayer_textmanager_renderunicode(mplayer, mplayer->music_font,
-                &music_name);
-            SDL_RenderCopy(mplayer->renderer, music_nametexture, NULL, &music_name.text_canvas);
-            SDL_DestroyTexture(music_nametexture); music_nametexture = NULL;
-            outer_canvas.y += outer_canvas.h + 5;
+        size_t music_id = item.music_id;
+        music_name.utext = mplayer->music_lists[music_listindex][music_id].music_name;
+        mplayer_textmanager_sizetext(mplayer->music_font, &music_name);
+        outer_canvas.h = music_name.text_canvas.h + 15;
+        music_name.text_canvas.y = outer_canvas.y + (outer_canvas.h - music_name.text_canvas.h) / 2;
+        if(outer_canvas.y < scroll_area.y + scroll_area.h) {
+            mplayer_scrollcontainer_additem(playlist_itemcontainer, outer_canvas);
+            mplayer_scrollcontainer_setnext_itemcanvas(playlist_itemcontainer, outer_canvas);
+        } else {
+            break;
         }
+        SDL_SetRenderDrawColor(mplayer->renderer, 0, 42, 50, 0xFF);
+        SDL_RenderDrawRect(mplayer->renderer, &outer_canvas);
+        SDL_RenderFillRect(mplayer->renderer, &outer_canvas);
+        SDL_Texture* music_nametexture = mplayer_textmanager_renderunicode(mplayer, mplayer->music_font,
+            &music_name);
+        SDL_RenderCopy(mplayer->renderer, music_nametexture, NULL, &music_name.text_canvas);
+        SDL_DestroyTexture(music_nametexture); music_nametexture = NULL;
+        outer_canvas.y += outer_canvas.h + 5;
     }
     if(mplayer->scroll) {
         mplayer_scrollcontainer_performscroll(mplayer, playlist_itemcontainer);

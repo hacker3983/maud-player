@@ -185,10 +185,9 @@ void mplayer_selectionmenu_handle_playbtn(mplayer_t* mplayer, SDL_Rect playbtn_b
         if(Mix_PlayingMusic() ) {
             Mix_HaltMusic();
         }
-        size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*play_itemindex].music_listindex,
-           music_id = play_queue->items[*play_itemindex].music_ids[*playid],
-           playmusic_count = play_queue->items[*play_itemindex].music_count;
+        size_t *playid = &play_queue->playid,
+           music_listindex = play_queue->items[*playid].music_listindex,
+           music_id = play_queue->items[*playid].music_id;
         music_t **music_lists = mplayer->music_lists,
                 *music_list = music_lists[music_listindex];
         if(play_queue->items && !Mix_PlayMusic(music_list[music_id].music, 1)) {
@@ -463,15 +462,13 @@ void mplayer_selectionmenu_handle_playnextbtn(mplayer_t* mplayer, SDL_Rect playn
     if(mplayer_rect_hover(mplayer, playnext_btncanvas)) {
         mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
         if(mplayer->mouse_clicked) {
-            printf("the play next button has not been implemented yet\n");
             bool playqueue_wasempty = !mplayer->play_queue.items;
             mplayer_queue_addmusicqueue_toplaynext(mplayer, &mplayer->play_queue, &mplayer->selection_queue);
             if(!Mix_PlayingMusic() && playqueue_wasempty) {
-                mplayer->play_queue.play_itemindex = 0,
                 mplayer->play_queue.playid = 0;
                 size_t play_itemindex = 0, playid = 0,
-                       music_listindex = mplayer->play_queue.items[play_itemindex].music_listindex,
-                       music_id = mplayer->play_queue.items[play_itemindex].music_ids[playid];
+                       music_listindex = mplayer->play_queue.items[playid].music_listindex,
+                       music_id = mplayer->play_queue.items[playid].music_id;
                 Mix_PlayMusic(mplayer->music_lists[music_listindex][music_id].music, 1);
             }
             mplayer_selectionmenu_clearmusic_selection(mplayer);
@@ -525,6 +522,35 @@ void mplayer_selectionmenu_display_songselectioninfo(mplayer_t* mplayer, text_in
     free(songs_selectioninfo_text); songs_selectioninfo_text = NULL;
 }
 
+bool mplayer_selectionmenu_toggleitem_checkboxmusic_queue(mplayer_t* mplayer, music_queue_t* queue,
+    size_t item_index) {
+    size_t i = item_index, music_listindex = queue->items[i].music_listindex,
+        music_id = queue->items[i].music_id;
+    if(mplayer->music_selectionmenu_checkbox_tickall && !queue->items[i].checkbox_ticked) {
+        queue->items[i].fill = true;
+        queue->items[i].checkbox_ticked = true;
+        mplayer_queue_addmusic(&mplayer->selection_queue, music_listindex, music_id);
+        mplayer->music_selected = true;
+        if(mplayer->tick_count < mplayer->music_count) {
+            mplayer->tick_count++;
+        }
+        return true;
+    } else if(mplayer->music_selectionmenu_checkbox_clicked &&
+        !mplayer->music_selectionmenu_checkbox_tickall && queue->items[i].checkbox_ticked) {
+        queue->items[i].fill = false;
+        queue->items[i].checkbox_ticked = false;
+        mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, music_listindex, music_id);
+        mplayer->music_selected = true;
+        mplayer->tick_count--;
+        if(!mplayer->tick_count) {
+            mplayer->music_selectionmenu_checkbox_clicked = false;
+        }
+        return true;
+    }
+    return false;
+
+}
+
 bool mplayer_selectionmenu_togglesong_checkbox(mplayer_t* mplayer, music_t* music_list, size_t music_checkbox_index) {
     size_t i = music_checkbox_index;
     if(mplayer->music_selectionmenu_checkbox_tickall && !music_list[i].checkbox_ticked) {
@@ -540,7 +566,7 @@ bool mplayer_selectionmenu_togglesong_checkbox(mplayer_t* mplayer, music_t* musi
         !mplayer->music_selectionmenu_checkbox_tickall && music_list[i].checkbox_ticked) {
         music_list[i].fill = false;
         music_list[i].checkbox_ticked = false;
-        mplayer_queue_removemusicby_id(&mplayer->selection_queue, 0, i);
+        mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, 0, i);
         mplayer->music_selected = true;
         mplayer->tick_count--;
         if(!mplayer->tick_count) {
@@ -551,14 +577,23 @@ bool mplayer_selectionmenu_togglesong_checkbox(mplayer_t* mplayer, music_t* musi
     return false;
 }
 
+bool mplayer_selectionmenu_togglecheckbox(mplayer_t* mplayer, music_queue_t* queue, size_t queue_itemindex,
+    music_t* music_list, size_t music_checkbox_index) {
+    bool ret_val = false;
+    if(active_tab == SONGS_TAB) {
+        ret_val = mplayer_selectionmenu_togglesong_checkbox(mplayer, music_list, music_checkbox_index);
+    } else if(active_tab == QUEUES_TAB) {
+        ret_val = mplayer_selectionmenu_toggleitem_checkboxmusic_queue(mplayer, queue, queue_itemindex);
+    }
+    return ret_val;
+}
+
 void mplayer_selectionmenu_clearmusic_selection(mplayer_t* mplayer) {
     for(size_t i=0;i<mplayer->selection_queue.item_count;i++) {
-        for(size_t j=0;j<mplayer->selection_queue.items[i].music_count;j++) {
-            size_t music_listindex = mplayer->selection_queue.items[i].music_listindex,
-                   music_id = mplayer->selection_queue.items[i].music_ids[j];
-            mplayer->music_lists[music_listindex][music_id].fill = false;
-            mplayer->music_lists[music_listindex][music_id].checkbox_ticked = false;
-        }
+        size_t music_listindex = mplayer->selection_queue.items[i].music_listindex,
+            music_id = mplayer->selection_queue.items[i].music_id;
+        mplayer->music_lists[music_listindex][music_id].fill = false;
+        mplayer->music_lists[music_listindex][music_id].checkbox_ticked = false;
     }
     mplayer->tick_count = 0;
     mplayer->music_selectionmenu_checkbox_fillall = false;

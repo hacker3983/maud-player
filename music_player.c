@@ -9,6 +9,7 @@
 #include "music_settingsmenu.h"
 #include "music_playerinfo.h"
 #include "music_queue.h"
+#include "music_notification.h"
 #include "music_songsmanager.h"
 #include "music_playlistmanager.h"
 #include "music_playerbutton_manager.h"
@@ -551,11 +552,9 @@ void mplayer_getcurrent_musicplaying_sizetext(mplayer_t* mplayer, text_info_t* c
     if(!play_queue->items) {
         return;
     }
-    size_t play_itemindex = play_queue->play_itemindex, playid = play_queue->playid,
-           playmusic_count = play_queue->items[play_queue->play_itemindex].music_count,
-           music_listindex = play_queue->items[play_queue->play_itemindex].music_listindex,
-           music_id = play_queue->items[play_itemindex].music_ids[playid];
-
+    size_t playid = play_queue->playid,
+           music_listindex = play_queue->items[playid].music_listindex,
+           music_id = play_queue->items[playid].music_id;
     music_t **music_lists = mplayer->music_lists,
             *music_list = music_lists[music_listindex];
     if(Mix_PlayingMusic()) {
@@ -637,10 +636,9 @@ void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtim
     duration_texts[1].text_canvas.x = mplayer->progress_bar.x + mplayer->progress_bar.w + 6;
     if(Mix_PlayingMusic()) {
         music_queue_t* play_queue = &mplayer->play_queue;
-        size_t play_itemindex = play_queue->play_itemindex, playid = play_queue->playid,
-           playmusic_count = play_queue->items[play_queue->play_itemindex].music_count,
-           music_listindex = play_queue->items[play_queue->play_itemindex].music_listindex,
-           music_id = play_queue->items[play_itemindex].music_ids[playid];
+        size_t playid = play_queue->playid,
+           music_listindex = play_queue->items[play_queue->playid].music_listindex,
+           music_id = play_queue->items[playid].music_id;
         music_t **music_lists = mplayer->music_lists;
         text_info_t music_name = {18, NULL, NULL, white, {0, 0, 0, 0}};
         music_name.utext = music_lists[music_listindex][music_id].music_name;
@@ -740,10 +738,9 @@ void mplayer_controlmusic_progression(mplayer_t* mplayer) {
     if(!play_queue->items) {
         return;
     }
-    size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*play_itemindex].music_listindex,
-           music_id = play_queue->items[*play_itemindex].music_ids[*playid],
-           playmusic_count = play_queue->items[*play_itemindex].music_count;
+    size_t *playid = &play_queue->playid,
+           music_listindex = play_queue->items[*playid].music_listindex,
+           music_id = play_queue->items[*playid].music_id;
     music_t **music_lists = mplayer->music_lists,
             *music_list = music_lists[music_listindex];
     mplayer_getcurrentmusic_progression(mplayer);
@@ -762,60 +759,50 @@ void mplayer_controlmusic_progression(mplayer_t* mplayer) {
     }
     switch(mplayer->repeat_id) {
         case MUSIC_REPEATALLBTN:
-            if(play_queue->playid < playmusic_count && !Mix_PlayingMusic()) {
+            if(play_queue->playid < play_queue->item_count && !Mix_PlayingMusic()) {
                 // play the next music whwnever the current on is complete
                 (*playid)++;
-                if(*playid == playmusic_count) {
-                    (*play_itemindex)++;
-                    (*play_itemindex) %= play_queue->item_count;
-                    (*playid) %= playmusic_count;
-                }
-                music_listindex = play_queue->items[*play_itemindex].music_listindex,
-                music_id = play_queue->items[*play_itemindex].music_ids[*playid];
+                (*playid) %= play_queue->item_count;
+                music_listindex = play_queue->items[*playid].music_listindex,
+                music_id = play_queue->items[*playid].music_id;
                 music_list = music_lists[music_listindex];
                 if(!Mix_PlayMusic(music_list[music_id].music, 1)) {
                     printf("Playing music %s\n", music_list[music_id].music_name);
                 } else {
-                    printf("Failed to play music %s\n", music_list[music_id].music_name);
+                    mplayer_songsmanager_addplayback_error(mplayer, music_list[music_id].music_name);
                 }
             }
             break;
         case MUSIC_REPEATONEBTN:
             if(!Mix_PlayingMusic()) {
                 if(!Mix_PlayMusic(music_lists[music_listindex][music_id].music, 1)) {
-                    printf("Playing music %s\n", mplayer->music_list[music_id].music_name);
+                    printf("Playing music %s\n", music_list[music_id].music_name);
                 } else {
                     // Whenever the current music object is equal to NULL then we skip to the next song that has
                     // a valid music object this can happen whenever we failed to load a music
-                    printf("Failed to play music %s\n", mplayer->music_list[music_id].music_name);
+                    printf("Failed to play music %s\n", music_list[music_id].music_name);
+                    mplayer_songsmanager_addplayback_error(mplayer, music_list[music_id].music_name);
                     (*playid)++;
-                    if(*playid == playmusic_count) {
-                        (*play_itemindex)++;
-                        (*play_itemindex) %= play_queue->item_count;
-                        (*playid) %= playmusic_count;
-                    }
+                    (*playid) %= play_queue->item_count;
                 }
             }
             break;
         case MUSIC_REPEATOFFBTN:
-            if(play_queue->playid < playmusic_count && !Mix_PlayingMusic()) {
+            if(play_queue->playid < play_queue->item_count && !Mix_PlayingMusic()) {
                 (*playid)++;
-                if(*playid == playmusic_count) {
-                    (*play_itemindex)++;
-                    (*play_itemindex) %= play_queue->item_count;
-                    (*playid) %= playmusic_count;
-                }
-                music_listindex = play_queue->items[*play_itemindex].music_listindex,
-                music_id = play_queue->items[*play_itemindex].music_ids[*playid];
+                (*playid) %= play_queue->item_count;
+                music_listindex = play_queue->items[*playid].music_listindex,
+                music_id = play_queue->items[*playid].music_id;
                 music_list = music_lists[music_listindex];
                 if(!Mix_PlayMusic(music_list[music_id].music, 1)) {
-                    printf("Playing music %s\n", mplayer->music_list[music_id].music_name);
+                    printf("Playing music %s\n", music_list[music_id].music_name);
                 } else {
-                    printf("Failed to play music %s\n", mplayer->music_list[music_id].music_name);
+                    mplayer_songsmanager_addplayback_error(mplayer, music_list[music_id].music_name);
+                    printf("Failed to play music %s\n", music_list[music_id].music_name);
                 }
                 // Whenever we the play id gets reset to zero we Pause the music so that it doesn't repeat
                 // the songs in the music list all over again
-                if((*playid) == 0 && (*play_itemindex) == 0) {
+                if((*playid) == 0) {
                     Mix_PauseMusic();
                 }
             }
@@ -828,10 +815,9 @@ void mplayer_getcurrentmusic_progression(mplayer_t* mplayer) {
     if(!play_queue->items) {
         return;
     }
-    size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*play_itemindex].music_listindex,
-           music_id = play_queue->items[*play_itemindex].music_ids[*playid],
-           playmusic_count = play_queue->items[*play_itemindex].music_count;
+    size_t *playid = &play_queue->playid,
+           music_listindex = play_queue->items[*playid].music_listindex,
+           music_id = play_queue->items[*playid].music_id;
     music_t **music_lists = mplayer->music_lists,
             *music_list = music_lists[music_listindex];
     if(Mix_PlayingMusic()) {
@@ -844,12 +830,12 @@ void mplayer_getcurrentmusic_progression(mplayer_t* mplayer) {
 void mplayer_getduration_progression(mplayer_t* mplayer, mtime_t* curr_duration,
     mtime_t* full_duration) {
     music_queue_t* play_queue = &mplayer->play_queue;
-    size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
+    size_t *playid = &play_queue->playid,
             music_listindex = 0, music_id = 0;
     music_t **music_lists = mplayer->music_lists, *music_list = NULL;
     if(play_queue->items) {
-        music_listindex = play_queue->items[*play_itemindex].music_listindex,
-        music_id = play_queue->items[*play_itemindex].music_ids[*playid],
+        music_listindex = play_queue->items[*playid].music_listindex,
+        music_id = play_queue->items[*playid].music_id,
         music_list = music_lists[music_listindex];
         *curr_duration = music_list[music_id].music_position,
         *full_duration = music_list[music_id].music_duration;
@@ -862,12 +848,11 @@ void mplayer_displayprogression_control(mplayer_t* mplayer) {
     double full_durationsecs = 0, curr_durationsecs = 0;
     int progress = 0;
 
-    size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
-            music_listindex = 0, music_id = 0;
+    size_t *playid = &play_queue->playid, music_listindex = 0, music_id = 0;
     music_t **music_lists = mplayer->music_lists, *music_list = NULL;
     if(play_queue->items) {
-        music_listindex = play_queue->items[*play_itemindex].music_listindex,
-        music_id = play_queue->items[*play_itemindex].music_ids[*playid],
+        music_listindex = play_queue->items[*playid].music_listindex,
+        music_id = play_queue->items[*playid].music_id,
         music_list = music_lists[music_listindex];
     
         curr_duration = music_list[music_id].music_position,
@@ -1285,10 +1270,11 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer->mouse_clicked = false;
     } else if(active_tab == QUEUES_TAB) {
         mplayer_createsearch_bar(mplayer);
+        mplayer_selectionmenu_create(mplayer);
         mplayer_createsongs_box(mplayer);
         mplayer_songsmanager_handleprevbutton(mplayer);
         mplayer_songsmanager_handleskipbutton(mplayer);
-        mplayer_queue_display(mplayer, mplayer->play_queue);
+        mplayer_queue_display(mplayer, &mplayer->play_queue);
         //mplayer_queue_print(mplayer, mplayer->play_queue);
         mplayer->mouse_clicked = false;
     } else if(active_tab == PLAYLISTS_TAB) {
@@ -1297,6 +1283,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer_playlistmanager_display(mplayer);
         mplayer->mouse_clicked = false;
     }
+    mplayer_notification_display(mplayer, &mplayer->notification);
     if(mplayer->display_musictooltip) {
         mplayer_tooltip_renderhover(mplayer, &mplayer->music_tooltip);
     }
@@ -1323,6 +1310,9 @@ void mplayer_destroyapp(mplayer_t* mplayer) {
     // Free music resources used by program
     mplayer_filemanager_freemusic_list(mplayer);
     mplayer_filemanager_freemusicpath_info(mplayer);
+
+    // Destroy the notification system
+    mplayer_notification_destroy(&mplayer->notification);
 
     // Destroy the play queue and the selection queue resources
     mplayer_queue_destroy(&mplayer->play_queue);

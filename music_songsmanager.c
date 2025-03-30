@@ -1,4 +1,5 @@
 #include "music_songsmanager.h"
+#include "music_notification.h"
 
 void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
@@ -171,7 +172,7 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
             }
             mplayer_songsmanager_rendersong_canvas(mplayer, music_list, music_renderlist[music_rendercount]);
             SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
-            fill_color = {0xFF, 0xA5, 0x00, 0xff};
+            fill_color = {0}/*{0xFF, 0xA5, 0x00, 0xff}*/;
             checkbox_size.x = outer_canvas.x+5;
             checkbox_size.h = outer_canvas.h-10;
             checkbox_size.y = outer_canvas.y + ((outer_canvas.h - checkbox_size.h)/2);
@@ -294,11 +295,28 @@ void mplayer_songsmanager_handlesong_playbutton_hover(mplayer_t* mplayer, SDL_Re
     }
 }
 
+void mplayer_songsmanager_addplayback_error(mplayer_t* mplayer, const char* music_name) {
+    size_t msg_len = 112 + strlen(music_name);
+    char msg_buff[msg_len+1];
+    sprintf(msg_buff,
+        "The selected music %s cannot be played because it is either a corrupted, "
+        "unsupported file format or file extension.",
+        music_name
+    );
+    msg_buff[msg_len] = '\0';
+    mplayer_notification_push(&mplayer->notification, mplayer->font, 20,
+        (SDL_Color){0x12, 0x12, 012, 0x12},
+        msg_buff,
+        white,
+        2,
+        20,
+        20
+    );
+}
+
 void mplayer_songsmanager_handleplaybutton(mplayer_t* mplayer, music_t* music_list, size_t music_id) {
     music_queue_t* play_queue = &mplayer->play_queue;
-    size_t prev_playitemindex = play_queue->play_itemindex,
-           prev_playid = play_queue->playid;
-    
+    size_t prev_playid = play_queue->playid;
     if(mplayer_musiclist_playbutton_hover(mplayer) && !music_addplaylistbtn.clicked &&
         !mplayer->music_selectionmenu_addtobtn_clicked
         && !mplayer->tick_count) {
@@ -310,7 +328,6 @@ void mplayer_songsmanager_handleplaybutton(mplayer_t* mplayer, music_t* music_li
             for(size_t i=0;i<mplayer->music_count;i++) {
                     if(i == music_id && i != prev_playid) {
                         play_queue->playid = i;
-                    
                     }
                     mplayer_queue_addmusic(play_queue, 0, i);
             }
@@ -329,6 +346,7 @@ void mplayer_songsmanager_handleplaybutton(mplayer_t* mplayer, music_t* music_li
                 Mix_SetMusicPosition(0);
                 if(Mix_PlayMusic(mplayer->music_list[music_id].music, 1) == -1) {
                     printf("Failed to play music\n");
+                    mplayer_songsmanager_addplayback_error(mplayer, mplayer->music_list[music_id].music_name);
                 }
             }
             mplayer->mouse_clicked = false;
@@ -376,7 +394,7 @@ void mplayer_songsmanager_handlecheckbox_musicselection(mplayer_t* mplayer, musi
                     */
                     music_list[music_id].fill = false;
                     music_list[music_id].checkbox_ticked = false;
-                    mplayer_queue_removemusicby_id(&mplayer->selection_queue, 0, music_id);
+                    mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, 0, music_id);
                     mplayer->tick_count--;
                     break;
             }
@@ -396,7 +414,7 @@ void mplayer_songsmanager_handlecheckbox_musicselection(mplayer_t* mplayer, musi
         if(music_list[music_id].checkbox_ticked) {
             mplayer->music_selected = true;
             mplayer->tick_count--;
-            mplayer_queue_removemusicby_id(&mplayer->selection_queue, 0, music_id);
+            mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, 0, music_id);
             music_list[music_id].fill = false;
             music_list[music_id].checkbox_ticked = false;
         } else if(mplayer->tick_count) {
@@ -415,17 +433,12 @@ void mplayer_songsmanager_handleskipbutton(mplayer_t* mplayer) {
     if(!(music_btns[MUSIC_SKIPBTN].clicked && play_queue->items)) {
         return;
     }
-    size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*play_itemindex].music_listindex,
-           music_id = play_queue->items[*play_itemindex].music_ids[*playid],
-           playmusic_count = play_queue->items[*play_itemindex].music_count;
+    size_t *playid = &play_queue->playid,
+           music_listindex = play_queue->items[*playid].music_listindex,
+           music_id = play_queue->items[*playid].music_id;
     music_t **music_lists = mplayer->music_lists, *music_list = music_lists[music_listindex];
     (*playid)++;
-    if((*playid) == playmusic_count) {
-        (*playid) = 0;
-        (*play_itemindex)++;
-        (*play_itemindex) %= play_queue->item_count;
-    }
+    (*playid) %= play_queue->item_count;
     mplayer_songsmanager_togglemusic_playback(mplayer);
     music_btns[MUSIC_SKIPBTN].clicked = false;
 }
@@ -436,20 +449,15 @@ void mplayer_songsmanager_handleprevbutton(mplayer_t* mplayer) {
         return;
     }
     // Select the play id
-    size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*play_itemindex].music_listindex,
-           music_id = play_queue->items[*play_itemindex].music_ids[*playid],
-           playmusic_count = play_queue->items[*play_itemindex].music_count;
+    size_t *playid = &play_queue->playid,
+           music_listindex = play_queue->items[*playid].music_listindex,
+           music_id = play_queue->items[*playid].music_id;
     music_t **music_lists = mplayer->music_lists,
             *music_list = music_lists[music_listindex];
 
     if(*playid) {
         (*playid)--;
     }
-    if(*play_itemindex && !(*playid)) {
-        (*play_itemindex)--;
-    }
-    
     // Halt any current music playing and play the actual music when we press the play button
     // Depending on whether it is paused or not
     mplayer_songsmanager_togglemusic_playback(mplayer);
@@ -459,15 +467,31 @@ void mplayer_songsmanager_handleprevbutton(mplayer_t* mplayer) {
 int mplayer_songsmanager_playmusic(mplayer_t* mplayer) {
     music_queue_t* play_queue = &mplayer->play_queue;
     if(!play_queue->items) {
-        printf("The program will crash Therefore I will not play music!\n");
         return -1;
     }
-    size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*play_itemindex].music_listindex,
-           music_id = play_queue->items[*play_itemindex].music_ids[*playid],
-           playmusic_count = play_queue->items[*play_itemindex].music_count;
+    size_t *playid = &play_queue->playid,
+           music_listindex = play_queue->items[*playid].music_listindex,
+           music_id = play_queue->items[*playid].music_id;
     music_t **music_lists = mplayer->music_lists,
             *music_list = music_lists[music_listindex];
+    if(!music_list[music_id].music) {
+        size_t msg_len = 120 + strlen(music_list[music_id].music_name);
+        char msg_buff[msg_len+1];
+        sprintf(msg_buff,
+            "The selected music %s cannot be played this is because"
+            "it is either corrupted, an unsupported file format or file extension.",
+            music_list[music_id].music_name
+        );
+        msg_buff[msg_len] = '\0';
+        mplayer_notification_push(&mplayer->notification, mplayer->font, 20,
+            (SDL_Color){0x12, 0x12, 012, 0x12},
+            msg_buff,
+            white,
+            2,
+            20,
+            20
+        );
+    }
     return Mix_PlayMusic(music_list[music_id].music, 1);
 }
 
@@ -482,10 +506,9 @@ void mplayer_songsmanager_togglemusic_playback(mplayer_t* mplayer) {
     if(!play_queue->items) {
         return;
     }
-    size_t *play_itemindex = &play_queue->play_itemindex, *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*play_itemindex].music_listindex,
-           music_id = play_queue->items[*play_itemindex].music_ids[*playid],
-           playmusic_count = play_queue->items[*play_itemindex].music_count;
+    size_t *playid = &play_queue->playid,
+           music_listindex = play_queue->items[*playid].music_listindex,
+           music_id = play_queue->items[*playid].music_id;
     music_t **music_lists = mplayer->music_lists,
             *music_list = music_lists[music_listindex];
     Mix_HaltMusic();

@@ -12,6 +12,7 @@ C_FILES = [
     "music_tooltips.c",
     "stringlist.c",
     "music_queue.c",
+    "music_notification.c",
     "music_checkboxes.c",
     "music_inputboxes.c",
     "music_menumanager.c",

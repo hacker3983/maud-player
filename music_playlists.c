@@ -56,9 +56,6 @@ bool mplayer_playlist_remove(mplayer_playlist_t** playlists, size_t* playlist_co
     size_t modified_count = (*playlist_count) ? (*playlist_count)-1 : 0, new_index = 0;
     mplayer_playlist_t* modified_playlists = (modified_count) ? calloc(modified_count,
         sizeof(mplayer_playlist_t)) : NULL;
-    if(!modified_playlists) {
-        return false;
-    }
     for(size_t i=0;i<(*playlist_count);i++) {
         if(strcmp((*playlists)[i].name, playlist_name) == 0) {
             mplayer_playlist_destroy(&(*playlists)[i]);

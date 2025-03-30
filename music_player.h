@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include "music_inputboxesdef.h"
 #include "music_queuedef.h"
+#include "music_notificationdef.h"
 #include "music_tooltipsdef.h"
 #include "music_playlistmanagerdef.h"
 #include "music_scrollcontainerdef.h"
@@ -145,6 +146,9 @@ typedef struct mplayer {
     // Music Informations such music name, path, duration, etc
     musloc_t* locations;
     size_t location_count, total_filecount;
+
+    // Notification system
+    music_notification_t notification;
 
     music_t *music_list, *music_templist, *music_lists[2];
     size_t music_counts[2], music_count, music_renderpos, tick_count;

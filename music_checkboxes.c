@@ -14,6 +14,7 @@ void mplayer_drawmusic_checkbox(mplayer_t* mplayer, SDL_Color box_color, SDL_Col
     checkbox_info.checkbox_canvas = checkbox_size;
     checkbox_info.box_color = box_color;
     checkbox_info.tk_color = tick_color;
+    checkbox_info.fill_color = fill_color;
     checkbox_info.tick = check;
     checkbox_info.fill = fill;
     mplayer_drawcheckbox(mplayer, &checkbox_info);
