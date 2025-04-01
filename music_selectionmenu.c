@@ -466,8 +466,7 @@ void mplayer_selectionmenu_handle_playnextbtn(mplayer_t* mplayer, SDL_Rect playn
             mplayer_queue_addmusicqueue_toplaynext(mplayer, &mplayer->play_queue, &mplayer->selection_queue);
             if(!Mix_PlayingMusic() && playqueue_wasempty) {
                 mplayer->play_queue.playid = 0;
-                size_t play_itemindex = 0, playid = 0,
-                       music_listindex = mplayer->play_queue.items[playid].music_listindex,
+                size_t playid = 0, music_listindex = mplayer->play_queue.items[playid].music_listindex,
                        music_id = mplayer->play_queue.items[playid].music_id;
                 Mix_PlayMusic(mplayer->music_lists[music_listindex][music_id].music, 1);
             }
@@ -481,7 +480,11 @@ void mplayer_selectionmenu_display_songselectioninfo(mplayer_t* mplayer, text_in
     int songs_selectioncount_length = 0;
     size_t music_selection_tickcount = mplayer->tick_count;
     if(mplayer->music_selectionmenu_checkbox_tickall) {
-        music_selection_tickcount = mplayer->music_count;
+        if(active_tab == SONGS_TAB) {
+            music_selection_tickcount = mplayer->music_count;
+        } else if(active_tab) {
+            music_selection_tickcount = mplayer->play_queue.item_count;
+        }
     }
     // Convert the number of selected songs into a string
     char* songs_selectioncount_text = mplayer_size_t_tostring(music_selection_tickcount,
@@ -619,6 +622,9 @@ void mplayer_selectionmenu_handle_checkallbtn_toggleoption(mplayer_t* mplayer, t
         .w = music_selectionmenu_checkbox_size.w + width_between + songs_selectioninfo.text_canvas.w,
         .h = music_selectionmenu_checkbox_size.h
     };
+
+    size_t target_count = (active_tab == SONGS_TAB) ? mplayer->music_count
+                        : (active_tab == QUEUES_TAB) ? mplayer->play_queue.item_count : 0;
     
     if(mplayer_rect_hover(mplayer, music_selectionmenu_togglecanvas)) {
         mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
@@ -631,7 +637,7 @@ void mplayer_selectionmenu_handle_checkallbtn_toggleoption(mplayer_t* mplayer, t
             }
             mplayer->music_selectionmenu_checkbox_clicked = true;
         }
-    } else if(!mplayer->music_selectionmenu_checkbox_clicked && mplayer->tick_count == mplayer->music_count) {
+    } else if(!mplayer->music_selectionmenu_checkbox_clicked && mplayer->tick_count == target_count) {
         *fill = true, *tick = true;
     } else {
         *fill = false, *tick = false,

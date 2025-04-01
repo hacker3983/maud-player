@@ -1275,6 +1275,19 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer_songsmanager_handleprevbutton(mplayer);
         mplayer_songsmanager_handleskipbutton(mplayer);
         mplayer_queue_display(mplayer, &mplayer->play_queue);
+        mplayer_selectionmenu_display_addtoplaylist_modal(mplayer);
+        mplayer_selectionmenu_handle_addtoplaylist_modalevents(mplayer);
+        mplayer_selectionmenu_handle_addtobtn(mplayer);
+        if(mplayer->selection_queue.items && mplayer->music_selected) {
+            //printf("The music selection queue looks like this:\n");
+            //mplayer_queue_print(mplayer, mplayer->selection_queue);
+            mplayer->music_selected = false;
+        }
+        if(music_playqueuebtn.clicked) {
+            mplayer_queue_addmusicfrom_queue(&mplayer->play_queue, &mplayer->selection_queue);
+            mplayer_selectionmenu_clearmusic_selection(mplayer);
+            music_playqueuebtn.clicked = false;
+        }
         //mplayer_queue_print(mplayer, mplayer->play_queue);
         mplayer->mouse_clicked = false;
     } else if(active_tab == PLAYLISTS_TAB) {
