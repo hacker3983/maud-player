@@ -79,7 +79,7 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
         // set the calculated x, y position and other related info for the music text and outer canvas
         music_list[i].outer_canvas.x = prev_canvas.x,
         music_list[i].outer_canvas.y = prev_canvas.y;
-        music_list[i].outer_canvas.w = WIDTH - scrollbar.w - 5;
+        music_list[i].outer_canvas.w = mplayer->win_width - scrollbar.w - 5;
         music_list[i].text_info.text_canvas.y = outer_canvas.y +
             ((music_list[i].outer_canvas.h -
             utext.text_canvas.h) / 2);
@@ -310,7 +310,8 @@ void mplayer_songsmanager_addplayback_error(mplayer_t* mplayer, const char* musi
         white,
         2,
         20,
-        20
+        20,
+        10
     );
 }
 
@@ -329,7 +330,7 @@ void mplayer_songsmanager_handleplaybutton(mplayer_t* mplayer, music_t* music_li
                     if(i == music_id && i != prev_playid) {
                         play_queue->playid = i;
                     }
-                    mplayer_queue_addmusic(play_queue, 0, i);
+                    mplayer_queue_addmusic(play_queue, 0, 0, i);
             }
             /* whenever we hover over the playbutton on the music
                we determine if we should restart the current playing music or play a new music
@@ -385,7 +386,7 @@ void mplayer_songsmanager_handlecheckbox_musicselection(mplayer_t* mplayer, musi
                     */
                     music_list[music_id].fill = true;
                     music_list[music_id].checkbox_ticked = true;
-                    mplayer_queue_addmusic(&mplayer->selection_queue, 0, music_id);
+                    mplayer_queue_addmusic(&mplayer->selection_queue, 0, 0, music_id);
                     mplayer->tick_count++;
                     break;
                 case true:
@@ -396,6 +397,9 @@ void mplayer_songsmanager_handlecheckbox_musicselection(mplayer_t* mplayer, musi
                     music_list[music_id].checkbox_ticked = false;
                     mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, 0, music_id);
                     mplayer->tick_count--;
+                    if(!mplayer->tick_count && mplayer->music_selectionmenu_checkbox_tickall) {
+                        mplayer->music_selectionmenu_checkbox_tickall = false;
+                    }
                     break;
             }
             mplayer->music_selected = true;
@@ -414,12 +418,15 @@ void mplayer_songsmanager_handlecheckbox_musicselection(mplayer_t* mplayer, musi
         if(music_list[music_id].checkbox_ticked) {
             mplayer->music_selected = true;
             mplayer->tick_count--;
+            if(!mplayer->tick_count && mplayer->music_selectionmenu_checkbox_tickall) {
+                mplayer->music_selectionmenu_checkbox_tickall = false;
+            }
             mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, 0, music_id);
             music_list[music_id].fill = false;
             music_list[music_id].checkbox_ticked = false;
         } else if(mplayer->tick_count) {
             mplayer->music_selected = true;
-            mplayer_queue_addmusic(&mplayer->selection_queue, 0, music_id);
+            mplayer_queue_addmusic(&mplayer->selection_queue, 0, 0, music_id);
             mplayer->tick_count++;
             music_list[music_id].fill = true;
             music_list[music_id].checkbox_ticked = true;
@@ -489,7 +496,8 @@ int mplayer_songsmanager_playmusic(mplayer_t* mplayer) {
             white,
             2,
             20,
-            20
+            20,
+            10
         );
     }
     return Mix_PlayMusic(music_list[music_id].music, 1);

@@ -7,22 +7,43 @@ void mplayer_selectionmenu_create(mplayer_t* mplayer) {
     // Set the y position calculation for selection menu will be down below the search bar
     mplayer->music_selectionmenu.y = mplayer->music_searchbar.y + mplayer->music_searchbar.h;
     // set the width and the height for the selection menu
-    mplayer->music_selectionmenu.w = WIDTH;
+    mplayer->music_selectionmenu.w = mplayer->win_width;
     mplayer->music_selectionmenu.h = mplayer->music_searchbar.h;
     // whenever we haven't selected anything then we will not render the selection menu onto the screen
     if(!mplayer->tick_count) {
+        mplayer->item_selected = false;
         return;
     }
+    if(!mplayer->item_selected && mplayer->tick_count == 1) {
+        mplayer->item_selected = true;
+    }
     text_info_t songs_selectioninfo = {0};
-    SDL_Rect playbtn_background = {0}, playnext_btnbackground = {0};
+    SDL_Rect playbtn_background = {0}, playnext_btnbackground = {0},
+             remove_btn = {0}, move_up = {0}, move_down = {0},
+             prev_canvas = {0};
     mplayer_selectionmenu_display_checkallbtn(mplayer);
     mplayer_selectionmenu_display_songselectioninfo(mplayer, &songs_selectioninfo);
     mplayer_selectionmenu_handle_checkallbtn_toggleoption(mplayer, songs_selectioninfo);
-    mplayer_selectionmenu_display_playbtn(mplayer, songs_selectioninfo, &playbtn_background);
-    mplayer_selectionmenu_handle_playbtn(mplayer, playbtn_background);
-    mplayer_selectionmenu_display_playnextbtn(mplayer, playbtn_background, &playnext_btnbackground);
+    if(active_tab == QUEUES_TAB && mplayer->tick_count > 1) {
+        prev_canvas = songs_selectioninfo.text_canvas;
+    } else {
+        mplayer_selectionmenu_display_playbtn(mplayer, songs_selectioninfo, &playbtn_background);
+        mplayer_selectionmenu_handle_playbtn(mplayer, playbtn_background);
+        prev_canvas = playbtn_background;
+    }
+
+    mplayer_selectionmenu_display_playnextbtn(mplayer, prev_canvas, &playnext_btnbackground);
     mplayer_selectionmenu_handle_playnextbtn(mplayer, playnext_btnbackground);
-    mplayer_selectionmenu_display_addbtn(mplayer, playnext_btnbackground);
+    prev_canvas = playnext_btnbackground;
+    mplayer_selectionmenu_display_addbtn(mplayer, prev_canvas);
+    if(active_tab != SONGS_TAB) {
+        mplayer_selectionmenu_display_removebtn(mplayer, &remove_btn);
+        mplayer_selectionmenu_handle_removebtn(mplayer, remove_btn);
+        mplayer_selectionmenu_display_movebtn(mplayer, 0, remove_btn, &move_up);
+        mplayer_selectionmenu_handle_moveup(mplayer, move_up);
+        mplayer_selectionmenu_display_movebtn(mplayer, 1, move_up, &move_down);
+        mplayer_selectionmenu_handle_movedown(mplayer, move_down);
+    }
     if(mplayer_rect_hover(mplayer, mplayer->music_selectionmenu) && mplayer->mouse_clicked) {
         if(mplayer->music_selectionmenu_addtobtn_clicked) {
             mplayer->music_selectionmenu_addtobtn_clicked = false;
@@ -31,38 +52,198 @@ void mplayer_selectionmenu_create(mplayer_t* mplayer) {
     }
 }
 
-void mplayer_selectionmenu_display_addbtn(mplayer_t* mplayer, SDL_Rect playnext_btnbackground) {
-    // Create add to button used for adding selected musics to current play queue or creating a new playlist of them    
-    music_addtobtn.btn_canvas.x = playnext_btnbackground.x + playnext_btnbackground.w + 20;
-    music_addtobtn.btn_canvas.y = mplayer->music_selectionmenu.y +
-                                ((mplayer->music_selectionmenu.h - music_addtobtn.btn_canvas.h) / 2);
- 
-    SDL_Texture* addtobtn_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx];
-    text_info_t addtobtn_text = {
-        .font_size = 20,
-        .text = "Add to",
-        .text_canvas = {
-            .x = music_addtobtn.btn_canvas.x + music_addtobtn.btn_canvas.w + 5,
-            .y = music_listplaybtn.btn_canvas.y,
-            .h = music_addtobtn.btn_canvas.h
-        },
+void mplayer_selectionmenu_display_movebtn(mplayer_t* mplayer, int type, SDL_Rect prevbtn,
+    SDL_Rect* move_btnref) {
+    if(mplayer->tick_count > 1) {
+        return;
+    }
+    const char* arrow_path = (type == 0) ? "images/up-arrow.png" : "images/down-arrow.png";
+    char* move_text = (type == 0) ? "Move up" : "Move down";
+    SDL_Rect arrow_canvas = {
+        .x = 0,
+        .y = 0,
+        .w = 30,
+        .h = 30
+    };
+
+    text_info_t move_btntext = {
+        .font_size = 16,
+        .text = move_text,
+        .text_canvas = {0},
         .text_color = {0xff, 0xff, 0xff, 0xff},
         .utext = NULL
     };
+    mplayer_textmanager_sizetext(mplayer->font, &move_btntext);
+    int max_h = (arrow_canvas.h > move_btntext.text_canvas.h) ? arrow_canvas.h :
+        move_btntext.text_canvas.h;
+    SDL_Rect full_canvas = {
+        .x = prevbtn.x + prevbtn.w + 10,
+        .y = 0,
+        .w = arrow_canvas.w + move_btntext.text_canvas.w + 15,
+        .h = max_h + 10
+    };
+    full_canvas.y = mplayer->music_selectionmenu.y + (mplayer->music_selectionmenu.h - full_canvas.h) / 2;
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(black));
+    SDL_RenderDrawRect(mplayer->renderer, &full_canvas);
+    SDL_RenderFillRect(mplayer->renderer, &full_canvas);
+    arrow_canvas.x = full_canvas.x + 5;
+    arrow_canvas.y = full_canvas.y + (full_canvas.h - arrow_canvas.h) / 2;
 
+    SDL_Texture* arrow_texture = IMG_LoadTexture(mplayer->renderer, arrow_path);
+    SDL_RenderCopy(mplayer->renderer, arrow_texture, NULL, &arrow_canvas);
+    SDL_DestroyTexture(arrow_texture);
+
+    move_btntext.text_canvas.x = arrow_canvas.x + arrow_canvas.w + 5;
+    move_btntext.text_canvas.y = full_canvas.y + (full_canvas.h - move_btntext.text_canvas.h) / 2;
+    SDL_Texture* movebtn_text_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font,
+        &move_btntext);
+    SDL_RenderCopy(mplayer->renderer, movebtn_text_texture, NULL, &move_btntext.text_canvas);
+    SDL_DestroyTexture(movebtn_text_texture);
+    *move_btnref = full_canvas;
+}
+
+void mplayer_selectionmenu_handle_moveup(mplayer_t* mplayer, SDL_Rect movebtn) {
+    music_queue_t* play_queue = &mplayer->play_queue, *selection_queue = &mplayer->selection_queue;
+    if(!mplayer_rect_hover(mplayer, movebtn)) {
+        return;
+    }
+    mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+    if(mplayer->mouse_clicked) {
+        size_t item_index = selection_queue->items[0].uid;
+        if(item_index) {
+            if(play_queue->playid == item_index) {
+                play_queue->playid = item_index-1;
+            } else if(play_queue->playid == item_index-1) {
+                play_queue->playid = item_index;
+            }
+            mplayer_queue_swapitem(&play_queue->items[item_index], &play_queue->items[item_index-1]);
+            mplayer_selectionmenu_clearmusic_selection(mplayer);
+        }
+        mplayer->mouse_clicked = false;
+    }
+}
+
+void mplayer_selectionmenu_handle_movedown(mplayer_t* mplayer, SDL_Rect movebtn) {
+    music_queue_t* play_queue = &mplayer->play_queue, *selection_queue = &mplayer->selection_queue;
+    if(!mplayer_rect_hover(mplayer, movebtn)) {
+        return;
+    }
+    mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+    if(mplayer->mouse_clicked) {
+        size_t item_index = selection_queue->items[0].uid;
+        if(item_index < play_queue->item_count-1) {
+            if(play_queue->playid == item_index) {
+                play_queue->playid = item_index+1;
+            } else if(play_queue->playid == item_index+1) {
+                play_queue->playid = item_index;
+            }
+            mplayer_queue_swapitem(&play_queue->items[item_index], &play_queue->items[item_index+1]);
+            mplayer_selectionmenu_clearmusic_selection(mplayer);
+        }
+        mplayer->mouse_clicked = false;
+    }
+}
+
+void mplayer_selectionmenu_display_removebtn(mplayer_t* mplayer, SDL_Rect* removebtn_ref) {
+    SDL_Rect addtobtn_canvas = mplayer->music_selectionmenu_addtocanvas;
+    SDL_Rect removebtn_icon = {
+        .x = 0,
+        .y = 0,
+        .w = 24,
+        .h = 24
+    };
+    text_info_t removebtn_textinfo = {
+        .font_size = 18,
+        .text = "Remove",
+        .text_canvas = {0},
+        .text_color = {0xff, 0xff, 0xff, 0xff},
+        .utext = NULL
+    };
+    mplayer_textmanager_sizetext(mplayer->font, &removebtn_textinfo);
+    int max_h = (removebtn_icon.h > removebtn_textinfo.text_canvas.h) ? removebtn_icon.h :
+                    removebtn_textinfo.text_canvas.h;
+    SDL_Rect full_canvas = {
+        .x = addtobtn_canvas.x + addtobtn_canvas.w + 10,
+        .y = 0,
+        .w = removebtn_icon.w + removebtn_textinfo.text_canvas.w + 20,
+        .h = max_h + 20
+    };
+    full_canvas.y = mplayer->music_selectionmenu.y + (mplayer->music_selectionmenu.h - full_canvas.h) / 2;
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(black));
+    SDL_RenderDrawRect(mplayer->renderer, &full_canvas);
+    SDL_RenderFillRect(mplayer->renderer, &full_canvas);
+
+    removebtn_icon.x = full_canvas.x + 5;
+    removebtn_icon.y = full_canvas.y + (full_canvas.h - removebtn_icon.h)/2;
+    SDL_Texture* removebtn_icontexture = IMG_LoadTexture(mplayer->renderer, "images/remove 2.png");
+    SDL_RenderCopy(mplayer->renderer, removebtn_icontexture, NULL, &removebtn_icon);
+    SDL_DestroyTexture(removebtn_icontexture);
+
+    removebtn_textinfo.text_canvas.x = removebtn_icon.x + removebtn_icon.w + 5;
+    removebtn_textinfo.text_canvas.y = full_canvas.y + (full_canvas.h -
+        removebtn_textinfo.text_canvas.h)/2;
+    SDL_Texture* removebtn_text_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font,
+        &removebtn_textinfo);
+    SDL_RenderCopy(mplayer->renderer, removebtn_text_texture, NULL, &removebtn_textinfo.text_canvas);
+    SDL_DestroyTexture(removebtn_text_texture);
+    *removebtn_ref = full_canvas;
+}
+
+void mplayer_selectionmenu_handle_removebtn(mplayer_t* mplayer, SDL_Rect removebtn) {
+    if(active_tab == SONGS_TAB) {
+        return;
+    }
+    if(mplayer_rect_hover(mplayer, removebtn)) {
+        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+        if(mplayer->mouse_clicked) {
+            mplayer->remove_btnclicked = true;
+            mplayer->mouse_clicked = false;
+        }
+    }
+}
+
+void mplayer_selectionmenu_display_addbtn(mplayer_t* mplayer, SDL_Rect playnext_btnbackground) {
+    // Create add to button used for adding selected musics to current play queue or creating a new playlist of them    
+    SDL_Rect addbtn_icon = {
+        .x = 0, .y = 0,
+        .w = 30, .h = 30
+    };
+ 
+    text_info_t addtobtn_text = {
+        .font_size = 16,
+        .text = "Add to",
+        .text_canvas = {0},
+        .text_color = {0xff, 0xff, 0xff, 0xff},
+        .utext = NULL
+    };
+    mplayer_textmanager_sizetext(mplayer->font, &addtobtn_text);
+    int max_h = (addbtn_icon.h > addtobtn_text.text_canvas.h) ? addbtn_icon.h : addtobtn_text.text_canvas.h;
+    SDL_Rect full_canvas = {
+        .x = playnext_btnbackground.x + playnext_btnbackground.w + 10,
+        .y = 0,
+        .w = addbtn_icon.w + addtobtn_text.text_canvas.w + 15,
+        .h = max_h + 10
+    };
+    full_canvas.y = mplayer->music_selectionmenu.y + (mplayer->music_selectionmenu.h -
+        full_canvas.h) / 2;
+    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(black));
+    SDL_RenderDrawRect(mplayer->renderer, &full_canvas);
+    SDL_RenderFillRect(mplayer->renderer, &full_canvas);
+
+    addbtn_icon.x = full_canvas.x + 5;
+    addbtn_icon.y = full_canvas.y + (full_canvas.h - addbtn_icon.h) / 2;
+    SDL_Texture* addtobtn_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][music_addtobtn.texture_idx];
+    SDL_RenderCopy(mplayer->renderer, addtobtn_texture, NULL, &addbtn_icon);
+    
+    addtobtn_text.text_canvas.x = addbtn_icon.x + addbtn_icon.w + 5;
+    addtobtn_text.text_canvas.y = full_canvas.y + (full_canvas.h - addtobtn_text.text_canvas.h) / 2;
     SDL_Texture* addtobtn_text_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font, &addtobtn_text);
-    SDL_RenderCopy(mplayer->renderer, addtobtn_texture, NULL, &music_addtobtn.btn_canvas);
     SDL_RenderCopy(mplayer->renderer, addtobtn_text_texture, NULL, &addtobtn_text.text_canvas);
     SDL_DestroyTexture(addtobtn_text_texture); addtobtn_text_texture = NULL;
-    SDL_Rect addtobtn_fullcanvas = {
-        .x = music_addtobtn.btn_canvas.x,
-        .y = music_addtobtn.btn_canvas.y,
-        .w = music_addtobtn.btn_canvas.w + addtobtn_text.text_canvas.w + 5,
-        .h = music_addtobtn.btn_canvas.h
-    };
-    mplayer->music_selectionmenu_addtocanvas = addtobtn_fullcanvas;
+    mplayer->music_selectionmenu_addtocanvas = full_canvas;
     bool *addtobtn_clicked = &mplayer->music_selectionmenu_addtobtn_clicked;
-    if(mplayer_rect_hover(mplayer, addtobtn_fullcanvas)) {
+    if(mplayer_rect_hover(mplayer, full_canvas)) {
+        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
         if(mplayer->mouse_clicked) {
             *addtobtn_clicked = !(*addtobtn_clicked);
             mplayer->mouse_clicked = false;
@@ -166,32 +347,39 @@ void mplayer_selectionmenu_handle_addtobtn(mplayer_t* mplayer) {
 }
 
 void mplayer_selectionmenu_handle_playbtn(mplayer_t* mplayer, SDL_Rect playbtn_background) {
-    music_queue_t* play_queue = &mplayer->play_queue;
+    music_queue_t *play_queue = &mplayer->play_queue,
+                  *selection_queue = &mplayer->selection_queue;
     if(!mplayer_rect_hover(mplayer, playbtn_background)) {
         return;
     }
+    size_t music_listindex = 0, music_id = 0, *playid = &play_queue->playid;
     mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
     if(mplayer->mouse_clicked) {
         printf("You clicked the play button now we are gonna modify the play queue\n");
-        mplayer_queue_destroy(play_queue);
-        if(!mplayer_queue_addmusicfrom_queue(play_queue, &mplayer->selection_queue)) {
-            printf("Failed to add the selection queue to the play queue\n");
-            Mix_HaltMusic();
-            return;
+        if(active_tab == QUEUES_TAB) {
+            *playid = selection_queue->items[0].uid;
+        } else {
+            mplayer_queue_destroy(play_queue);
+            if(!mplayer_queue_addmusicfrom_queue(play_queue, selection_queue)) {
+                printf("Failed to add the selection queue to the play queue\n");
+                Mix_HaltMusic();
+                return;
+            }
+            printf("Successfully added the selection queue to the play queue and play queue now looks like:");
+            printf("mplayer->play_queue->item_count = %zu\n", play_queue->item_count);
+            mplayer_queue_print(mplayer, *play_queue);
         }
-        printf("Successfully added the selection queue to the play queue and play queue now looks like:");
-        printf("mplayer->play_queue->item_count = %zu\n", play_queue->item_count);
-        mplayer_queue_print(mplayer, *play_queue);
         if(Mix_PlayingMusic() ) {
+            Mix_PauseMusic();
             Mix_HaltMusic();
         }
-        size_t *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*playid].music_listindex,
-           music_id = play_queue->items[*playid].music_id;
-        music_t **music_lists = mplayer->music_lists,
-                *music_list = music_lists[music_listindex];
-        if(play_queue->items && !Mix_PlayMusic(music_list[music_id].music, 1)) {
-            printf("Playing music %s\n", music_list[music_id].music_name);
+        music_listindex = play_queue->items[*playid].music_listindex,
+        music_id = play_queue->items[*playid].music_id;
+        if(play_queue->items && !Mix_PlayMusic(mplayer->music_lists[music_listindex]
+            [music_id].music, 1)) {
+            printf("Playing music %s\n",
+                mplayer->music_lists[music_listindex][music_id].music_name
+            );
         }
         mplayer_selectionmenu_clearmusic_selection(mplayer);
         mplayer->mouse_clicked = false;
@@ -206,7 +394,7 @@ void mplayer_selectionmenu_display_addtoplaylist_modal(mplayer_t* mplayer) {
         .x = 0, .y = 0,
         .w = 400, .h = 450
     };
-    modal.x = (WIDTH - modal.w)/2, modal.y = (HEIGHT - modal.h)/2;
+    modal.x = (mplayer->win_width - modal.w)/2, modal.y = (mplayer->win_height - modal.h)/2;
     SDL_Color modal_color = {0x21, 0x01, 0x24, 0xFF};
     
     // Render the Add new playlist modal box and its contents / elements
@@ -243,17 +431,22 @@ void mplayer_selectionmenu_display_addtoplaylist_modal(mplayer_t* mplayer) {
         .w = 140, .h = 140
     };
     SDL_Color newplaylist_imagecanvas_color = {0x00, 0x00, 0x00, 0x00};
-    newplaylist_imagecanvas.x = (WIDTH - newplaylist_imagecanvas.w) / 2;
+    newplaylist_imagecanvas.x = (mplayer->win_width - newplaylist_imagecanvas.w) / 2;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(newplaylist_imagecanvas_color));
     SDL_RenderDrawRect(mplayer->renderer, &newplaylist_imagecanvas);
     SDL_RenderFillRect(mplayer->renderer, &newplaylist_imagecanvas);
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE]
                     [music_addplaylistbtn.texture_idx], NULL, &newplaylist_imagecanvas);
 
+    mplayer_inputbox_getsize(mplayer, &mplayer->playlist_inputbox);
     mplayer->playlist_inputbox.inputbox_canvas.x = modal.x + (modal.w -
         mplayer->playlist_inputbox.inputbox_canvas.w) / 2,
     mplayer->playlist_inputbox.inputbox_canvas.y = newplaylist_imagecanvas.y + newplaylist_imagecanvas.h + 30;
-    // TODO: Implement input box for typing the playlist name that should be created
+
+    text_info_t* placeholder_textinfo = &mplayer->playlist_inputbox.placeholder_info;
+    placeholder_textinfo->text_canvas.x = mplayer->playlist_inputbox.inputbox_canvas.x + 10;
+    placeholder_textinfo->text_canvas.y = mplayer->playlist_inputbox.inputbox_canvas.y + (mplayer->
+        playlist_inputbox.inputbox_canvas.h - placeholder_textinfo->text_canvas.h) / 2;
     mplayer_inputbox_display(mplayer, &mplayer->playlist_inputbox);
 
     // Add the create button to the new playlist modal box
@@ -372,29 +565,34 @@ void mplayer_selectionmenu_display_playbtn(mplayer_t* mplayer, text_info_t songs
     // This can be use to play musics that were selected using the check boxes
     SDL_Texture* music_listplaybtn_texture = mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE]
         [music_listplaybtn.texture_idx];
-    music_listplaybtn.btn_canvas.x = songs_selectioninfo.text_canvas.x + songs_selectioninfo.text_canvas.w + 20,
-    // Center the music list play button within the selection menu canvas on the y axis / vertically
-    music_listplaybtn.btn_canvas.y = mplayer->music_selectionmenu.y +
-        ((mplayer->music_selectionmenu.h - music_listplaybtn.btn_canvas.h) / 2);
+
+    SDL_Rect playbtn_icon = {
+        .x = songs_selectioninfo.text_canvas.x + songs_selectioninfo.text_canvas.w + 10,
+        .y = 0,
+        .w = 24,
+        .h = 30,
+    };
 
     // Add play text beside the play button
     text_info_t play_text = {
-        .font_size = 20,
+        .font_size = 16,
         .text = "Play",
         .text_canvas = {
-            .x = music_listplaybtn.btn_canvas.x + music_listplaybtn.btn_canvas.w + 5,
-            .y = music_listplaybtn.btn_canvas.y,
-            .h = music_listplaybtn.btn_canvas.h,
+            .x = playbtn_icon.x + playbtn_icon.w + 5,
+            .y = 0,
+            .w = 0,
+            .h = 0,
         },
         .text_color = {0xFF, 0xFF, 0xFF, 0xFF},
         .utext = NULL
     };
+    mplayer_textmanager_sizetext(mplayer->font, &play_text);
     SDL_Texture* playtext_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font, &play_text);
-    int playbtn_background_height = music_listplaybtn.btn_canvas.h + 10;
+    int playbtn_background_height = playbtn_icon.h + 10;
     SDL_Rect playbtn_background = {
-        .x = music_listplaybtn.btn_canvas.x - 5,
+        .x = playbtn_icon.x - 5,
         .y = mplayer->music_selectionmenu.y + (mplayer->music_selectionmenu.h - playbtn_background_height)/2,
-        .w = play_text.text_canvas.w + music_listplaybtn.btn_canvas.w + 15,
+        .w = play_text.text_canvas.w + playbtn_icon.w + 15,
         .h = playbtn_background_height,
     };
     // Render the full play button background or canvas to the screen
@@ -403,11 +601,13 @@ void mplayer_selectionmenu_display_playbtn(mplayer_t* mplayer, text_info_t songs
     SDL_RenderFillRect(mplayer->renderer, &playbtn_background);
 
     // Copy the play button onto the renderer
+    playbtn_icon.y = playbtn_background.y + (playbtn_background.h - playbtn_icon.h) / 2;
     if(SDL_RenderCopy(mplayer->renderer, music_listplaybtn_texture, NULL,
-        &music_listplaybtn.btn_canvas) < 0) {
+        &playbtn_icon) < 0) {
         printf("SDL_RenderCopyFailed(): because %s\n", SDL_GetError());
     }
     // Copy the texture for the play button text onto the renderer
+    play_text.text_canvas.y = playbtn_background.y + (playbtn_background.h - play_text.text_canvas.h) / 2;
     if(SDL_RenderCopy(mplayer->renderer, playtext_texture, NULL, &play_text.text_canvas)) {
         printf("SDL_RenderCopyFailed(): because %s\n", SDL_GetError());
     }
@@ -417,32 +617,28 @@ void mplayer_selectionmenu_display_playbtn(mplayer_t* mplayer, text_info_t songs
 
 void mplayer_selectionmenu_display_playnextbtn(mplayer_t* mplayer, SDL_Rect playbtn_background,
     SDL_Rect* playnext_backgroundref) {
-    SDL_Rect playbtn_canvas = {
-        .x = playbtn_background.x + playbtn_background.w + 20,
-        .y = mplayer->music_selectionmenu.y +
-            (mplayer->music_selectionmenu.h - music_listplaybtn.btn_canvas.h)/2,
-        .w = music_listplaybtn.btn_canvas.w, .h = music_listplaybtn.btn_canvas.h
+    SDL_Rect playbtn_icon = {
+        .x = 0, .y = 0,
+        .w = 24, .h = 30
     };    
     text_info_t playnextbtn_textinfo = {
-        .font_size = 20,
+        .font_size = 16,
         .text = "Play next",
-        .text_canvas = {
-            .x = playbtn_canvas.x + playbtn_canvas.w + 10, .y = playbtn_canvas.y,
-            .w = 0, .h = 0
-        },
+        .text_canvas = {0},
         .text_color = {0xFF, 0xFF, 0xFF, 0xFF},
         .utext = NULL
     };
-    SDL_Texture* playnextbtntext_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font,
-        &playnextbtn_textinfo);
-    int playbtn_backgroundheight = music_listplaybtn.btn_canvas.h + 10;
+    mplayer_textmanager_sizetext(mplayer->font, &playnextbtn_textinfo);
+    int playbtn_backgroundheight = playbtn_icon.h + 10;
     SDL_Rect playnextbtn_background = {
-        .x = playbtn_canvas.x - 5,
+        .x = playbtn_background.x + playbtn_background.w + 10,
         .y = mplayer->music_selectionmenu.y + (mplayer->music_selectionmenu.h - playbtn_backgroundheight) / 2,
-        .w = playnextbtn_textinfo.text_canvas.x + playnextbtn_textinfo.text_canvas.w +
-            playbtn_canvas.w + 10 - (playbtn_canvas.x + playbtn_canvas.w),
+        .w = playnextbtn_textinfo.text_canvas.w + playbtn_icon.w + 15,
         .h = playbtn_backgroundheight
     };
+
+    SDL_Texture* playnextbtntext_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font,
+        &playnextbtn_textinfo);
 
     // Set the background color for the play button icon
     SDL_SetRenderDrawColor(mplayer->renderer, black.r, black.g, black.b, 34);
@@ -450,9 +646,15 @@ void mplayer_selectionmenu_display_playnextbtn(mplayer_t* mplayer, SDL_Rect play
     SDL_RenderFillRect(mplayer->renderer, &playnextbtn_background);
 
     // Copy the play button texture to its canvas
+    playbtn_icon.x = playnextbtn_background.x + 5;
+    playbtn_icon.y = playnextbtn_background.y + (playnextbtn_background.h - playbtn_icon.h) / 2;
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE]
-        [music_listplaybtn.texture_idx], NULL, &playbtn_canvas);
+        [music_listplaybtn.texture_idx], NULL, &playbtn_icon);
+
     // Copy the rendered play next button text to its canvas
+    playnextbtn_textinfo.text_canvas.x = playbtn_icon.x + playbtn_icon.w + 5;
+    playnextbtn_textinfo.text_canvas.y = playnextbtn_background.y + (playnextbtn_background.h
+        - playnextbtn_textinfo.text_canvas.h) / 2;
     SDL_RenderCopy(mplayer->renderer, playnextbtntext_texture, NULL, &playnextbtn_textinfo.text_canvas);
     SDL_DestroyTexture(playnextbtntext_texture); playnextbtntext_texture = NULL;
     *playnext_backgroundref = playnextbtn_background;
@@ -471,6 +673,7 @@ void mplayer_selectionmenu_handle_playnextbtn(mplayer_t* mplayer, SDL_Rect playn
                 Mix_PlayMusic(mplayer->music_lists[music_listindex][music_id].music, 1);
             }
             mplayer_selectionmenu_clearmusic_selection(mplayer);
+            mplayer->checkall_btntoggled = true;
         }
     }
 }
@@ -507,15 +710,18 @@ void mplayer_selectionmenu_display_songselectioninfo(mplayer_t* mplayer, text_in
     strcat(songs_selectioninfo_text, " selected");
 
     text_info_t songs_selectioninfo = {
-        .font_size = 20,
+        .font_size = 16,
         .text = songs_selectioninfo_text,
         .text_canvas = {
             .x = music_selectionmenu_checkbox_size.x + music_selectionmenu_checkbox_size.w + 10,
-            .y = music_selectionmenu_checkbox_size.y,
+            .y = 0,
         },
         .text_color = {},
         .utext = NULL
     };
+    mplayer_textmanager_sizetext(mplayer->font, &songs_selectioninfo);
+    songs_selectioninfo.text_canvas.y = mplayer->music_selectionmenu.y + (mplayer->music_selectionmenu.h -
+        songs_selectioninfo.text_canvas.h) / 2;
 
     SDL_Texture* songs_selectioninfo_texture = mplayer_textmanager_rendertext(mplayer, mplayer->font, &songs_selectioninfo);
     SDL_RenderCopy(mplayer->renderer, songs_selectioninfo_texture, NULL, &songs_selectioninfo.text_canvas);
@@ -532,9 +738,9 @@ bool mplayer_selectionmenu_toggleitem_checkboxmusic_queue(mplayer_t* mplayer, mu
     if(mplayer->music_selectionmenu_checkbox_tickall && !queue->items[i].checkbox_ticked) {
         queue->items[i].fill = true;
         queue->items[i].checkbox_ticked = true;
-        mplayer_queue_addmusic(&mplayer->selection_queue, music_listindex, music_id);
+        mplayer_queue_addmusic(&mplayer->selection_queue, item_index, music_listindex, music_id);
         mplayer->music_selected = true;
-        if(mplayer->tick_count < mplayer->music_count) {
+        if(mplayer->tick_count < queue->item_count) {
             mplayer->tick_count++;
         }
         return true;
@@ -542,7 +748,7 @@ bool mplayer_selectionmenu_toggleitem_checkboxmusic_queue(mplayer_t* mplayer, mu
         !mplayer->music_selectionmenu_checkbox_tickall && queue->items[i].checkbox_ticked) {
         queue->items[i].fill = false;
         queue->items[i].checkbox_ticked = false;
-        mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, music_listindex, music_id);
+        mplayer_queue_removemusicby_uid(&mplayer->selection_queue, item_index);
         mplayer->music_selected = true;
         mplayer->tick_count--;
         if(!mplayer->tick_count) {
@@ -559,7 +765,7 @@ bool mplayer_selectionmenu_togglesong_checkbox(mplayer_t* mplayer, music_t* musi
     if(mplayer->music_selectionmenu_checkbox_tickall && !music_list[i].checkbox_ticked) {
         music_list[i].fill = true;
         music_list[i].checkbox_ticked = true;
-        mplayer_queue_addmusic(&mplayer->selection_queue, 0, i);
+        mplayer_queue_addmusic(&mplayer->selection_queue, 0, 0, i);
         mplayer->music_selected = true;
         if(mplayer->tick_count < mplayer->music_count) {
             mplayer->tick_count++;
@@ -592,12 +798,20 @@ bool mplayer_selectionmenu_togglecheckbox(mplayer_t* mplayer, music_queue_t* que
 }
 
 void mplayer_selectionmenu_clearmusic_selection(mplayer_t* mplayer) {
+    for(size_t i=0;i<mplayer->play_queue.item_count;i++) {
+        mplayer->play_queue.items[i].fill = false;
+        mplayer->play_queue.items[i].checkbox_ticked = false;
+    }
+    if(active_tab == QUEUES_TAB) {
+        mplayer->songsbox_resized = true;
+    }
     for(size_t i=0;i<mplayer->selection_queue.item_count;i++) {
         size_t music_listindex = mplayer->selection_queue.items[i].music_listindex,
-            music_id = mplayer->selection_queue.items[i].music_id;
+        music_id = mplayer->selection_queue.items[i].music_id;
         mplayer->music_lists[music_listindex][music_id].fill = false;
         mplayer->music_lists[music_listindex][music_id].checkbox_ticked = false;
     }
+
     mplayer->tick_count = 0;
     mplayer->music_selectionmenu_checkbox_fillall = false;
     mplayer->music_selectionmenu_checkbox_tickall = false;
@@ -635,6 +849,7 @@ void mplayer_selectionmenu_handle_checkallbtn_toggleoption(mplayer_t* mplayer, t
             } else {
                 *tick = true;
             }
+            mplayer->checkall_btntoggled = true;
             mplayer->music_selectionmenu_checkbox_clicked = true;
         }
     } else if(!mplayer->music_selectionmenu_checkbox_clicked && mplayer->tick_count == target_count) {

@@ -25,6 +25,12 @@ void mplayer_selectionmenu_handle_playbtn(mplayer_t* mplayer, SDL_Rect playbtn_b
 void mplayer_selectionmenu_display_playnextbtn(mplayer_t* mplayer, SDL_Rect playbtn_background,
     SDL_Rect* playnext_backgroundref);
 void mplayer_selectionmenu_handle_playnextbtn(mplayer_t* mplayer, SDL_Rect playnext_btncanvas);
+void mplayer_selectionmenu_display_removebtn(mplayer_t* mplayer, SDL_Rect* removebtn_ref);
+void mplayer_selectionmenu_handle_removebtn(mplayer_t* mplayer, SDL_Rect removebtn);
+void mplayer_selectionmenu_display_movebtn(mplayer_t* mplayer, int type, SDL_Rect prevbtn,
+    SDL_Rect* move_btnref);
+void mplayer_selectionmenu_handle_moveup(mplayer_t* mplayer, SDL_Rect movebtn);
+void mplayer_selectionmenu_handle_movedown(mplayer_t* mplayer, SDL_Rect movebtn);
 void mplayer_selectionmenu_display_songselectioninfo(mplayer_t* mplayer, text_info_t* songs_selectioninfo);
 void mplayer_selectionmenu_display_checkallbtn(mplayer_t* mplayer);
 void mplayer_selectionmenu_handle_checkallbtn_toggleoption(mplayer_t* mplayer, text_info_t songs_selectioninfo);
