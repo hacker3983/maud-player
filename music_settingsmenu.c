@@ -21,7 +21,7 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     }
     mplayer_set_window_title(mplayer, SETTING_TITLE);
     mplayer_set_window_color(mplayer->renderer, setting_wincolor);
-    SDL_GetWindowSize(mplayer->window, &WIDTH, &HEIGHT);
+    SDL_GetWindowSize(mplayer->window, &mplayer->win_width, &mplayer->win_height);
     // Create the navigation bar and handle its components
     mplayer_settingmenu_create_navigationbar(mplayer, &navbar);
     if(mplayer_settingmenu_handle_backbtn(mplayer, &navbar)) {
@@ -31,7 +31,7 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     }
     SDL_Rect scroll_area = {
         .x = 0, .y = navbar.canvas.y + navbar.canvas.h,
-        .w = WIDTH, .h = HEIGHT - (navbar.canvas.y + navbar.canvas.h)
+        .w = mplayer->win_width, .h = mplayer->win_height - (navbar.canvas.y + navbar.canvas.h)
     };
     mplayer_scrollcontainer_setscroll_area(settingmenu_scrollcontainer, scroll_area);
     mplayer_settingmenu_render_musiclibrary(mplayer, navbar, &music_librarycategory);
@@ -39,7 +39,7 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
         &personalization_category);
     mplayer_settingmenu_render_about(mplayer, personalization_category);
 
-    mplayer_scrollcontainer_setprops(&mplayer->settingmenu_scrollcontainer, scroll_area, 20, 0, mplayer->settingmenu_contentcount);
+    mplayer_scrollcontainer_setprops(&mplayer->settingmenu_scrollcontainer, scroll_area, 20, mplayer->settingmenu_contentcount);
     // Render the navigation bar
     if(mplayer->scroll) {
         printf("Scrolling\n");
@@ -93,7 +93,7 @@ void mplayer_settingmenu_create_navigationbar(mplayer_t* mplayer, mplayer_settin
 
     navbar_ref->color = (SDL_Color){0x39, 0x2F, 0x5A, 0xFF}/*{0x5E, 0xB1, 0xBF, 0xFF}{0x04, 0x2A, 0x2B, 0xFF}{0x00, 0xA6, 0x76, 0xff}*/;
     navbar_ref->canvas.x = 0, navbar_ref->canvas.y = 0;
-    navbar_ref->canvas.w = WIDTH, navbar_ref->canvas.h = max_navbarheight;
+    navbar_ref->canvas.w = mplayer->win_width, navbar_ref->canvas.h = max_navbarheight;
 
     // Center the settings button vertically on the navigation bar
     setting_btns[0].btn_canvas.y = navbar_ref->canvas.y + (navbar_ref->canvas.h - setting_btns[0].btn_canvas.h)/2;
@@ -118,7 +118,7 @@ void mplayer_settingmenu_create_navigationbar(mplayer_t* mplayer, mplayer_settin
         .delay_secs = 0,
         .duration_secs = 0,
         .element_canvas = navbar_ref->backbtn_canvas,
-        .wrap_length = WIDTH,
+        .wrap_length = mplayer->win_width,
         .wrap_spacing = 5
     };
     navbar_ref->backbtn_tooltip = backbtn_tooltip;
