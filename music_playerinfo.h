@@ -1,11 +1,24 @@
 #ifndef _MUSIC_PLAYERINFO_H
 #define _MUSIC_PLAYERINFO_H
 #include "music_player.h"
+#define MAUD_RELEASE 0
+#define MAUD_PROGRAMDATA "C:\\ProgramData\\Maud Player\\"
+
+#if MAUD_RELEASE
+#define MAUD_PATHINFO_FILE MAUD_PROGRAMDATA "MUSICPATHS.info"
+#define MAUD_PLAYLISTSINFO_FILE MAUD_PROGRAMDATA "MUSICPLAYLISTS.info"
+#define MAUD_TEMPLISTINFO_FILE MAUD_PROGRAMDATA "C:\\ProgramData\\Maud Player\\MUSICTEMPLIST.info"
+#else
+#define MAUD_PATHINFO_FILE "MUSICPATHS.info"
+#define MAUD_PLAYLISTSINFO_FILE "MUSICPLAYLISTS.info"
+#define MAUD_TEMPLISTINFO_FILE "MUSICTEMPLIST.info"
+#endif
+
 const char *WINDOW_TITLE = "Maud Player (Music Audio Player)", *SETTING_TITLE = "Maud Player Settings",
            *FONT_FILE = "SF-Pro-Display-Black.otf", *MUSIC_FONTFILE = "Symbola.ttf",
-           *MUSIC_PATHINFO_FILE = "MUSICPATHS.info",
-           *MUSIC_PLAYLISTSINFO_FILE = "MUSICPLAYLISTS.info",
-           *MUSIC_TEMPLISTINFO_FILE = "MUSICTEMPLIST.info";
+           *MUSIC_PATHINFO_FILE = MAUD_PATHINFO_FILE,
+           *MUSIC_PLAYLISTSINFO_FILE = MAUD_PLAYLISTSINFO_FILE,
+           *MUSIC_TEMPLISTINFO_FILE = MAUD_TEMPLISTINFO_FILE;
 #ifdef _WIN32
 const wchar_t *FILE_EXTENSIONS[] = {L"mp3", L"flac", L"ogg", L"opus", L"wav", L"m4a", NULL};
 #else
@@ -75,7 +88,7 @@ music_addtobtn = {"images/add.png", "Add to", MUSIC_ADDTOBTN, {0, 0, 30, 40}, fa
 music_addtocirclebtn = {"images/add 2.png", "Add to", MUSIC_ADDTOCIRCLEBTN, {0, 0, 30, 40}, false, false, 0},
 music_playqueuebtn = {"images/play-queue.png", "Play queue", MUSIC_PLAYQUEUEBTN, {0, 0, 30, 40}, false, false, 0},
 music_playlistbtn = {"images/playlist.png", "Playlist", MUSIC_PLAYLISTBTN, {0, 0, 30, 30}, false, false, 0},
-music_removebtn = {"images/remove.png", "Remove", MUSIC_REMOVEBTN, {0, 0, 24, 24}, false, false, 0},
+music_removebtn = {"images/removelocation.png", "Remove", MUSIC_REMOVEBTN, {0, 0, 24, 24}, false, false, 0},
 setting_btns[] = {
     {"images/back-button.png", "Home", BACK_BUTTON, {5, 0, 45, 45}, false, false, 0},
     {"images/add-folder.png", "Add a music location (Directory or Folder)", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0}
