@@ -6,11 +6,15 @@
 typedef struct music_notificationitem {
     TTF_Font* font;
     char* message;
-    text_info_t message_info;
+    text_info_t message_info,
+                *message_segments;
+    size_t message_segmentcount;
+    int message_spacing;
     int padding_x, padding_y;
     SDL_Rect canvas;
     SDL_Color background_color;
-    uint64_t timestamp, timeout;
+    double timeout_secs;
+    uint64_t timeout;
 } music_notificationitem_t;
 
 typedef struct music_notificationqueue {
