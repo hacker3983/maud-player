@@ -133,6 +133,7 @@ enum cursor_types {
 typedef struct mplayer {
     // Music Player Graphical Utilities
     SDL_Window* window; // window
+    int win_width, win_height;
     SDL_Renderer* renderer; // renderer
     TTF_Font* font, *music_font; // fonts
     SDL_Event e; // event
@@ -155,6 +156,7 @@ typedef struct mplayer {
     music_queue_t play_queue, selection_queue;
     mplayer_playlistmanager_t playlist_manager;
     music_scrollcontainer_t play_queuescrollcontainer;
+    bool item_selected, remove_btnclicked;
 
     mplayer_tooltip_t music_tooltip;
     bool display_musictooltip;
@@ -166,7 +168,7 @@ typedef struct mplayer {
     size_t musicsearchbar_datalen, musicsearchbar_datarenderpos, additional_musicsearch_querylen,
         music_failcount, music_maxrenderpos, match_maxrenderpos, music_renderinit,
         musicpending_removalcount, musiclocation_count, current_musicsearch_querylen;
-    mplayer_inputbox_t playlist_inputbox;
+    mplayer_inputbox_t playlist_inputbox, search_inputbox;
     music_itemcontainer_t settingmenu_itemcontainer;
     music_scrollcontainer_t settingmenu_scrollcontainer;
     size_t settingmenu_contentcount;
@@ -175,7 +177,7 @@ typedef struct mplayer {
          music_locationadded, music_selectionmenu_checkbox_fillall, music_selectionmenu_checkbox_tickall,
          music_selectionmenu_checkbox_clicked, music_selectionmenu_addtobtn_clicked,
          music_selectionmenu_addtobtn_dropdown_clicked, hover_object,
-         music_selected;
+         music_selected, songsbox_resized, checkall_btntoggled;
     
     SDL_Color music_selectionmenu_addto_dropdown_color;
     SDL_Rect progress_bar, progress_count, music_searchbar,
