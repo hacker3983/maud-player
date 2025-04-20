@@ -9,6 +9,7 @@ void mplayer_menumanager_setup_menu(mplayer_t* mplayer) {
         || menu->textures[MPLAYER_TAB_TEXTURE]) {
         return;
     }
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
     if(mplayer->menu_opt == MPLAYER_DEFAULT_MENU) {
         mplayer_menumanager_createmenu_texture(mplayer, MPLAYER_TEXT_TEXTURE, text_info_size-1);
         mplayer_menumanager_createmenu_texture(mplayer, MPLAYER_TAB_TEXTURE, tab_info_size);
