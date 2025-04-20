@@ -13,9 +13,10 @@ void mplayer_queue_handleplaybutton(mplayer_t* mplayer, music_queue_t* queue, si
 void mplayer_queue_handleitem_selection(mplayer_t* mplayer, music_queue_t* queue, size_t item_index,
     SDL_Rect outer_canvas, text_info_t* item_textinfo);
 void mplayer_queue_handlecheckbox_itemselection(mplayer_t* mplayer, music_queue_t* queue, size_t item_index);
-bool mplayer_queue_addmusic(music_queue_t* queue, size_t music_listindex, size_t music_id);
+bool mplayer_queue_addmusic(music_queue_t* queue, size_t uid, size_t music_listindex, size_t music_id);
 bool mplayer_queue_addmusicqueue_toplaynext(mplayer_t* mplayer, music_queue_t* destination_queue, music_queue_t* source_queue);
 bool mplayer_queue_addmusicfrom_queue(music_queue_t* destination_queue, music_queue_t* source_queue);
+void mplayer_queue_removemusicby_uid(music_queue_t* queue, size_t uid);
 void mplayer_queue_removemusicby_playid(music_queue_t* queue, size_t playid);
 void mplayer_queue_removemusicby_musiclistidx_id(music_queue_t* queue, size_t music_listindex, size_t musicid);
 void mplayer_queue_display(mplayer_t* mplayer, music_queue_t* queue);

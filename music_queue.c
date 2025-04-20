@@ -32,10 +32,11 @@ music_queueitem_t* mplayer_queue_realloclist_by(music_queue_t* queue, size_t amo
     return new_items;
 }
 
-bool mplayer_queue_addmusic(music_queue_t* queue, size_t music_listindex, size_t music_id) {
+bool mplayer_queue_addmusic(music_queue_t* queue, size_t uid, size_t music_listindex, size_t music_id) {
     if(!mplayer_queue_realloclist_by(queue, 1)) {
         return false;
     }
+    queue->items[queue->item_count-1].uid = uid;
     queue->items[queue->item_count-1].music_listindex = music_listindex,
     queue->items[queue->item_count-1].music_id = music_id;
     return true;
@@ -74,17 +75,36 @@ void mplayer_queue_removemusicby_musiclistidx_id(music_queue_t* queue, size_t mu
     size_t target_index = 0;
     for(size_t i=0;i<queue->item_count;i++) {
         if(queue->items[i].music_listindex == music_listindex &&
-            queue->items[i].music_id == musicid) {
+            queue->items[i].music_id == musicid && !found) {
             target_index = i;
             found = true;
-            break;
+        }
+        if(found && i < queue->item_count-1) {
+            mplayer_queue_swapitem(&queue->items[i], &queue->items[i+1]);
         }
     }
     if(!found) {
         return;
     }
-    for(size_t i=target_index;i<queue->item_count-1;i++) {
-        mplayer_queue_swapitem(&queue->items[i], &queue->items[i+1]);
+    queue->item_count--;
+    queue->items = realloc(queue->items, queue->item_count * sizeof(music_queueitem_t));
+}
+
+void mplayer_queue_removemusicby_uid(music_queue_t* queue, size_t uid) {
+    if(!queue->items) {
+        return;
+    }
+    bool found = false;
+    for(size_t i=0;i<queue->item_count;i++) {
+        if(queue->items[i].uid == uid && !found) {
+            found = true;
+        }
+        if(found && i < queue->item_count-1) {
+            mplayer_queue_swapitem(&queue->items[i], &queue->items[i+1]);
+        }
+    }
+    if(!found) {
+        return;
     }
     queue->item_count--;
     queue->items = realloc(queue->items, queue->item_count * sizeof(music_queueitem_t));
@@ -159,7 +179,6 @@ void mplayer_queue_handlecheckbox_itemselection(mplayer_t* mplayer, music_queue_
            music_id = queue->items[item_index].music_id;
     // check if the mouse is hovered over the music
     if(mplayer_checkbox_hovered(mplayer)) {
-        bool notick = mplayer->tick_count;
         if(mplayer->mouse_clicked) {
             // if we are in the position of the checkbox and we clicked it
             switch(queue->items[item_index].checkbox_ticked) {
@@ -169,7 +188,11 @@ void mplayer_queue_handlecheckbox_itemselection(mplayer_t* mplayer, music_queue_
                     */
                     queue->items[item_index].fill = true;
                     queue->items[item_index].checkbox_ticked = true;
-                    mplayer_queue_addmusic(&mplayer->selection_queue, music_listindex, music_id);
+                    mplayer_queue_addmusic(&mplayer->selection_queue, item_index, music_listindex,
+                        music_id);
+                    if(!mplayer->tick_count) {
+                        mplayer->songsbox_resized = true;
+                    }
                     mplayer->tick_count++;
                     break;
                 case true:
@@ -178,9 +201,14 @@ void mplayer_queue_handlecheckbox_itemselection(mplayer_t* mplayer, music_queue_
                     */
                     queue->items[item_index].fill = false;
                     queue->items[item_index].checkbox_ticked = false;
-                    mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, music_listindex,
-                        music_id);
+                    mplayer_queue_removemusicby_uid(&mplayer->selection_queue, item_index);
                     mplayer->tick_count--;
+                    if(!mplayer->tick_count && mplayer->music_selectionmenu_checkbox_tickall) {
+                        mplayer->music_selectionmenu_checkbox_tickall = false;
+                    }
+                    if(!mplayer->tick_count) {
+                        mplayer->songsbox_resized = true;
+                    }
                     break;
             }
             mplayer->music_selected = true;
@@ -191,9 +219,6 @@ void mplayer_queue_handlecheckbox_itemselection(mplayer_t* mplayer, music_queue_
             */
             queue->items[item_index].fill = true;
         }
-        if(notick) {
-            mplayer->play_queuescrollcontainer.scroll_y = songs_box.y + 1;
-        }
         mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
     } else if(mplayer->tick_count && mplayer->mouse_clicked && !music_addplaylistbtn.clicked &&
         !mplayer->music_selectionmenu_addtobtn_clicked) {
@@ -202,12 +227,18 @@ void mplayer_queue_handlecheckbox_itemselection(mplayer_t* mplayer, music_queue_
         if(queue->items[item_index].checkbox_ticked) {
             mplayer->music_selected = true;
             mplayer->tick_count--;
-            mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, 0, music_id);
+            if(!mplayer->tick_count) {
+                mplayer->songsbox_resized = true;
+            }
+            if(!mplayer->tick_count && mplayer->music_selectionmenu_checkbox_tickall) {
+                mplayer->music_selectionmenu_checkbox_tickall = false;
+            }
+            mplayer_queue_removemusicby_uid(&mplayer->selection_queue, item_index);
             queue->items[item_index].fill = false;
             queue->items[item_index].checkbox_ticked = false;
         } else if(mplayer->tick_count) {
             mplayer->music_selected = true;
-            mplayer_queue_addmusic(&mplayer->selection_queue, 0, music_id);
+            mplayer_queue_addmusic(&mplayer->selection_queue, item_index, music_listindex, music_id);
             mplayer->tick_count++;
             queue->items[item_index].fill = true;
             queue->items[item_index].checkbox_ticked = true;
@@ -218,26 +249,19 @@ void mplayer_queue_handlecheckbox_itemselection(mplayer_t* mplayer, music_queue_
 
 void mplayer_queue_handleplaybutton(mplayer_t* mplayer, music_queue_t* queue, size_t item_index) {
     music_queue_t* play_queue = &mplayer->play_queue;
-    size_t prev_playid = play_queue->playid;
-    puts("mplayer_queue_handleplaybutton(): has not been implemented as yet\n");
-    /*if(mplayer_musiclist_playbutton_hover(mplayer) && !music_addplaylistbtn.clicked &&
+    size_t music_listindex = play_queue->items[item_index].music_listindex,
+           music_id = play_queue->items[item_index].music_id;
+    //puts("mplayer_queue_handleplaybutton(): has not been implemented as yet\n");
+    if(mplayer_musiclist_playbutton_hover(mplayer) && !music_addplaylistbtn.clicked &&
         !mplayer->music_selectionmenu_addtobtn_clicked
         && !mplayer->tick_count) {
         if(mplayer->mouse_clicked) {
-            // Whenever we click the play button for a particular music we play the current play queue and
-            // add the new music ids
+            // Whenever we click the play button for a particular music we play the current play queue
 
-            mplayer_queue_destroy(play_queue);
-            for(size_t i=0;i<mplayer->music_count;i++) {
-                    if(i == music_id && i != prev_playid) {
-                        play_queue->playid = i;
-                    }
-                    mplayer_queue_addmusic(play_queue, 0, i);
-            }*/
             /* whenever we hover over the playbutton on the music
                we determine if we should restart the current playing music or play a new music
             */
-    /*        if(Mix_PlayingMusic() && play_queue->playid == prev_playid) {
+            if(Mix_PlayingMusic() && play_queue->playid == item_index) {
                 Mix_SetMusicPosition(0);
                 if(Mix_PausedMusic()) {
                     Mix_ResumeMusic();
@@ -247,7 +271,8 @@ void mplayer_queue_handleplaybutton(mplayer_t* mplayer, music_queue_t* queue, si
                     Mix_HaltMusic();
                 }
                 Mix_SetMusicPosition(0);
-                if(Mix_PlayMusic(mplayer->music_list[music_id].music, 1) == -1) {
+                play_queue->playid = item_index;
+                if(Mix_PlayMusic(mplayer->music_lists[music_listindex][music_id].music, 1) == -1) {
                     printf("Failed to play music\n");
                     mplayer_songsmanager_addplayback_error(mplayer, mplayer->music_list[music_id].music_name);
                 }
@@ -255,7 +280,7 @@ void mplayer_queue_handleplaybutton(mplayer_t* mplayer, music_queue_t* queue, si
             mplayer->mouse_clicked = false;
         }
         mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
-    }*/
+    }
 }
 
 void mplayer_queue_display(mplayer_t* mplayer, music_queue_t* queue) {
@@ -272,17 +297,56 @@ void mplayer_queue_display(mplayer_t* mplayer, music_queue_t* queue) {
     };
     SDL_Rect scroll_area = {
         .x = songs_box.x + 2, .y = songs_box.y + 1,
-        .w = WIDTH, .h = songs_box.h
+        .w = mplayer->win_width, .h = songs_box.h
     };
     SDL_RenderSetClipRect(mplayer->renderer, &scroll_area);
+    mplayer_scrollcontainer_setprops(queue_scrollcontainer, scroll_area, 20, queue->item_count);
     mplayer_scrollcontainer_setscroll_area(queue_scrollcontainer, scroll_area);
-    mplayer_scrollcontainer_setprops(queue_scrollcontainer, scroll_area, 20, 0, queue->item_count);
+    mplayer_scrollcontainer_setcontent_count(queue_scrollcontainer, queue->item_count);
+    bool update_itempositions = false;
+    if(mplayer->songsbox_resized) {
+        update_itempositions = true;
+        printf("Update item positions\n");
+        mplayer_scrollcontainer_setscroll_yfromscroll_area(queue_scrollcontainer);
+        mplayer->songsbox_resized = false;
+    }
     SDL_Rect outer_canvas = {
         .x = songs_box.x + 2, .y = queue_scrollcontainer->scroll_y,
-        .w = WIDTH - scrollbar.w - 5, .h = 0
+        .w = mplayer->win_width - scrollbar.w - 5, .h = 0
     };
     SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
         fill_color = {0}/*{0xFF, 0xA5, 0x00, 0xff}*/;
+    if(mplayer->remove_btnclicked) {
+        for(size_t i=0;i<mplayer->tick_count;i++) {
+            bool reset_playid = false;
+            for(size_t j=0;j<queue->item_count;j++) {
+                if(queue->items[j].checkbox_ticked) {
+                    mplayer_queue_removemusicby_playid(queue, j);
+                    if(queue->playid == j) {
+                        if(Mix_PlayingMusic()) {
+                            Mix_PauseMusic();
+                            Mix_HaltMusic();
+                            if(queue->item_count) {
+                                queue->playid %= queue->item_count;
+                            }
+                            if(queue->playid < queue->item_count) {
+                                size_t music_listindex = queue->items[queue->playid].music_listindex,
+                                music_id = queue->items[queue->playid].music_id;
+                                Mix_PlayMusic(mplayer->music_lists[music_listindex][music_id].music, 1);
+                            }
+                        }
+                    } else if(queue->playid > j) {
+                        queue->playid--;
+                    }
+                    break;
+                }
+            }
+        }
+        mplayer_selectionmenu_clearmusic_selection(mplayer);
+        mplayer_scrollcontainer_destroy(queue_scrollcontainer);
+        mplayer->remove_btnclicked = false;
+        return;
+    }
     for(size_t i=0;i<queue->item_count;i++) {
         mplayer_selectionmenu_toggleitem_checkboxmusic_queue(mplayer, queue, i);
         size_t music_listindex = queue->items[i].music_listindex;
@@ -299,7 +363,7 @@ void mplayer_queue_display(mplayer_t* mplayer, music_queue_t* queue) {
         checkbox_size.x = outer_canvas.x+5;
         checkbox_size.h = outer_canvas.h-10;
         checkbox_size.y = outer_canvas.y + ((outer_canvas.h - checkbox_size.h)/2);
-        if(outer_canvas.y < scroll_area.y + scroll_area.h) {
+        if(update_itempositions || outer_canvas.y < scroll_area.y + scroll_area.h) {
             mplayer_scrollcontainer_additem(queue_scrollcontainer, outer_canvas);
             mplayer_scrollcontainer_setnext_itemcanvas(queue_scrollcontainer, outer_canvas);
             if(!mplayer->tick_count) {

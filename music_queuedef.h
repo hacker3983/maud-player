@@ -3,7 +3,7 @@
 #include <stddef.h>
 
 typedef struct music_queueitem {
-    size_t music_listindex, music_id;
+    size_t uid, music_listindex, music_id;
     bool fill, checkbox_ticked;
 } music_queueitem_t;
 
