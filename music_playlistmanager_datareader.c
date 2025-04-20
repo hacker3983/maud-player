@@ -1,4 +1,5 @@
 #include "music_playlistmanager.h"
+#include "music_notification.h"
 
 bool mplayer_playlistmanager_read_datafile(mplayer_t* mplayer) {
     stringlist_t string_list = {0};
@@ -16,10 +17,12 @@ bool mplayer_playlistmanager_read_datafile(mplayer_t* mplayer) {
             stringlist_destroy(&string_list);
         }
     }
+
     if(string_list.strings) {
         mplayer_playlistmanager_createplaylist_fromparsed_data(mplayer, &string_list);
         stringlist_destroy(&string_list);
     }
+    fclose(playlist_datafile);
     return true;
 }
 
@@ -61,11 +64,35 @@ void mplayer_playlistmanager_createplaylist_fromparsed_data(mplayer_t* mplayer, 
         return;
     }
     char* playlist_name = string_list->strings[0];
-    mplayer_playlistmanager_createplaylist(mplayer, playlist_name);
-    for(size_t i=1;i<string_list->count;i++) {
-        size_t music_listindex = 0, music_id = 0;
-        mplayer_playlistmanager_getmusicindex_byname(mplayer, string_list->strings[i], &music_listindex,
-            &music_id);
-        mplayer_playlistmanager_addmusic_toplaylist(mplayer, playlist_name, music_listindex, music_id);
+    bool success = mplayer_playlist_create(&mplayer->playlist_manager.playlists,
+        &mplayer->playlist_manager.playlist_count,
+        playlist_name
+    );
+    if(success) {
+       // Write the created playlist to the data file
+        mplayer_playlistmanager_write_data_tofile(mplayer);
+        for(size_t i=1;i<string_list->count;i++) {
+            size_t music_listindex = 0, music_id = 0;
+            mplayer_playlistmanager_getmusicindex_byname(mplayer, string_list->strings[i], &music_listindex,
+                &music_id);
+            mplayer_playlistmanager_addmusic_toplaylist(mplayer, playlist_name, music_listindex, music_id);
+        }
+        size_t msg_len = 30 + strlen(playlist_name);
+        char* msg = malloc(msg_len + 1);
+        sprintf(msg, "Successfully loaded playlist %s!", playlist_name);
+        msg[msg_len] = '\0';
+        mplayer_notification_push(
+            &mplayer->notification,
+            mplayer->font,
+            20,
+            black,
+            msg,
+            (SDL_Color){0x00, 0xff, 0x00, 0xff},
+            0.15,
+            20,
+            20,
+            10
+        );
+        free(msg);
     }
 }

@@ -50,6 +50,9 @@ void mplayer_playlistmanager_write_escapedstring_tofile(FILE* f, const char* str
             case ']':
                 fputs("\\]", f);
                 break;
+            case '\\':
+                fputs("\\\\", f);
+                break;
             default:
                 fputc(string[i], f);
         }
