@@ -3,7 +3,7 @@ import platform
 
 LINK_FILES = ""
 if platform.system() == "Windows":
-    LINK_FILES = "-lmingw32 -lshlwapi -lcomdlg32 -lsetupapi -lcfgmgr32 -lole32 -lsetupapi -lgdi32 -limm32 "
+    LINK_FILES = "-lmingw32 -lshlwapi -lcomdlg32 -lsetupapi -lcfgmgr32 -lole32 -lgdi32 -limm32 "
 LINK_FILES += "-lm -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image -lSDL2_mixer"
 
 C_FILES = [
@@ -35,6 +35,7 @@ C_FILES = [
 print("Building music player...")
 os.system(f"gcc main.c {' '.join(C_FILES)} {LINK_FILES} -o mplayer")
 print("Running music player...")
+
 if platform.system() == "Linux":
     os.system("./mplayer")
 else:
