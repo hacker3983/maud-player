@@ -1,5 +1,6 @@
 #ifndef _MUSIC_INPUTBOXESDEF_H
 #define _MUSIC_INPUTBOXESDEF_H
+#include "music_textinfodef.h"
 
 enum music_inputbox_datatype {
     MPLAYER_INPUTBOXDATA_ASCII,
@@ -18,20 +19,27 @@ typedef struct input_data {
 typedef struct music_inputbox {
     TTF_Font *placeholder_font, *input_datafont;
     input_data_t input;
-    size_t start_renderpos,
-           end_renderpos;
+    text_info_t input_text;
+    char* renderable_data;
+    size_t* cursor_ranges;
+    size_t cursor_rangecount;
     bool update_renderpos;
 
     SDL_Color input_datacolor;
-    char* placeholder;
-    SDL_Rect placeholder_canvas;
+    char* placeholder, *placeholder_truncated;
+    text_info_t placeholder_info;
     SDL_Color placeholder_color;
+    bool render_placeholder;
 
-    SDL_Rect inputbox_canvas;
+    SDL_Rect inputbox_canvas, temp_canvas;
     SDL_Color inputbox_color;
+    bool inputbox_fill;
 
     SDL_Rect cursor_canvas;
     SDL_Color cursor_color;
+    double blink_timeoutsecs;
+    uint64_t blink_timeout;
+    bool show_cursor, cursor_blink;
     bool hover, clicked;
 } mplayer_inputbox_t;
 #endif
