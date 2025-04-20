@@ -5,12 +5,24 @@
 // Initialize the scroll container
 void mplayer_scrollcontainer_init(music_scrollcontainer_t* container);
 
+// set the scroll container content count
+void mplayer_scrollcontainer_setcontent_count(music_scrollcontainer_t* container, size_t content_count);
+
 // set the scroll container scroll area / viewport
 void mplayer_scrollcontainer_setscroll_area(music_scrollcontainer_t* container, SDL_Rect scroll_area);
 
+// set the scroll container scroll y position
+void mplayer_scrollcontainer_setscroll_y(music_scrollcontainer_t* container, int scroll_y);
+
+// set the scroll container scroll y from the scroll area / viewport
+void mplayer_scrollcontainer_setscroll_yfromscroll_area(music_scrollcontainer_t* container);
+
+// set the scroll container scroll speed
+void mplayer_scrollcontainer_setscroll_speed(music_scrollcontainer_t* container, int scroll_speed);
+
 // set the scroll container properties
 void mplayer_scrollcontainer_setprops(music_scrollcontainer_t* container, SDL_Rect scroll_area,
-    int scroll_speed, size_t content_renderpos, size_t content_count);
+    int scroll_speed, size_t content_count);
 
 // Adds a new scroll item to the container
 void mplayer_scrollcontainer_additem(music_scrollcontainer_t* container, SDL_Rect scroll_item);

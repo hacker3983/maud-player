@@ -5,16 +5,28 @@ void mplayer_scrollcontainer_init(music_scrollcontainer_t* container) {
     container->init = true;
 }
 
+void mplayer_scrollcontainer_setcontent_count(music_scrollcontainer_t* container, size_t content_count) {
+    container->content_count = content_count;
+}
+
 void mplayer_scrollcontainer_setscroll_area(music_scrollcontainer_t* container, SDL_Rect scroll_area) {
     container->scroll_area = scroll_area;
-    if(container->init) {
-        return;
-    }
-    container->scroll_y = scroll_area.y;
+}
+
+void mplayer_scrollcontainer_setscroll_y(music_scrollcontainer_t* container, int scroll_y) {
+    container->scroll_y = scroll_y;
+}
+
+void mplayer_scrollcontainer_setscroll_yfromscroll_area(music_scrollcontainer_t* container) {
+    container->scroll_y = container->scroll_area.y;
+}
+
+void mplayer_scrollcontainer_setscroll_speed(music_scrollcontainer_t* container, int scroll_speed) {
+    container->scroll_speed = scroll_speed;
 }
 
 void mplayer_scrollcontainer_setprops(music_scrollcontainer_t* container, SDL_Rect scroll_area,
-    int scroll_speed, size_t content_renderpos, size_t content_count) {
+    int scroll_speed, size_t content_count) {
     if(container->init) {
         return;
     }
