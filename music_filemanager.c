@@ -585,7 +585,7 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
     size_t startlocation_index = 0;
     if(mplayer->music_locationremoved) {
         mplayer_filemanager_removemusics_pendingremoval(mplayer);
-        if(mplayer->musicsearchbar_data) {
+        if(mplayer->search_inputbox.input.data) {
             mplayer->music_newsearch = true;
         }
         return;
