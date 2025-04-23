@@ -424,7 +424,7 @@ void mplayer_queue_display(mplayer_t* mplayer, music_queue_t* queue) {
     SDL_RenderSetClipRect(mplayer->renderer, NULL);
     mplayer_renderscroll_bar(mplayer, &songsbox_scrollbar, 8);
     if(mplayer->scroll) {
-        mplayer_scrollcontainer_performscroll(mplayer, queue_scrollcontainer);
+        mplayer_scrollcontainer_performscroll_overscrollarea(mplayer, queue_scrollcontainer);
         mplayer->scroll = false;
     }
     if(queue_scrollcontainer->item_container.items) {

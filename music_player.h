@@ -163,7 +163,6 @@ typedef struct mplayer {
 
     int repeat_id, mouse_x, mouse_y, scroll_type, scroll_y;
     char* musicsearchbar_data, *current_musicsearch_query, *additional_musicsearch_query;
-    text_info_t musicsearchbar_datainfo;
     int musicsearchcursor_relpos;
     size_t musicsearchbar_datalen, musicsearchbar_datarenderpos, additional_musicsearch_querylen,
         music_failcount, music_maxrenderpos, match_maxrenderpos, music_renderinit,
@@ -172,7 +171,7 @@ typedef struct mplayer {
     music_itemcontainer_t settingmenu_itemcontainer;
     music_scrollcontainer_t settingmenu_scrollcontainer;
     size_t settingmenu_contentcount;
-    bool mouse_clicked, musicsearchbar_clicked, musicsearchcursor_blink, music_hover, music_newsearch,
+    bool mouse_clicked, music_hover, music_newsearch,
          scroll, progressbar_clicked, progressbar_dragged, mouse_buttondown, music_locationremoved,
          music_locationadded, music_selectionmenu_checkbox_fillall, music_selectionmenu_checkbox_tickall,
          music_selectionmenu_checkbox_clicked, music_selectionmenu_addtobtn_clicked,
@@ -182,8 +181,7 @@ typedef struct mplayer {
     SDL_Color music_selectionmenu_addto_dropdown_color;
     SDL_Rect progress_bar, progress_count, music_searchbar,
         music_selectionmenu, music_selectionmenu_addtocanvas,
-        music_selectionmenu_addto_dropdown,
-        music_searchbar_cursor, addtoplaylist_modalcanvases[3];
+        music_selectionmenu_addto_dropdown, addtoplaylist_modalcanvases[3];
 } mplayer_t;
 
 void mplayer_init();

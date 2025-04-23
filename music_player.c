@@ -87,14 +87,13 @@ void mplayer_createapp(mplayer_t* mplayer) {
               cursor_color = {0x00, 0xff, 0x00, 0xff};
     mplayer->playlist_inputbox = mplayer_inputbox_create(mplayer->music_font, mplayer->font,
         inputbox_canvas, placeholder_text,
-        placeholder_color, input_boxcolor, input_datacolor, cursor_color);
+        placeholder_color, input_boxcolor, (SDL_Color){0x45, 0x7E, 0xAC, 0xFF}, input_datacolor, cursor_color);
 
     text_info_t placeholder = text_info[1];
-    printf("placeholder.text = %s\n", placeholder.text);
     mplayer->search_inputbox = mplayer_inputbox_create(mplayer->music_font, mplayer->music_font,
-        (SDL_Rect){0}, placeholder.text, placeholder.text_color, music_searchbar_color, white, green);
+        (SDL_Rect){0}, placeholder.text, placeholder.text_color,
+        music_searchbar_color, (SDL_Color){0x45, 0x7E, 0xAC, 0xFF}, white, green);
     mplayer->search_inputbox.inputbox_fill = false;
-    printf("Here\n");
 
     // Initialize the play queue and music selection queue
     mplayer_queue_init(&mplayer->play_queue);
@@ -421,13 +420,6 @@ void mplayer_rendercontrol_btns(mplayer_t* mplayer) {
         SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][i],
             NULL, &music_btns[i].btn_canvas);
     }
-}
-
-SDL_TimerCallback draw_cursorblink(void* m) {
-    mplayer_t* mplayer = (mplayer_t*)m;
-    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(white));
-    SDL_RenderDrawRect(mplayer->renderer, &mplayer->music_searchbar_cursor);
-    SDL_RenderFillRect(mplayer->renderer, &mplayer->music_searchbar_cursor);
 }
 
 void mplayer_createsearch_bar(mplayer_t* mplayer) {
@@ -918,7 +910,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
             mplayer->scroll = true;
         } else if(Mix_PlayingMusic() && mplayer->e.type == SDL_KEYUP) {
             if(mplayer->e.key.keysym.sym == SDLK_SPACE && !mplayer->playlist_manager.button_bar.new_playlistbtn.clicked
-                && !music_addplaylistbtn.clicked && !mplayer->musicsearchbar_clicked && !mplayer->playlist_manager.rename_clicked) {
+                && !music_addplaylistbtn.clicked && !mplayer->search_inputbox.clicked && !mplayer->playlist_manager.rename_clicked) {
                 if(Mix_PausedMusic()) {
                     Mix_ResumeMusic();
                 } else {
@@ -1081,7 +1073,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer_filemanager_loadmusics(mplayer);
         printf("Successfully loaded all musics\n");
         mplayer_playlistmanager_read_datafile(mplayer);
-        if(mplayer->musicsearchbar_data) {
+        if(mplayer->search_inputbox.input.data) {
             mplayer->music_newsearch = true;
         }
     }
@@ -1169,10 +1161,6 @@ void mplayer_destroyapp(mplayer_t* mplayer) {
     for(int i=0;i<sizeof(mplayer->cursors)/sizeof(SDL_Cursor*);i++) {
         SDL_FreeCursor(mplayer->cursors[i]); mplayer->cursors[i] = NULL;
     }
-
-    // free whatever data the user types into the searchbar
-    free(mplayer->musicsearchbar_data); mplayer->musicsearchbar_data = NULL;
-    mplayer->musicsearchbar_datalen = 0;
 
     // Free music resources used by program
     mplayer_filemanager_freemusic_list(mplayer);

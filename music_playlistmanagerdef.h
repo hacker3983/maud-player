@@ -35,7 +35,8 @@ typedef struct mplayer_playlistmanager {
     mplayer_playlist_t* playlists; // An array of playlists with their songs queue
     int playlistmenu_collapsex,
         playlistmenu_collapsey;
-    bool playlistmenu_collapse, playlistmenu_scrolled;
+    bool playlistmenu_collapse, playlistmenu_scrolled,
+         playlistmenu_shouldscroll;
 
     button_bar_t button_bar;
     mplayer_tooltip_t playlist_tooltip;
@@ -43,6 +44,8 @@ typedef struct mplayer_playlistmanager {
     bool createplaylistbtn_clicked, playlistname_empty,
          playlistname_exists;
     mplayer_inputbox_t rename_inputbox;
+    music_itemcontainer_t playlist_contentitems;
+    bool scroll_playlistcontent;
     music_scrollcontainer_t playlist_itemcontainer,
         playlist_container;
     bool rename_clicked, rename_inputinited;

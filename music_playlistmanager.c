@@ -15,7 +15,8 @@ void mplayer_playlistmanager_initialize_playlistinput(mplayer_t* mplayer) {
     SDL_Color placeholder_color = {0xff, 0xff, 0xff, 0xff};
     SDL_Color cursor_color = {0x00, 0xff, 0x00, 0xff};
     mplayer->playlist_manager.playlist_inputbox = mplayer_inputbox_create(mplayer->music_font, mplayer->font, 
-    input_canvas, placeholder_text, placeholder_color, input_canvascolor, placeholder_color, cursor_color);
+    input_canvas, placeholder_text, placeholder_color, input_canvascolor, (SDL_Color){0x45, 0x7E, 0xAC, 0xFF},
+        placeholder_color, cursor_color);
     mplayer->playlist_manager.playlist_inputboxinited = true;
 }
 
@@ -25,7 +26,8 @@ void mplayer_playlistmanager_initialize_renameinput(mplayer_t* mplayer, const ch
     SDL_Color cursor_color = {0x00, 0xff, 0x00, 0xff};
     SDL_Color content_color = {0xff, 0xff, 0xff, 0xff};
     mplayer->playlist_manager.rename_inputbox = mplayer_inputbox_create(mplayer->music_font, mplayer->font,
-        input_canvas, NULL, (SDL_Color){0}, input_canvascolor, content_color, cursor_color);
+        input_canvas, NULL, (SDL_Color){0}, input_canvascolor, (SDL_Color){0x45, 0x7E, 0xAC, 0xFF}, content_color,
+        cursor_color);
     mplayer_inputbox_t *rename_inputbox = &mplayer->playlist_manager.rename_inputbox;
     mplayer_inputbox_addinput_data(rename_inputbox, input_data);
     mplayer_inputbox_getcursor_ranges(mplayer, rename_inputbox);
@@ -375,8 +377,7 @@ void mplayer_playlistmanager_display_playlistname_validation(mplayer_t* mplayer)
     }
     // Get the size of the tooltip width and height and let it go down below the input box
     mplayer_tooltip_getsize(&popup_tooltip);
-    popup_tooltip.x = playlist_inputbox->inputbox_canvas.x + (playlist_inputbox->inputbox_canvas.w
-        - popup_tooltip.w) / 2;
+    popup_tooltip.x = 1;
     popup_tooltip.y = playlist_inputbox->inputbox_canvas.y + playlist_inputbox->inputbox_canvas.h;
     mplayer_tooltip_render(mplayer, &popup_tooltip);
 }
@@ -718,7 +719,7 @@ void mplayer_playlistmanager_displayplaylists(mplayer_t* mplayer) {
     if(layout_type == PLAYLIST_LISTVIEW) {
         if(mplayer->scroll) {
             printf("Perform scrolling\n");
-            mplayer_scrollcontainer_performscroll(mplayer, &mplayer->playlist_manager.playlist_container);
+            mplayer_scrollcontainer_performscroll_overscrollarea(mplayer, &mplayer->playlist_manager.playlist_container);
             mplayer->scroll = false;
         }
         if(mplayer->playlist_manager.playlist_container.item_container.items) {
@@ -922,17 +923,15 @@ void mplayer_playlistmanager_display_playlistmenu(mplayer_t* mplayer, SDL_Rect* 
     };
     int playlist_cardhalfw = playlist_card.w / 2,
         playlist_cardhalfh = playlist_card.h / 2;
+    music_itemcontainer_t* playlist_contentitems = &playlist_manager->playlist_contentitems;
     music_scrollcontainer_t* playlist_itemcontainer = &playlist_manager->playlist_itemcontainer;
     bool should_scroll = false;
-    if(playlist_itemcontainer->item_container.items &&
-       playlist_itemcontainer->item_container.items[playlist_itemcontainer->item_container.item_count-1].y +
-       playlist_itemcontainer->item_container.items[playlist_itemcontainer->item_container.item_count-1].h
-       >= playlist_itemcontainer->scroll_area.y + playlist_itemcontainer->scroll_area.h &&
-       playlist_itemcontainer->content_renderpos + playlist_itemcontainer->item_container.item_count
-       < playlist_itemcontainer->content_count
+    if(playlist_contentitems->has_allitems && playlist_itemcontainer->content_renderpos
+        + playlist_itemcontainer->item_container.item_count < playlist_itemcontainer->content_count
     ) {
         should_scroll = true;
     }
+    playlist_manager->playlistmenu_shouldscroll = should_scroll;
 
     if(mplayer->scroll && should_scroll) {
         if(mplayer->scroll_type == MPLAYERSCROLL_DOWN &&
@@ -943,14 +942,11 @@ void mplayer_playlistmanager_display_playlistmenu(mplayer_t* mplayer, SDL_Rect* 
             mplayer->scroll = false;
         } else if(mplayer->scroll_type == MPLAYERSCROLL_UP && playlist_manager->playlistmenu_collapsey &&
             !playlist_manager->playlist_itemcontainer.content_renderpos) {
-            mplayer_scrollcontainer_destroy(&playlist_manager->playlist_itemcontainer);
             playlist_manager->playlistmenu_collapsex -= playlist_cardhalfw;
             playlist_manager->playlistmenu_collapsey -= playlist_cardhalfh;
             mplayer->scroll = false;
         }
-        if(!playlist_manager->playlistmenu_collapse) {
-            playlist_manager->playlistmenu_scrolled = false;
-        }
+
         if(playlist_manager->playlistmenu_collapsey < playlist_cardhalfh) {
             playlist_manager->playlistmenu_collapse = false;
         } else if(playlist_manager->playlistmenu_collapsey >= playlist_cardhalfh) {
@@ -1398,6 +1394,7 @@ void mplayer_playlistmanager_displayrename_input(mplayer_t* mplayer) {
 void mplayer_playlistmanager_display_playlistcontent(mplayer_t* mplayer) {
     mplayer_playlistmanager_t *playlist_manager = &mplayer->playlist_manager;
     mplayer_playlist_t* playlists = playlist_manager->playlists;
+    music_itemcontainer_t *playlist_contentitems = &playlist_manager->playlist_contentitems;
     music_scrollcontainer_t *playlist_itemcontainer = &playlist_manager->playlist_itemcontainer;
     size_t playlist_count = playlist_manager->playlist_count,
            playlist_selectionindex = playlist_manager->playlist_selectionindex;
@@ -1406,15 +1403,32 @@ void mplayer_playlistmanager_display_playlistcontent(mplayer_t* mplayer) {
     music_queue_t playlist_queue = playlists[playlist_selectionindex].queue;
     SDL_Rect scroll_area = {
         .x = 0,
-        .y = playlistmenu_canvas.y + playlistmenu_canvas.h + 5,
+        .y = playlistmenu_canvas.y + playlistmenu_canvas.h,
         .w = mplayer->win_width,
-        .h = music_status.y - (playlistmenu_canvas.y + playlistmenu_canvas.h + 5)
-    };
+        .h = music_status.y - (playlistmenu_canvas.y + playlistmenu_canvas.h)
+    }/*,
+    clip_area = {
+        .x = 0,
+        .y = playlistmenu_canvas.y + playlistmenu_canvas.h,
+        .w = mplayer->win_width,
+        .h = music_status.y - playlistmenu_canvas.y - playlistmenu_canvas.h
+    }*/;
+    printf("scroll_area = {.y = %d, .w = %d, .h = %d}\n", scroll_area.y, scroll_area.w, scroll_area.h);
     SDL_RenderSetClipRect(mplayer->renderer, &scroll_area);
     if(playlist_itemcontainer->init && playlist_itemcontainer->content_count != playlist_queue.item_count) {
         playlist_itemcontainer->content_count = playlist_queue.item_count;
     }
-    mplayer_scrollcontainer_setprops(playlist_itemcontainer, scroll_area, 20, playlist_queue.item_count);
+    mplayer_scrollcontainer_setscroll_area(playlist_itemcontainer, scroll_area);
+    mplayer_scrollcontainer_setscroll_speed(playlist_itemcontainer, 20);
+    mplayer_scrollcontainer_setcontent_count(playlist_itemcontainer, playlist_queue.item_count);
+    if(playlist_manager->playlistmenu_collapse && playlist_itemcontainer->content_renderpos == 0
+        && !playlist_manager->scroll_playlistcontent) {
+        mplayer_scrollcontainer_setscroll_y(playlist_itemcontainer, scroll_area.y);
+        printf("Setting scroll_y\n");
+        playlist_manager->scroll_playlistcontent = true;
+    } else if(!playlist_manager->playlistmenu_collapse) {
+        playlist_manager->scroll_playlistcontent = false;
+    }
     text_info_t music_name = {
         .font_size = 20,
         .text = NULL,
@@ -1428,11 +1442,20 @@ void mplayer_playlistmanager_display_playlistcontent(mplayer_t* mplayer) {
     };
     SDL_Rect outer_canvas = {
         .x = 0,
-        .y = scroll_area.y,
+        .y = playlistmenu_canvas.y + playlistmenu_canvas.h,
         .w = mplayer->win_width,
         .h = 0
     };
-    if(playlist_itemcontainer->init) {
+    if(playlist_itemcontainer->init && playlist_manager->scroll_playlistcontent) {
+        /*int diff = playlistmenu_canvas.y + playlistmenu_canvas.h - playlist_itemcontainer->scroll_y;
+        if(!playlist_manager->playlistmenu_shouldscroll && playlist_itemcontainer->scroll_y < clip_area.y) {
+            mplayer_scrollcontainer_setscroll_y(playlist_itemcontainer, clip_area.y);
+        } else if(playlist_manager->playlistmenu_shouldscroll && playlist_itemcontainer->scroll_y > clip_area.y) {
+            mplayer_scrollcontainer_setscroll_y(playlist_itemcontainer, clip_area.y);
+        }
+        if(diff > 1 && playlist_manager->playlistmenu_collapse) {
+            mplayer_scrollcontainer_setscroll_y(playlist_itemcontainer, playlistmenu_canvas.y + playlistmenu_canvas.h);
+        }*/
         outer_canvas.y = playlist_itemcontainer->scroll_y;
     }
     size_t content_renderpos = 0;
@@ -1444,12 +1467,12 @@ void mplayer_playlistmanager_display_playlistcontent(mplayer_t* mplayer) {
         mplayer_textmanager_sizetext(mplayer->music_font, &music_name);
         outer_canvas.h = music_name.text_canvas.h + 15;
         music_name.text_canvas.y = outer_canvas.y + (outer_canvas.h - music_name.text_canvas.h) / 2;
+        mplayer_itemcontainer_additem(playlist_contentitems, outer_canvas);
+        mplayer_itemcontainer_setnextitem_canvas(playlist_contentitems, outer_canvas);
         if(outer_canvas.y < scroll_area.y + scroll_area.h) {
-            if(playlist_manager->playlistmenu_collapse) {
-                mplayer_scrollcontainer_additem(playlist_itemcontainer, outer_canvas);
-                mplayer_scrollcontainer_setnext_itemcanvas(playlist_itemcontainer, outer_canvas);
-            }
-        } else {
+            mplayer_scrollcontainer_additem(playlist_itemcontainer, outer_canvas);
+            mplayer_scrollcontainer_setnext_itemcanvas(playlist_itemcontainer, outer_canvas);
+        } else if(playlist_contentitems->has_allitems) {
             break;
         }
         SDL_SetRenderDrawColor(mplayer->renderer, 0, 42, 50, 0xFF);
@@ -1461,10 +1484,12 @@ void mplayer_playlistmanager_display_playlistcontent(mplayer_t* mplayer) {
         SDL_DestroyTexture(music_nametexture); music_nametexture = NULL;
         outer_canvas.y += outer_canvas.h + 5;
     }
-    if(mplayer->scroll) {
-        mplayer_scrollcontainer_performscroll(mplayer, playlist_itemcontainer);
+    if(mplayer->scroll && playlist_manager->scroll_playlistcontent && playlist_manager->playlistmenu_collapse) {
+        mplayer_scrollcontainer_performscroll(mplayer, playlist_itemcontainer, scroll_area.y);
         mplayer->scroll = false;
     }
+    mplayer_itemcontainer_set_hasallitems_status(playlist_contentitems, true);
+    mplayer_itemcontainer_resetitem_index(playlist_contentitems);
     if(playlist_itemcontainer->item_container.items) {
         mplayer_scrollcontainer_init(playlist_itemcontainer);
     }
