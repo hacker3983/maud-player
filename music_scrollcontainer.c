@@ -61,10 +61,14 @@ bool mplayer_scrollcontainer_hover_scrollarea(mplayer_t* mplayer, music_scrollco
     return false;
 }
 
-void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollcontainer_t* container) {
+void mplayer_scrollcontainer_performscroll_overscrollarea(mplayer_t* mplayer, music_scrollcontainer_t* container) {
     if(!mplayer_scrollcontainer_hover_scrollarea(mplayer, *container)) {
         return;
-    }
+    }    
+    mplayer_scrollcontainer_performscroll(mplayer, container, container->scroll_area.y);
+}
+
+void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollcontainer_t* container, int scroll_y) {
     if(!container->init) {
         if(container->item_container.items) {
             printf("Init flag is false but items is not NULL\n");
@@ -80,7 +84,7 @@ void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollconta
         return;
     }
     if(mplayer->scroll_type == MPLAYERSCROLL_DOWN) {
-        int disappear_y = container->scroll_area.y - container->item_container.items[0].h;
+        int disappear_y = scroll_y - container->item_container.items[0].h;
         printf("Perform scroll line 58, container->content_renderpos: %zu, container->content_count: %zu, item_count: %zu\n",
             container->content_renderpos, container->content_count, container->item_container.item_count);
         printf("container->content_renderpos + container->item_count = %zu\n", container->content_renderpos + container->item_container.item_count);
@@ -96,8 +100,8 @@ void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollconta
                 container->init = false;
             }
         } else if(container->item_container.items[container->item_container.item_count-1].y + container->item_container.items[container->item_container.item_count-1].h
-            > container->scroll_area.y + container->scroll_area.h) {
-            int disappear_y = container->scroll_area.y - container->item_container.items[0].h;
+            > scroll_y + container->scroll_area.h) {
+            int disappear_y = scroll_y - container->item_container.items[0].h;
             container->scroll_y -= container->scroll_speed;
             if(container->scroll_y <= disappear_y) {
                 container->content_renderpos++;
@@ -110,13 +114,13 @@ void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollconta
         }
     } else if(mplayer->scroll_type == MPLAYERSCROLL_UP) {
         printf("Scroll UP\n");
-        if(container->scroll_y == container->scroll_area.y && container->content_renderpos) {
-            container->scroll_y = container->scroll_area.y - container->item_container.items[0].h;
+        if(container->scroll_y == scroll_y && container->content_renderpos) {
+            container->scroll_y = container->scroll_y - container->item_container.items[0].h;
         }
-        if(mplayer->scroll_y < container->scroll_area.y) {
+        if(mplayer->scroll_y < scroll_y) {
             container->scroll_y += container->scroll_speed;
-            if(container->scroll_y >= container->scroll_area.y) {
-                container->scroll_y = container->scroll_area.y;
+            if(container->scroll_y >= scroll_y) {
+                container->scroll_y = scroll_y;
                 if(container->content_renderpos) {
                     container->content_renderpos--;
                 }

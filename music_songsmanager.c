@@ -57,7 +57,7 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
         utext = music_list[i].text_info;
         outer_canvas = music_list[i].outer_canvas;
         default_h = utext.text_canvas.h, default_w = utext.text_canvas.w;
-        if(music_list[i].search_match && !mplayer->musicsearchbar_data) {
+        if(music_list[i].search_match && !mplayer->search_inputbox.input.data) {
             music_list[i].search_match = false;
             music_list[i].search_render = false;
             if(songs_box.h < utext.text_canvas.h + def_outerheight) {

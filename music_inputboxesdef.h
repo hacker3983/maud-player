@@ -7,6 +7,11 @@ enum music_inputbox_datatype {
     MPLAYER_INPUTBOXDATA_OTHER
 };
 
+enum input_selectiontype {
+    INPUT_SELECTIONLEFT,
+    INPUT_SELECTIONRIGHT
+};
+
 typedef struct input_data {
     char* data; // The full utf8 input string
     size_t datasize; // The total number of bytes in the input_data
@@ -16,12 +21,17 @@ typedef struct input_data {
     size_t byte_positionlen; // The total length of byte positions
 } input_data_t;
 
+typedef struct input_selection {
+    size_t *list, count;
+    bool direction;
+} input_selection_t;
+
 typedef struct music_inputbox {
     TTF_Font *placeholder_font, *input_datafont;
     input_data_t input;
     text_info_t input_text;
     char* renderable_data;
-    size_t* cursor_ranges;
+    size_t* cursor_ranges, start_renderpos, end_renderpos;
     size_t cursor_rangecount;
     bool update_renderpos;
 
@@ -34,6 +44,11 @@ typedef struct music_inputbox {
     SDL_Rect inputbox_canvas, temp_canvas;
     SDL_Color inputbox_color;
     bool inputbox_fill;
+
+    input_selection_t selections;
+    SDL_Rect selection_canvas;
+    SDL_Color selection_color;
+    bool select_all;
 
     SDL_Rect cursor_canvas;
     SDL_Color cursor_color;

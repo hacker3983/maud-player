@@ -43,7 +43,7 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     // Render the navigation bar
     if(mplayer->scroll) {
         printf("Scrolling\n");
-        mplayer_scrollcontainer_performscroll(mplayer, settingmenu_scrollcontainer);
+        mplayer_scrollcontainer_performscroll_overscrollarea(mplayer, settingmenu_scrollcontainer);
         printf("settingmenu_itemcount: %zu, 2: %zu, scroll: %zu\n", settingmenu_itemcontainer->item_count, mplayer->settingmenu_contentcount,
             settingmenu_scrollcontainer->item_container.item_count);
         mplayer->scroll = false;

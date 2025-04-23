@@ -10,7 +10,18 @@ bool mplayer_inputbox_getinput_beforecursor(mplayer_inputbox_t* input_box, input
 bool mplayer_inputbox_getinput_aftercursor(mplayer_inputbox_t* input_box, input_data_t* input_after);
 mplayer_inputbox_t mplayer_inputbox_create(TTF_Font* input_datafont, TTF_Font* placeholder_font,
     SDL_Rect inputbox_canvas, const char* placeholder, SDL_Color placeholder_color, SDL_Color inputbox_color,
-    SDL_Color input_datacolor, SDL_Color cursor_color);
+    SDL_Color input_selectioncolor,
+    SDL_Color input_datacolor,
+    SDL_Color cursor_color);
+void mplayer_inputbox_popselection_front(mplayer_inputbox_t* input_box);
+void mplayer_inputbox_popselection_back(mplayer_inputbox_t* input_box);
+void mplayer_inputbox_addselection_left(mplayer_inputbox_t* input_box, size_t cursor_pos);
+void mplayer_inputbox_addselection_right(mplayer_inputbox_t* input_box, size_t cursor_pos);
+void mplayer_inputbox_addselection(mplayer_inputbox_t* input_box, size_t cursor_pos, int direction);
+void mplayer_inputbox_clearselection(mplayer_inputbox_t* input_box);
+char* mplayer_inputbox_getselectiondata(mplayer_inputbox_t* input_box);
+void mplayer_inputbox_getselectionsize(mplayer_t* mplayer, mplayer_inputbox_t* input_box);
+void mplayer_inputbox_renderselection(mplayer_t* mplayer, mplayer_inputbox_t* input_box);
 void mplayer_inputbox_getplaceholder_size(mplayer_t* mplayer, mplayer_inputbox_t* input_box);
 void mplayer_inputbox_getsize(mplayer_t* mplayer, mplayer_inputbox_t* input_box);
 bool mplayer_inputbox_hover(mplayer_t* mplayer, mplayer_inputbox_t* input_box);

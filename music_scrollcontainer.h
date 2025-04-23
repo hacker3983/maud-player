@@ -36,8 +36,12 @@ void mplayer_scrollcontainer_resetitem_index(music_scrollcontainer_t* container)
 // Detects whether we hover over the scroll area where we should detect scroll
 bool mplayer_scrollcontainer_hover_scrollarea(mplayer_t* mplayer, music_scrollcontainer_t container);
 
+// Perform scroll specifically over the screen area but let them disappear whenever item is scrolled below the scroll area
+// y position
+void mplayer_scrollcontainer_performscroll_overscrollarea(mplayer_t* mplayer, music_scrollcontainer_t* container);
+
 // Perform scrolling operation on a scroll container when we detect scroll within the scroll area
-void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollcontainer_t* container);
+void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollcontainer_t* container, int scroll_y);
 
 // Destroy the memory allocated for the scroll container
 void mplayer_scrollcontainer_destroy(music_scrollcontainer_t* container);
