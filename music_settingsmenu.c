@@ -208,8 +208,9 @@ void mplayer_settingmenu_render_musiclocations(mplayer_t* mplayer, SDL_Rect prev
         } else if(mplayer->settingmenu_contentcount < mplayer->settingmenu_scrollcontainer.content_renderpos) {
             mplayer_settingmenu_additem(mplayer, music_location.text_canvas);
             mplayer->settingmenu_contentcount++;
+            #ifdef _WIN32
             free(music_location.utext); music_location.utext = NULL;
-            //printf("i = %zu\n", i);
+            #endif
             continue;
         }
         mplayer->settingmenu_contentcount++;
@@ -224,7 +225,9 @@ void mplayer_settingmenu_render_musiclocations(mplayer_t* mplayer, SDL_Rect prev
             SDL_DestroyTexture(location_texture); location_texture = NULL;
         }
         music_location.text_canvas.y += music_location.text_canvas.h + SETTING_LINESPACING;
+        #ifdef _WIN32
         free(music_location.utext); music_location.utext = NULL;
+        #endif
     }
     printf("iteration_count: %zu, item_count: %zu\n", iteration_count,
         settingmenu_scrollcontainer->item_container.item_count);
