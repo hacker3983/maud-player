@@ -5,6 +5,8 @@
 #include <string.h>
 #include <wchar.h>
 #include <stdbool.h>
+#include <ctype.h>
+#include <wctype.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif

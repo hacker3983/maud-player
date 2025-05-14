@@ -125,7 +125,7 @@ void mplayer_createapp(mplayer_t* mplayer) {
         location = calloc(strlen(home) + 7, sizeof(char));
         strcat(location, home);
         strcat(location, "/Music");
-        mplayer_addmusic_location(mplayer, location);
+        mplayer_filemanager_addmusic_location(mplayer, location);
         free(location); location = NULL;
         #endif
     }
