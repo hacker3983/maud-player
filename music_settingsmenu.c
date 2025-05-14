@@ -197,7 +197,11 @@ void mplayer_settingmenu_render_musiclocations(mplayer_t* mplayer, SDL_Rect prev
             return;
         }
         //printf("mplayer->locations[%zu].path = %ls\n", i, mplayer->locations[i].path);
+        #ifdef _WIN32
         music_location.utext = mplayer_widetoutf8(mplayer->locations[i].path);
+        #else
+        music_location.utext = mplayer->locations[i].path;
+        #endif
         mplayer_textmanager_sizetext(mplayer->font, &music_location);
         if(mplayer->settingmenu_contentcount == mplayer->settingmenu_scrollcontainer.content_renderpos) {
             music_location.text_canvas.y = mplayer->settingmenu_scrollcontainer.scroll_y;

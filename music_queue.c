@@ -439,7 +439,7 @@ void mplayer_queue_print(mplayer_t* mplayer, music_queue_t queue) {
     for(size_t i=0;i<item_count;i++) {
         size_t music_listindex = queue.items[i].music_listindex, music_id = queue.items[i].music_id;
         char* music_name = mplayer->music_lists[music_listindex][music_id].music_name;
-        printf("\t%zu:{music_listindex: %zu, music id:%d, music_name: %s}", i+1, music_listindex,
+        printf("\t%zu:{music_listindex: %zu, music id:%zu, music_name: %s}", i+1, music_listindex,
             music_id, music_name);
         if(i != item_count-1) {
             printf(", ");
