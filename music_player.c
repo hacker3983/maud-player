@@ -1072,7 +1072,9 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
     if(!mplayer->music_list) {
         mplayer_filemanager_loadmusics(mplayer);
         printf("Successfully loaded all musics\n");
-        mplayer_playlistmanager_read_datafile(mplayer);
+        if(!mplayer->playlist_manager.playlists) {
+            mplayer_playlistmanager_read_datafile(mplayer);
+        }
         if(mplayer->search_inputbox.input.data) {
             mplayer->music_newsearch = true;
         }
