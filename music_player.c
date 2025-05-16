@@ -144,19 +144,12 @@ void mplayer_setcursor(mplayer_t* mplayer, int cursor_type) {
     if(!mplayer->cursor_active && cursor_type != MPLAYER_CURSOR_DEFAULT) {
         mplayer->cursor = cursor_type;
         mplayer->cursor_active = true;
-        return;
+    } else if(!mplayer->cursor_active && cursor_type == MPLAYER_CURSOR_DEFAULT) {
+        mplayer->cursor = cursor_type;
+    } else if(mplayer->cursor_active && cursor_type == MPLAYER_CURSOR_DEFAULT) {
+        mplayer->cursor_active = false;
     }
-    mplayer->cursor = cursor_type;
-    mplayer->cursor_active = false;
-}
-
-void mplayer_activatecursor(mplayer_t* mplayer) {
-    int cursor = mplayer->cursor;
-    if(cursor < 0 || cursor >= CURSOR_COUNT) {
-        return;
-    }
-    SDL_SetCursor(mplayer->cursors[cursor]);
-    mplayer->cursor_active = false;
+    mplayer_setcursor(mplayer, mplayer->cursors[mplayer->cursor]);
 }
 
 bool mplayer_tab_hover(mplayer_t* mplayer, tabinfo_t tab) {
@@ -1146,7 +1139,7 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer_tooltip_renderhover(mplayer, &mplayer->music_tooltip);
     }
     prev_tab = active_tab;
-    mplayer_activatecursor(mplayer);
+    mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
     // Present all rendered objects on the screen
     SDL_RenderPresent(mplayer->renderer);
 }

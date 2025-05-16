@@ -204,7 +204,6 @@ TTF_Font* mplayer_openfont(const char* file, int size);
 void mplayer_run(mplayer_t* mplayer);
 void mplayer_defaultmenu(mplayer_t* mplayer);
 void mplayer_setcursor(mplayer_t* mplayer, int cursor_type);
-void mplayer_activatecursor(mplayer_t* mplayer);
 void mplayer_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color);
 void mplayer_set_window_title(mplayer_t* mplayer, const char* title);
 bool mplayer_tab_hover(mplayer_t* mplayer, tabinfo_t tab);
