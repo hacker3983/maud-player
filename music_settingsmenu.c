@@ -54,8 +54,6 @@ void mplayer_settingmenu(mplayer_t* mplayer) {
     mplayer->settingmenu_contentcount = 0;
     mplayer_settingmenu_render_navigationbar(mplayer, &navbar);
     mplayer->mouse_clicked = false;
-    // Activate the cursor that was set if none was set then we will just use the default cursor
-    mplayer_activatecursor(mplayer);
     mplayer_setcursor(mplayer, MPLAYER_CURSOR_DEFAULT);
     SDL_RenderPresent(mplayer->renderer);
 }

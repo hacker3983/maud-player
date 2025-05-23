@@ -14,9 +14,10 @@ void mplayer_playlistmanager_initialize_playlistinput(mplayer_t* mplayer) {
     char* placeholder_text = "New playlist name here...";
     SDL_Color placeholder_color = {0xff, 0xff, 0xff, 0xff};
     SDL_Color cursor_color = {0x00, 0xff, 0x00, 0xff};
-    mplayer->playlist_manager.playlist_inputbox = mplayer_inputbox_create(mplayer->music_font, mplayer->font, 
-    input_canvas, placeholder_text, placeholder_color, input_canvascolor, (SDL_Color){0x45, 0x7E, 0xAC, 0xFF},
-        placeholder_color, cursor_color);
+    mplayer->playlist_manager.playlist_inputbox = mplayer_inputbox_create(mplayer->music_font, 20,
+        input_canvascolor, placeholder_text, placeholder_color, cursor_color, placeholder_color,
+        input_canvas.x, input_canvas.y,
+        input_canvas.w, input_canvas.h, 2, 50/2);
     mplayer->playlist_manager.playlist_inputboxinited = true;
 }
 
@@ -25,12 +26,11 @@ void mplayer_playlistmanager_initialize_renameinput(mplayer_t* mplayer, const ch
     SDL_Color input_canvascolor = {0};
     SDL_Color cursor_color = {0x00, 0xff, 0x00, 0xff};
     SDL_Color content_color = {0xff, 0xff, 0xff, 0xff};
-    mplayer->playlist_manager.rename_inputbox = mplayer_inputbox_create(mplayer->music_font, mplayer->font,
-        input_canvas, NULL, (SDL_Color){0}, input_canvascolor, (SDL_Color){0x45, 0x7E, 0xAC, 0xFF}, content_color,
-        cursor_color);
+    mplayer->playlist_manager.rename_inputbox = mplayer_inputbox_create(mplayer->music_font, 20,
+        input_canvascolor, NULL, (SDL_Color){0}, cursor_color, content_color, input_canvas.x, input_canvas.y,
+        input_canvas.w, input_canvas.h, 2, 50/2);
     mplayer_inputbox_t *rename_inputbox = &mplayer->playlist_manager.rename_inputbox;
-    mplayer_inputbox_addinput_data(rename_inputbox, input_data);
-    mplayer_inputbox_getcursor_ranges(mplayer, rename_inputbox);
+    mplayer_inputbox_addinputdata(rename_inputbox, input_data);
 }
 
 char* mplayer_playlistmanager_getmusicnamefrom_index(mplayer_t* mplayer, size_t music_listindex,
@@ -248,14 +248,14 @@ void mplayer_playlistmanager_display_newplaylistbutton_input(mplayer_t* mplayer)
     };
     SDL_Color box_containercolor = dark_purple;
     mplayer_inputbox_t *playlist_inputbox = &playlist_manager->playlist_inputbox;
-    mplayer_inputbox_getsize(mplayer, playlist_inputbox);
-    playlist_inputbox->inputbox_canvas.x = new_playlistbtn->canvas.x - (playlist_inputbox->inputbox_canvas.w -
+    //mplayer_inputbox_getsize(mplayer, playlist_inputbox);
+    playlist_inputbox->canvas.x = new_playlistbtn->canvas.x - (playlist_inputbox->canvas.w -
         new_playlistbtn->canvas.w)/2,
-    playlist_inputbox->inputbox_canvas.y = new_playlistbtn->canvas.y + new_playlistbtn->canvas.h + 5;
+    playlist_inputbox->canvas.y = new_playlistbtn->canvas.y + new_playlistbtn->canvas.h + 5;
 
-    text_info_t* placeholder_textinfo = &playlist_inputbox->placeholder_info;
+    SDL_Rect* placeholder_canvas = &playlist_inputbox->placeholder_canvas;
     SDL_Rect createbtn = {
-        .x = 0, .y = playlist_inputbox->inputbox_canvas.y,
+        .x = 0, .y = playlist_inputbox->canvas.y,
         .w = 20, .h = 20
     };
     SDL_Color createbtn_color = {0x04, 0x8B, 0xA8, 0xff};
@@ -269,29 +269,29 @@ void mplayer_playlistmanager_display_newplaylistbutton_input(mplayer_t* mplayer)
     mplayer_textmanager_sizetext(mplayer->font, &createbtn_text);
     createbtn.w += createbtn_text.text_canvas.w + 10,
     createbtn.h += createbtn_text.text_canvas.h + 10;
-    if(playlist_inputbox->inputbox_canvas.w > createbtn.w) {
-        box_container.w += playlist_inputbox->inputbox_canvas.w;
+    if(playlist_inputbox->canvas.w > createbtn.w) {
+        box_container.w += playlist_inputbox->canvas.w;
     } else {
         box_container.w += createbtn.w;
     }
-    box_container.h += playlist_inputbox->inputbox_canvas.h + createbtn.h;
+    box_container.h += playlist_inputbox->canvas.h + createbtn.h;
     box_container.x = new_playlistbtn->canvas.x;
     box_container.y = new_playlistbtn->canvas.y + new_playlistbtn->canvas.h;
 
-    playlist_inputbox->inputbox_canvas.x = box_container.x + (box_container.w -
-        playlist_inputbox->inputbox_canvas.w) / 2;
-    playlist_inputbox->inputbox_canvas.y = box_container.y + 50;
-    placeholder_textinfo->text_canvas.x = playlist_inputbox->inputbox_canvas.x + 10;
-    placeholder_textinfo->text_canvas.y = playlist_inputbox->inputbox_canvas.y + (playlist_inputbox->inputbox_canvas.h
-        - placeholder_textinfo->text_canvas.h) / 2;
+    playlist_inputbox->canvas.x = box_container.x + (box_container.w -
+        playlist_inputbox->canvas.w) / 2;
+    playlist_inputbox->canvas.y = box_container.y + 50;
+    placeholder_canvas->x = playlist_inputbox->canvas.x + 10;
+    placeholder_canvas->y = playlist_inputbox->canvas.y + (playlist_inputbox->canvas.h
+        - placeholder_canvas->h) / 2;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(box_containercolor));
     SDL_RenderDrawRect(mplayer->renderer, &box_container);
     SDL_RenderFillRect(mplayer->renderer, &box_container);
     mplayer_inputbox_display(mplayer, playlist_inputbox);
 
-    createbtn.x = playlist_inputbox->inputbox_canvas.x + (playlist_inputbox->inputbox_canvas.w -
+    createbtn.x = playlist_inputbox->canvas.x + (playlist_inputbox->canvas.w -
         createbtn.w)/2;
-    createbtn.y = playlist_inputbox->inputbox_canvas.y + playlist_inputbox->inputbox_canvas.h + 25;
+    createbtn.y = playlist_inputbox->canvas.y + playlist_inputbox->canvas.h + 25;
     createbtn_text.text_canvas.x = createbtn.x + (createbtn.w - createbtn_text.text_canvas.w) / 2;
     createbtn_text.text_canvas.y = createbtn.y + (createbtn.h - createbtn_text.text_canvas.h) / 2;
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(createbtn_color));
@@ -308,9 +308,11 @@ void mplayer_playlistmanager_display_newplaylistbutton_input(mplayer_t* mplayer)
     }
     playlist_manager->playlistname_exists = false;
     if(playlist_inputbox->input.data) {
+        char* playlist_name = mplayer_inputbox_getinputdata(playlist_inputbox);
         playlist_manager->playlistname_exists = mplayer_playlistmanager_playlistexists(mplayer,
-            playlist_inputbox->input.data);
+            playlist_name);
         playlist_manager->playlistname_empty = false;
+        free(playlist_name);
     }
     if(mplayer_rect_hover(mplayer, createbtn)) {
         mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
@@ -353,7 +355,7 @@ void mplayer_playlistmanager_display_playlistname_validation(mplayer_t* mplayer)
         .background_color = {0x12, 0x12, 0x12, 0xff},
         .delay_secs = 0.5,
         .duration_secs = 0,
-        .element_canvas = playlist_inputbox->inputbox_canvas,
+        .element_canvas = playlist_inputbox->canvas,
         .font = mplayer->music_font,
         .margin_x = 10,
         .margin_y = 10,
@@ -378,7 +380,7 @@ void mplayer_playlistmanager_display_playlistname_validation(mplayer_t* mplayer)
     // Get the size of the tooltip width and height and let it go down below the input box
     mplayer_tooltip_getsize(&popup_tooltip);
     popup_tooltip.x = 1;
-    popup_tooltip.y = playlist_inputbox->inputbox_canvas.y + playlist_inputbox->inputbox_canvas.h;
+    popup_tooltip.y = playlist_inputbox->canvas.y + playlist_inputbox->canvas.h;
     mplayer_tooltip_render(mplayer, &popup_tooltip);
 }
 
@@ -1256,8 +1258,8 @@ void mplayer_playlistmanager_displayrename_input(mplayer_t* mplayer) {
         .h = 40
     };
     mplayer_textmanager_sizetext(mplayer->font, &rename_text);
-    int max_w = (rename_inputbox->inputbox_canvas.w > rename_text.text_canvas.w) ?
-                    rename_inputbox->inputbox_canvas.w : rename_text.text_canvas.w;
+    int max_w = (rename_inputbox->canvas.w > rename_text.text_canvas.w) ?
+                    rename_inputbox->canvas.w : rename_text.text_canvas.w;
     text_info_t rename_btntext = {
         .font_size = 18,
         .text = "Rename",
@@ -1288,11 +1290,11 @@ void mplayer_playlistmanager_displayrename_input(mplayer_t* mplayer) {
         .h = cancel_btntext.text_canvas.h + 20
     };
     SDL_Color cancel_btncolor = {0xff, 0x00, 0x00, 0xff};
-    mplayer_inputbox_getsize(mplayer, rename_inputbox);
+    //mplayer_inputbox_getsize(mplayer, rename_inputbox);
     SDL_Rect box_container = {
         .x = 0, .y = 0,
         .w = max_w + 60,
-        .h = rename_text.text_canvas.h + playlist_card.h + rename_inputbox->inputbox_canvas.h + rename_btncanvas.h + 80
+        .h = rename_text.text_canvas.h + playlist_card.h + rename_inputbox->canvas.h + rename_btncanvas.h + 80
     };
     SDL_Color box_color = {0xF6, 0xAE, 0x2D, 0xff};
     box_container.x = (mplayer->win_width - box_container.w) / 2;
@@ -1318,12 +1320,13 @@ void mplayer_playlistmanager_displayrename_input(mplayer_t* mplayer) {
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE][music_playlistbtn.texture_idx],
         NULL, &playlist_icon);
 
-    rename_inputbox->inputbox_canvas.x = box_container.x + (box_container.w - rename_inputbox->inputbox_canvas.w) / 2,
-    rename_inputbox->inputbox_canvas.y = playlist_card.y + playlist_card.h + 15;
-    text_info_t* placeholder_info = &rename_inputbox->placeholder_info;
-    placeholder_info->text_canvas.x = rename_inputbox->inputbox_canvas.x + 10;
-    placeholder_info->text_canvas.y = rename_inputbox->inputbox_canvas.y + (rename_inputbox->inputbox_canvas.h
-        - placeholder_info->text_canvas.h) / 2;
+    rename_inputbox->canvas.x = box_container.x + (box_container.w - rename_inputbox->canvas.w) / 2,
+    rename_inputbox->canvas.y = playlist_card.y + playlist_card.h + 15;
+
+    SDL_Rect* placeholder_canvas = &rename_inputbox->placeholder_canvas;
+    placeholder_canvas->x = rename_inputbox->canvas.x + 10;
+    placeholder_canvas->y = rename_inputbox->canvas.y + (rename_inputbox->canvas.h
+        - placeholder_canvas->h) / 2;
     mplayer_inputbox_display(mplayer, rename_inputbox);
 
     rename_btncanvas.x = box_container.x + 10;

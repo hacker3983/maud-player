@@ -249,16 +249,26 @@ void mplayer_queue_handlecheckbox_itemselection(mplayer_t* mplayer, music_queue_
 
 void mplayer_queue_handleplaybutton(mplayer_t* mplayer, music_queue_t* queue, size_t item_index) {
     music_queue_t* play_queue = &mplayer->play_queue;
-    size_t music_listindex = play_queue->items[item_index].music_listindex,
-           music_id = play_queue->items[item_index].music_id;
+    size_t music_listindex = queue->items[item_index].music_listindex,
+           music_id = queue->items[item_index].music_id;
     //puts("mplayer_queue_handleplaybutton(): has not been implemented as yet\n");
     if(mplayer_musiclist_playbutton_hover(mplayer) && !music_addplaylistbtn.clicked &&
         !mplayer->music_selectionmenu_addtobtn_clicked
         && !mplayer->tick_count) {
         if(mplayer->mouse_clicked) {
             // Whenever we click the play button for a particular music we play the current play queue
+            if(active_tab == SONGS_TAB) {
+                mplayer_queue_destroy(play_queue);
+                Mix_HaltMusic();
+                play_queue->playid = item_index;
+                for(size_t i=0;i<queue->item_count;i++) {
+                    int curr_musiclistindex = queue->items[i].music_listindex,
+                        curr_musicid = queue->items[i].music_id;
+                    mplayer_queue_addmusic(play_queue, 0, curr_musiclistindex, curr_musicid);
+                }
+            }
 
-            /* whenever we hover over the playbutton on the music
+            /* whenever we hover over the play button on the music
                we determine if we should restart the current playing music or play a new music
             */
             if(Mix_PlayingMusic() && play_queue->playid == item_index) {
@@ -284,7 +294,7 @@ void mplayer_queue_handleplaybutton(mplayer_t* mplayer, music_queue_t* queue, si
 }
 
 void mplayer_queue_display(mplayer_t* mplayer, music_queue_t* queue) {
-    music_scrollcontainer_t* queue_scrollcontainer = &mplayer->play_queuescrollcontainer;
+    music_scrollcontainer_t* queue_scrollcontainer = &mplayer->queue_scrollcontainer;
     text_info_t music_name = {
         .font_size = 18,
         .text = NULL,
@@ -442,7 +452,7 @@ void mplayer_queue_print(mplayer_t* mplayer, music_queue_t queue) {
         printf("\t%zu:{music_listindex: %zu, music id:%zu, music_name: %s}", i+1, music_listindex,
             music_id, music_name);
         if(i != item_count-1) {
-            printf(", ");
+            printf(",\n");
         }
     }
     printf("\n]\n");
