@@ -438,15 +438,15 @@ void mplayer_selectionmenu_display_addtoplaylist_modal(mplayer_t* mplayer) {
     SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE]
                     [music_addplaylistbtn.texture_idx], NULL, &newplaylist_imagecanvas);
 
-    mplayer_inputbox_getsize(mplayer, &mplayer->playlist_inputbox);
-    mplayer->playlist_inputbox.inputbox_canvas.x = modal.x + (modal.w -
-        mplayer->playlist_inputbox.inputbox_canvas.w) / 2,
-    mplayer->playlist_inputbox.inputbox_canvas.y = newplaylist_imagecanvas.y + newplaylist_imagecanvas.h + 30;
+    //mplayer_inputbox_getsize(mplayer, &mplayer->playlist_inputbox);
+    mplayer->playlist_inputbox.canvas.x = modal.x + (modal.w -
+        mplayer->playlist_inputbox.canvas.w) / 2,
+    mplayer->playlist_inputbox.canvas.y = newplaylist_imagecanvas.y + newplaylist_imagecanvas.h + 30;
 
-    text_info_t* placeholder_textinfo = &mplayer->playlist_inputbox.placeholder_info;
-    placeholder_textinfo->text_canvas.x = mplayer->playlist_inputbox.inputbox_canvas.x + 10;
-    placeholder_textinfo->text_canvas.y = mplayer->playlist_inputbox.inputbox_canvas.y + (mplayer->
-        playlist_inputbox.inputbox_canvas.h - placeholder_textinfo->text_canvas.h) / 2;
+    SDL_Rect *placeholder_canvas = &mplayer->playlist_inputbox.placeholder_canvas;
+    placeholder_canvas->x = mplayer->playlist_inputbox.canvas.x + 10;
+    placeholder_canvas->y = mplayer->playlist_inputbox.canvas.y + (mplayer->
+        playlist_inputbox.canvas.h - placeholder_canvas->h) / 2;
     mplayer_inputbox_display(mplayer, &mplayer->playlist_inputbox);
 
     // Add the create button to the new playlist modal box
@@ -538,9 +538,8 @@ void mplayer_selectionmenu_handle_addtoplaylist_modalevents(mplayer_t* mplayer) 
     if(mplayer_rect_hover(mplayer, createbtn)) {
         mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
         if(mplayer->mouse_clicked && mplayer->playlist_inputbox.input.data) {
-            char* playlist_name = mplayer->playlist_inputbox.input.data;
-            mplayer_playlistmanager_createplaylist(mplayer, playlist_name);
-            mplayer_playlistmanager_addmusicselection_toplaylist(mplayer, playlist_name);
+            mplayer_playlistmanager_createplaylist(mplayer, mplayer->playlist_inputbox.input.data);
+            mplayer_playlistmanager_addmusicselection_toplaylist(mplayer, mplayer->playlist_inputbox.input.data);
             mplayer_inputbox_clear(&mplayer->playlist_inputbox);
             mplayer_selectionmenu_clearmusic_selection(mplayer);
             mplayer->mouse_clicked = false;

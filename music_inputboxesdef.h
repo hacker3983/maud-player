@@ -1,60 +1,54 @@
 #ifndef _MUSIC_INPUTBOXESDEF_H
 #define _MUSIC_INPUTBOXESDEF_H
-#include "music_textinfodef.h"
-
-enum music_inputbox_datatype {
-    MPLAYER_INPUTBOXDATA_ASCII,
-    MPLAYER_INPUTBOXDATA_OTHER
-};
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 enum input_selectiontype {
     INPUT_SELECTIONLEFT,
     INPUT_SELECTIONRIGHT
 };
 
+typedef struct input_character {
+    char* utf8_char;
+    size_t utf8_charlen;
+    SDL_Rect canvas;
+} inputchar_t;
+
 typedef struct input_data {
-    char* data; // The full utf8 input string
-    size_t datasize; // The total number of bytes in the input_data
-    size_t *byte_positions; // The starting and ending position as a pair for each utf8 character in input_data string
-    size_t cursor_pos; // The current cursor position
-    size_t datalen; // The total number of characters in the utf8 input_data string
-    size_t byte_positionlen; // The total length of byte positions
-} input_data_t;
+    inputchar_t* characters;
+    char* data;
+    int selection_direction;
+    size_t selection_start, selection_end, selection_count;
+    size_t cursor_pos, character_count, size;
+} inputdata_t;
 
-typedef struct input_selection {
-    size_t *list, count;
-    bool direction;
-} input_selection_t;
+typedef struct inputbox {
+    TTF_Font* font;
+    int font_size;
+    size_t render_pos;
 
-typedef struct music_inputbox {
-    TTF_Font *placeholder_font, *input_datafont;
-    input_data_t input;
-    text_info_t input_text;
-    char* renderable_data;
-    size_t* cursor_ranges, start_renderpos, end_renderpos;
-    size_t cursor_rangecount;
-    bool update_renderpos;
+    SDL_Rect canvas;
+    SDL_Color canvas_color;
 
-    SDL_Color input_datacolor;
-    char* placeholder, *placeholder_truncated;
-    text_info_t placeholder_info;
+    inputdata_t input;
+    SDL_Color text_color;
+
+    char* placeholder;
+    SDL_Rect placeholder_canvas;
     SDL_Color placeholder_color;
-    bool render_placeholder;
-
-    SDL_Rect inputbox_canvas, temp_canvas;
-    SDL_Color inputbox_color;
-    bool inputbox_fill;
-
-    input_selection_t selections;
-    SDL_Rect selection_canvas;
-    SDL_Color selection_color;
-    bool select_all;
+    bool placeholder_show;
 
     SDL_Rect cursor_canvas;
     SDL_Color cursor_color;
+    int cursor_width, cursor_height;
+    uint64_t cursor_timeout;
     double blink_timeoutsecs;
-    uint64_t blink_timeout;
-    bool show_cursor, cursor_blink;
+    bool show_cursor, cursor_blink,
+         cursor_blinking;
+
+    int mouse_startx, mouse_endx;
+    bool mouse_drag, start_xinited, end_xinited;
+    bool entered, fill;
     bool hover, clicked;
 } mplayer_inputbox_t;
 #endif
