@@ -153,9 +153,11 @@ typedef struct mplayer {
 
     music_t *music_list, *music_templist, *music_lists[2];
     size_t music_counts[2], music_count, music_renderpos, tick_count;
-    music_queue_t play_queue, selection_queue;
+    music_queue_t play_queue, searchresults_queue, selection_queue;
+    size_t search_index;
+    bool searchresults_ready;
     mplayer_playlistmanager_t playlist_manager;
-    music_scrollcontainer_t play_queuescrollcontainer;
+    music_scrollcontainer_t queue_scrollcontainer;
     bool item_selected, remove_btnclicked;
 
     mplayer_tooltip_t music_tooltip;
@@ -186,6 +188,12 @@ typedef struct mplayer {
 
 void mplayer_init();
 void mplayer_createsearch_bar(mplayer_t* mplayer);
+bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index);
+void mplayer_setcurrent_searchquery(mplayer_t* mplayer);
+void mplayer_setcurrent_searchquery_data(mplayer_t* mplayer);
+void mplayer_clearcurrent_searchquery_data(mplayer_t* mplayer);
+void mplayer_search_music(mplayer_t* mplayer);
+void mplayer_populate_searchresults(mplayer_t* mplayer);
 void mplayer_createsongs_box(mplayer_t* mplayer);
 void mplayer_setcontrolbtns_position(mplayer_t* mplayer);
 void mplayer_setprogressbar_size(mplayer_t* mplayer);
@@ -213,9 +221,6 @@ bool mplayer_music_hover(mplayer_t* mplayer, size_t i);
 bool mplayer_songsbox_hover(mplayer_t* mplayer);
 bool mplayer_progressbar_hover(mplayer_t* mplayer);
 bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer);
-bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index);
-void mplayer_search_music(mplayer_t* mplayer);
-void mplayer_populate_searchresults(mplayer_t* mplayer);
 void* mplayer_searchthread(void* arg);
 #ifdef _WIN32
 wchar_t* mplayer_stringtowide(const char* string);
