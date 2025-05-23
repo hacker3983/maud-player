@@ -736,10 +736,10 @@ void mplayer_controlmusic_progression(mplayer_t* mplayer) {
         if(Mix_PlayingMusic() && curr_durationsecs > 0.0) {
             progress = (int)(curr_durationsecs / full_durationsecs * 100.0);
         }
-        /*printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n",
+        printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n",
             music_list[music_id].music_name,
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
-            full_duration.hrs, full_duration.mins, full_duration.secs, progress);*/
+            full_duration.hrs, full_duration.mins, full_duration.secs, progress);
     }
     switch(mplayer->repeat_id) {
         case MUSIC_REPEATALLBTN:

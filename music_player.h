@@ -10,7 +10,6 @@
 #include <locale.h>
 #include <errno.h>
 #include <wctype.h>
-#include <pthread.h>
 #include "music_inputboxesdef.h"
 #include "music_queuedef.h"
 #include "music_notificationdef.h"
@@ -141,7 +140,6 @@ typedef struct mplayer {
     mplayer_menu_t menus[MENU_COUNT], *menu;
     SDL_Cursor* cursors[3];
     bool window_resized, cursor_active;
-    pthread_mutex_t mutex;
     Uint32 blink_timeout;
 
     // Music Informations such music name, path, duration, etc
@@ -164,10 +162,8 @@ typedef struct mplayer {
     bool display_musictooltip;
 
     int repeat_id, mouse_x, mouse_y, scroll_type, scroll_y;
-    char* musicsearchbar_data, *current_musicsearch_query, *additional_musicsearch_query;
-    int musicsearchcursor_relpos;
-    size_t musicsearchbar_datalen, musicsearchbar_datarenderpos, additional_musicsearch_querylen,
-        music_failcount, music_maxrenderpos, match_maxrenderpos, music_renderinit,
+    char *current_musicsearch_query;
+    size_t music_failcount, music_maxrenderpos, music_renderinit,
         musicpending_removalcount, musiclocation_count, current_musicsearch_querylen;
     mplayer_inputbox_t playlist_inputbox, search_inputbox;
     music_itemcontainer_t settingmenu_itemcontainer;
@@ -193,7 +189,6 @@ void mplayer_setcurrent_searchquery(mplayer_t* mplayer);
 void mplayer_setcurrent_searchquery_data(mplayer_t* mplayer);
 void mplayer_clearcurrent_searchquery_data(mplayer_t* mplayer);
 void mplayer_search_music(mplayer_t* mplayer);
-void mplayer_populate_searchresults(mplayer_t* mplayer);
 void mplayer_createsongs_box(mplayer_t* mplayer);
 void mplayer_setcontrolbtns_position(mplayer_t* mplayer);
 void mplayer_setprogressbar_size(mplayer_t* mplayer);
@@ -221,7 +216,6 @@ bool mplayer_music_hover(mplayer_t* mplayer, size_t i);
 bool mplayer_songsbox_hover(mplayer_t* mplayer);
 bool mplayer_progressbar_hover(mplayer_t* mplayer);
 bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer);
-void* mplayer_searchthread(void* arg);
 #ifdef _WIN32
 wchar_t* mplayer_stringtowide(const char* string);
 char* mplayer_widetoutf8(wchar_t* wstring);
