@@ -22,6 +22,7 @@ char* mplayer_inputbox_getselectiondata(mplayer_inputbox_t* inputbox);
 void mplayer_inputbox_printselection(mplayer_inputbox_t* inputbox);
 void mplayer_inputbox_cursor_resetblink(mplayer_inputbox_t* inputbox);
 char* mplayer_inputbox_getinputdata(mplayer_inputbox_t* inputbox);
+void mplayer_inputbox_getprimaryinputdata(mplayer_inputbox_t* inputbox);
 void mplayer_inputbox_backspace(mplayer_inputbox_t* inputbox);
 void mplayer_inputbox_renderplaceholder(mplayer_t* mplayer, mplayer_inputbox_t* inputbox);
 void mplayer_inputbox_rendercharacters(mplayer_t* mplayer, mplayer_inputbox_t* inputbox);

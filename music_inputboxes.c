@@ -46,9 +46,13 @@ void mplayer_inputbox_addinputchar(mplayer_inputbox_t* inputbox, char* utf8_char
         return;
     }
     new_characters[new_count-1].utf8_char = utf8_char;
-    TTF_SetFontSize(inputbox->font, inputbox->font_size);
-    TTF_SizeUTF8(inputbox->font, utf8_char, &new_characters[new_count-1].canvas.w,
+    if(inputbox->font) {
+        if(TTF_SetFontSize(inputbox->font, inputbox->font_size) < 0) {
+            fprintf(stderr, "TTF_SetFontSize(): Failure %s\n", TTF_GetError());
+        }
+        TTF_SizeUTF8(inputbox->font, utf8_char, &new_characters[new_count-1].canvas.w,
         &new_characters[new_count-1].canvas.h);
+    }
     new_characters[new_count-1].utf8_charlen = strlen(utf8_char);
     input->size += new_characters[new_count-1].utf8_charlen;
     for(size_t i=new_count-1;i>input->cursor_pos;i--) {
@@ -67,10 +71,11 @@ void mplayer_inputbox_addinputdata(mplayer_inputbox_t* inputbox, const char* utf
         char* utf8_char = mplayer_getutf8_char(utf8_string, &i, utf8_stringsize);
         mplayer_inputbox_addinputchar(inputbox, utf8_char);
     }
+    mplayer_inputbox_getprimaryinputdata(inputbox);
 }
 
 char* mplayer_inputbox_getinputdata(mplayer_inputbox_t* inputbox) {
-    if(!inputbox->input.characters) {
+    if(!inputbox->input.characters || !inputbox->input.character_count) {
         return NULL;
     }
     char* new_data = calloc(inputbox->input.size+1, sizeof(char));
@@ -78,6 +83,11 @@ char* mplayer_inputbox_getinputdata(mplayer_inputbox_t* inputbox) {
         strcat(new_data, inputbox->input.characters[i].utf8_char);
     }
     return new_data;
+}
+
+void mplayer_inputbox_getprimaryinputdata(mplayer_inputbox_t* inputbox) {
+    free(inputbox->input.data);
+    inputbox->input.data = mplayer_inputbox_getinputdata(inputbox);
 }
 
 void mplayer_inputbox_backspace(mplayer_inputbox_t* inputbox) {
@@ -208,13 +218,9 @@ void mplayer_inputbox_handle_events(mplayer_t* mplayer, mplayer_inputbox_t* inpu
                     mplayer_inputbox_backspace(inputbox);
                 }
                 mplayer_inputbox_clearselection(inputbox);
-                free(inputbox->input.data);
-                inputbox->input.data = mplayer_inputbox_getinputdata(inputbox);
             }
             mplayer_inputbox_addinputdata(inputbox, mplayer->e.text.text);
             mplayer_inputbox_cursor_resetblink(inputbox);
-            free(inputbox->input.data);
-            inputbox->input.data = mplayer_inputbox_getinputdata(inputbox);
             break;
         case SDL_KEYDOWN:
             if(SDL_GetModState() & KMOD_CTRL) {
@@ -241,8 +247,6 @@ void mplayer_inputbox_handle_events(mplayer_t* mplayer, mplayer_inputbox_t* inpu
                             mplayer_inputbox_clearselection(inputbox);
                         }
                         mplayer_inputbox_addinputdata(inputbox, clipboard_data);
-                        free(inputbox->input.data);
-                        inputbox->input.data = mplayer_inputbox_getinputdata(inputbox);
                         free(clipboard_data);
                         break;
                 }
@@ -296,13 +300,11 @@ void mplayer_inputbox_handle_events(mplayer_t* mplayer, mplayer_inputbox_t* inpu
                             mplayer_inputbox_backspace(inputbox);
                         }
                         mplayer_inputbox_clearselection(inputbox);
-                        free(inputbox->input.data);
-                        inputbox->input.data = mplayer_inputbox_getinputdata(inputbox);
+                        mplayer_inputbox_getprimaryinputdata(inputbox);
                         break;
                     }
                     mplayer_inputbox_backspace(inputbox);
-                    free(inputbox->input.data);
-                    inputbox->input.data = mplayer_inputbox_getinputdata(inputbox);
+                    mplayer_inputbox_getprimaryinputdata(inputbox);
                     break;
                 case SDLK_RETURN:
                     inputbox->entered = true;
@@ -418,21 +420,22 @@ void mplayer_inputbox_rendercharacters(mplayer_t* mplayer, mplayer_inputbox_t* i
         SDL_DestroyTexture(char_texture);
     }
     if(mplayer->mouse_clicked && mplayer_rect_hover(mplayer, inputbox->canvas) &&
+        input->characters &&
         mouse_x >= input->characters[end_renderpos-1].canvas.x +
         input->characters[end_renderpos-1].canvas.w) {
         input->cursor_pos = end_renderpos;
         mplayer->mouse_clicked = false;
     }
     inputbox->cursor_canvas.x = inputbox->canvas.x + 1;
-    if(input->cursor_pos == inputbox->render_pos && inputbox->render_pos) {
+    if(input->characters && input->cursor_pos == inputbox->render_pos && inputbox->render_pos) {
         inputbox->render_pos--;
-    } else if(input->cursor_pos >= end_renderpos-1 && input->characters && input->characters[end_renderpos-1].canvas.x + input->characters[end_renderpos-1].canvas.w >=
+    } else if(input->characters && input->cursor_pos >= end_renderpos-1 && input->characters[end_renderpos-1].canvas.x + input->characters[end_renderpos-1].canvas.w >=
         inputbox->canvas.x + inputbox->canvas.w) {
         inputbox->render_pos++;
     } else if(input->characters && input->cursor_pos) {
         inputbox->cursor_canvas.x = input->characters[input->cursor_pos-1].canvas.x + input->characters[input->cursor_pos-1].canvas.w;
     }
-    if(input->cursor_pos < inputbox->render_pos) {
+    if(input->characters && input->cursor_pos < inputbox->render_pos) {
         inputbox->render_pos--;
     }
 }
