@@ -16,6 +16,7 @@
 #include "music_tooltipsdef.h"
 #include "music_playlistmanagerdef.h"
 #include "music_scrollcontainerdef.h"
+#include "music_colorpickerdef.h"
 #include "music_playerbutton_types.h"
 #include "music_playertexture_types.h"
 #include "music_playerscroll_types.h"
@@ -102,6 +103,7 @@ enum TAB_ID {
         SONGS_TAB,
         QUEUES_TAB,
         PLAYLISTS_TAB,
+        COLORPICKER_TAB
 };
 
 typedef struct mplayer_scrollbar {
@@ -148,6 +150,9 @@ typedef struct mplayer {
 
     // Notification system
     music_notification_t notification;
+
+    // Color picker system
+    mplayer_colorpicker_t color_picker;
 
     music_t *music_list, *music_templist, *music_lists[2];
     size_t music_counts[2], music_count, music_renderpos, tick_count;

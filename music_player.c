@@ -9,6 +9,7 @@
 #include "music_settingsmenu.h"
 #include "music_playerinfo.h"
 #include "music_queue.h"
+#include "music_colorpicker.h"
 #include "music_notification.h"
 #include "music_songsmanager.h"
 #include "music_playlistmanager.h"
@@ -100,6 +101,47 @@ void mplayer_createapp(mplayer_t* mplayer) {
     mplayer_queue_init(&mplayer->play_queue);
     mplayer_queue_init(&mplayer->selection_queue);
 
+    // Initialize color picker system
+    color_tracknameattrib_t color_attribs[4] = {
+        {
+            .track_font = mplayer->font,
+            .track_fontsize = 20,
+            .track_name = "Red",
+            .track_namecolor = white,
+            .track_namespacing = 10
+        },
+        {
+            .track_font = mplayer->font,
+            .track_fontsize = 20,
+            .track_name = "Green:",
+            .track_namecolor = white,
+            .track_namespacing = 10
+        },
+        {
+            .track_font = mplayer->font,
+            .track_fontsize = 20,
+            .track_name = "Blue:",
+            .track_namecolor = white,
+            .track_namespacing = 10
+        },
+        {
+            .track_font = mplayer->font,
+            .track_fontsize = 20,
+            .track_name = "Alpha:",
+            .track_namecolor = white,
+            .track_namespacing = 10
+        }
+    };
+    mplayer_colorpicker_t* color_picker = &mplayer->color_picker;
+    mplayer_colorpicker_setpreview_props(color_picker, mplayer->font, 20,
+        400, 150);
+    mplayer_colorpicker_setsliders_props(color_picker,
+        color_attribs,
+        2, 50, 20, 50,
+        white,
+        (SDL_Color){0x00, 0x00, 0x00, 0xff}
+    );
+
     // create music information
     #if _WIN32 && MAUD_RELEASE
     if(!PathIsDirectory(MAUD_PROGRAMDATA)) {
@@ -154,21 +196,12 @@ void mplayer_setcursor(mplayer_t* mplayer, int cursor_type) {
 }
 
 bool mplayer_tab_hover(mplayer_t* mplayer, tabinfo_t tab) {
-    int x = tab.text_canvas.x, y = tab.text_canvas.y,
-        w = tab.text_canvas.w, h = tab.text_canvas.h;
-    if((mplayer->e.motion.x <= x + w && mplayer->e.motion.x >= x) &&
-        (mplayer->e.motion.y <= y + h && mplayer->e.motion.y >= y)) {
-        return true;
-    }
-    return false;
+    return mplayer_rect_hover(mplayer, tab.text_canvas);
 }
 
 bool mplayer_rect_hover(mplayer_t* mplayer, SDL_Rect rect) {
-    if((mplayer->mouse_x <= rect.x + rect.w && mplayer->mouse_x >= rect.x) &&
-        (mplayer->mouse_y <= rect.y + rect.h && mplayer->mouse_y >= rect.y)) {
-        return true;
-    }
-    return false;
+    return ((mplayer->mouse_x <= rect.x + rect.w && mplayer->mouse_x >= rect.x) &&
+        (mplayer->mouse_y <= rect.y + rect.h && mplayer->mouse_y >= rect.y));
 }
 
 bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t tab_count) {
@@ -185,40 +218,19 @@ bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t
 }
 
 bool mplayer_music_hover(mplayer_t* mplayer, size_t index) {
-    SDL_Rect canvas = mplayer->music_list[index].outer_canvas;
-    if((mplayer->mouse_x <= canvas.x + canvas.w && mplayer->mouse_x >= canvas.x) &&
-        (mplayer->mouse_y <= canvas.y + canvas.h && mplayer->mouse_y >= canvas.y)) {
-            return true;
-    }
-    return false;
+    return mplayer_rect_hover(mplayer, mplayer->music_list[index].outer_canvas);
 }
 
 bool mplayer_songsbox_hover(mplayer_t* mplayer) {
-    if((mplayer->mouse_x <= songs_box.x + songs_box.w && mplayer->mouse_x >= songs_box.x) &&
-        (mplayer->mouse_y <= songs_box.y + songs_box.h && mplayer->mouse_y >= songs_box.y)) {
-            return true;
-    }
-    return false;
+    return mplayer_rect_hover(mplayer, songs_box);
 }
 
 bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer) {
-    int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
-    SDL_Rect canvas = music_listplaybtn.btn_canvas;
-    if((mouse_x <= canvas.x + canvas.w && mouse_x >= canvas.x) &&
-        (mouse_y <= canvas.y + canvas.h && mouse_y >= canvas.y)) {
-        return true;
-    }
-    return false;
+    return mplayer_rect_hover(mplayer, music_listplaybtn.btn_canvas);
 }
 
 bool mplayer_progressbar_hover(mplayer_t* mplayer) {
-    int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
-    if((mouse_x <= mplayer->progress_bar.x + mplayer->progress_bar.w && mouse_x >= mplayer->progress_bar.x) &&
-        (mouse_y <= mplayer->progress_bar.y + mplayer->progress_bar.h && mouse_y >= mplayer->progress_bar.y)) {
-            //printf("Progress bar hovering status is True\n");
-            return true;
-    }
-    return false;
+    return mplayer_rect_hover(mplayer, mplayer->progress_bar);
 }
 
 bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index) {
@@ -927,6 +939,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer_inputbox_handle_events(mplayer, &mplayer->playlist_manager.rename_inputbox);
             } else if(mplayer->search_inputbox.clicked) {
                 mplayer_inputbox_handle_events(mplayer, &mplayer->search_inputbox);
+            } else {
+                mplayer_colorpicker_handleinputbox_events(mplayer, &mplayer->color_picker);
             }
         } else if(mplayer->e.type == SDL_KEYDOWN) {
             if(music_addplaylistbtn.clicked) {
@@ -937,6 +951,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 mplayer_inputbox_handle_events(mplayer, &mplayer->playlist_manager.rename_inputbox);
             } else if(mplayer->search_inputbox.clicked) {
                 mplayer_inputbox_handle_events(mplayer, &mplayer->search_inputbox);
+            } else {
+                mplayer_colorpicker_handleinputbox_events(mplayer, &mplayer->color_picker);
             }
         } else if(mplayer->e.type == SDL_MOUSEMOTION) {
             mplayer->mouse_x = mplayer->e.motion.x, mplayer->mouse_y = mplayer->e.motion.y;
@@ -999,7 +1015,6 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
                 tab_info[tab_hoverid].active = true;
                 active_tab = tab_hoverid;
             } else if(mplayer_progressbar_hover(mplayer) && Mix_PlayingMusic()) {
-                mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
                 mplayer->progressbar_clicked = true;
             } else if(mplayer_buttonmanager_ibutton_hover(mplayer, setting_iconbtn)) {
                 mplayer->menu_opt = MPLAYER_SETTINGS_MENU;
@@ -1145,6 +1160,8 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         // render songs so we can set the new music position based on the percentage of the music we are in
         // whether in the search result or the regular music list
         if(mplayer->search_inputbox.input.data) {
+            mplayer_songsmanager_handleprevbutton(mplayer);
+            mplayer_songsmanager_handleskipbutton(mplayer);
             mplayer_queue_display(mplayer, &mplayer->searchresults_queue);
         } else {
             mplayer_songsmanager_songstab_rendersongs(mplayer);
@@ -1194,6 +1211,25 @@ void mplayer_defaultmenu(mplayer_t* mplayer) {
         mplayer_songsmanager_handleskipbutton(mplayer);
         mplayer_playlistmanager_display(mplayer);
         mplayer->mouse_clicked = false;
+    } else if(active_tab == COLORPICKER_TAB) {
+        mplayer_songsmanager_handleprevbutton(mplayer);
+        mplayer_songsmanager_handleskipbutton(mplayer);
+        mplayer_colorpicker_t* color_picker = &mplayer->color_picker;
+        mplayer_colorpicker_setpreview_position(
+            color_picker,
+            20,
+            tab_info[COLORPICKER_TAB].text_canvas.y +
+            tab_info[COLORPICKER_TAB].text_canvas.h + UNDERLINE_THICKNESS + 10
+        );
+        mplayer_colorpicker_setsliders_trackposition(
+            color_picker,
+            color_picker->preview_canvas.x,
+            color_picker->preview_canvas.y +
+            color_picker->preview_canvas.h + 10,
+            20
+        );
+        mplayer_colorpicker_display(mplayer, color_picker);
+        mplayer->mouse_clicked = false;
     }
     mplayer_notification_display(mplayer, &mplayer->notification);
     if(mplayer->display_musictooltip) {
@@ -1235,6 +1271,9 @@ void mplayer_destroyapp(mplayer_t* mplayer) {
 
     // Destroy the playlist manager an its resources
     mplayer_playlistmanager_destroy(mplayer);
+
+    // Destroy color picker system
+    mplayer_colorpicker_destroy(&mplayer->color_picker);
 
     // free the text informations
     mplayer_menumanager_menu_freetext(mplayer, MPLAYER_DEFAULT_MENU);

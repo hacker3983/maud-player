@@ -326,16 +326,14 @@ void mplayer_songsmanager_handleplaybutton(mplayer_t* mplayer, music_t* music_li
             // add the new music ids
 
             mplayer_queue_destroy(play_queue);
+            play_queue->playid = music_id;
             for(size_t i=0;i<mplayer->music_count;i++) {
-                    if(i == music_id && i != prev_playid) {
-                        play_queue->playid = i;
-                    }
                     mplayer_queue_addmusic(play_queue, 0, 0, i);
             }
             /* whenever we hover over the playbutton on the music
                we determine if we should restart the current playing music or play a new music
             */
-            if(Mix_PlayingMusic() && play_queue->playid == prev_playid) {
+            if(Mix_PlayingMusic() && prev_playid == music_id) {
                 Mix_SetMusicPosition(0);
                 if(Mix_PausedMusic()) {
                     Mix_ResumeMusic();
@@ -344,7 +342,6 @@ void mplayer_songsmanager_handleplaybutton(mplayer_t* mplayer, music_t* music_li
                 if(Mix_PlayingMusic()) {
                     Mix_HaltMusic();
                 }
-                Mix_SetMusicPosition(0);
                 if(Mix_PlayMusic(mplayer->music_list[music_id].music, 1) == -1) {
                     printf("Failed to play music\n");
                     mplayer_songsmanager_addplayback_error(mplayer, mplayer->music_list[music_id].music_name);
