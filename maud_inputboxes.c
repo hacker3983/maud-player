@@ -74,6 +74,23 @@ void mplayer_inputbox_addinputdata(mplayer_inputbox_t* inputbox, const char* utf
     mplayer_inputbox_getprimaryinputdata(inputbox);
 }
 
+bool mplayer_inputbox_deleteselection(mplayer_inputbox_t* inputbox) {
+    inputdata_t* input = &inputbox->input;
+    if(input->selection_count) {
+        input->cursor_pos = input->selection_end;
+        if(input->selection_count == input->character_count) {
+            inputbox->render_pos = 0;
+        }
+        for(size_t i=0;i<input->selection_count;i++) {
+            mplayer_inputbox_backspace(inputbox);
+        }
+        mplayer_inputbox_clearselection(inputbox);
+        mplayer_inputbox_getprimaryinputdata(inputbox);
+        return true;
+    }
+    return false;
+}
+
 char* mplayer_inputbox_getinputdata(mplayer_inputbox_t* inputbox) {
     if(!inputbox->input.characters || !inputbox->input.character_count) {
         return NULL;
@@ -209,16 +226,7 @@ void mplayer_inputbox_handle_events(mplayer_t* mplayer, mplayer_inputbox_t* inpu
     inputdata_t* input = &inputbox->input;
     switch(mplayer->e.type) {
         case SDL_TEXTINPUT:
-            if(input->selection_count) {
-                input->cursor_pos = input->selection_end;
-                if(input->selection_count == input->character_count) {
-                    inputbox->render_pos = 0;
-                }
-                for(size_t i=0;i<input->selection_count;i++) {
-                    mplayer_inputbox_backspace(inputbox);
-                }
-                mplayer_inputbox_clearselection(inputbox);
-            }
+            mplayer_inputbox_deleteselection(inputbox);
             mplayer_inputbox_addinputdata(inputbox, mplayer->e.text.text);
             mplayer_inputbox_cursor_resetblink(inputbox);
             break;
@@ -236,16 +244,7 @@ void mplayer_inputbox_handle_events(mplayer_t* mplayer, mplayer_inputbox_t* inpu
                         break;
                     case SDLK_v:
                         char* clipboard_data = SDL_GetClipboardText();
-                        if(input->selection_count) {
-                            input->cursor_pos = input->selection_end;
-                            if(input->selection_count == input->character_count) {
-                                inputbox->render_pos = 0;
-                            }
-                            for(size_t i=0;i<input->selection_count;i++) {
-                                mplayer_inputbox_backspace(inputbox);
-                            }
-                            mplayer_inputbox_clearselection(inputbox);
-                        }
+                        mplayer_inputbox_deleteselection(inputbox);
                         mplayer_inputbox_addinputdata(inputbox, clipboard_data);
                         free(clipboard_data);
                         break;
@@ -291,16 +290,7 @@ void mplayer_inputbox_handle_events(mplayer_t* mplayer, mplayer_inputbox_t* inpu
                     break;
                 case SDLK_BACKSPACE:
                     mplayer_inputbox_cursor_resetblink(inputbox);
-                    if(input->selection_count) {
-                        input->cursor_pos = input->selection_end;
-                        if(input->selection_count == input->character_count) {
-                            inputbox->render_pos = 0;
-                        }
-                        for(size_t i=0;i<input->selection_count;i++) {
-                            mplayer_inputbox_backspace(inputbox);
-                        }
-                        mplayer_inputbox_clearselection(inputbox);
-                        mplayer_inputbox_getprimaryinputdata(inputbox);
+                    if(mplayer_inputbox_deleteselection(inputbox)) {
                         break;
                     }
                     mplayer_inputbox_backspace(inputbox);

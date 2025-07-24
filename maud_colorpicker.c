@@ -121,7 +121,8 @@ void mplayer_colorpicker_setpreview_position(mplayer_colorpicker_t* color_picker
     color_picker->preview_canvas.y = y;
 
     color_picker->hex_inputbox.canvas.x = x + color_picker->preview_canvas.w + 10;
-    color_picker->hex_inputbox.canvas.y = y + color_picker->preview_canvas.y + 10;
+    color_picker->hex_inputbox.canvas.y = y + (color_picker->preview_canvas.h -
+        color_picker->hex_inputbox.canvas.h) / 2;
 }
 
 void mplayer_colorpicker_setpreview_props(mplayer_colorpicker_t* color_picker, TTF_Font* font,
@@ -306,8 +307,20 @@ void mplayer_colorpicker_handleslider_inputbox_event(mplayer_t* mplayer,
     switch(mplayer->e.type) {
         case SDL_KEYDOWN:
             int key = mplayer->e.key.keysym.sym;
+            if(SDL_GetModState() & KMOD_CTRL && (key == SDLK_a
+                || key == SDLK_c || key == SDLK_v)) {
+                mplayer_inputbox_handle_events(mplayer, inputbox);
+                if(key == SDLK_v) {
+                    color_value = atoi(input->data);
+                    color_value = (color_value > 255) ? 255 : color_value;
+                    mplayer_colorpicker_setslider_handlepos(color_picker, slider_type,
+                        color_value);
+                    update_color = true;
+                }
+                break;
+            }
             if(key <= SDLK_9 && key >= SDLK_0 && input->character_count < 3) {
-                mplayer_inputbox_addinputdata(inputbox, (const char[]){key, '\0'});
+                mplayer_inputbox_addinputdata(inputbox, (const char[2]){key});
                 if(input->data) {
                     color_value = atoi(input->data);
                     color_value = (color_value > 255) ? 255 : color_value;
@@ -334,6 +347,49 @@ void mplayer_colorpicker_handleslider_inputbox_event(mplayer_t* mplayer,
     }
 }
 
+bool mplayer_colorpicker_handlehex_inputpaste(mplayer_colorpicker_t* color_picker) {
+    mplayer_inputbox_t* hex_inputbox = &color_picker->hex_inputbox;
+    inputdata_t* hex_input = &hex_inputbox->input;
+    char* clipboard_data = SDL_GetClipboardText();
+    if(!clipboard_data) {
+        return false;
+    }
+    mplayer_inputbox_deleteselection(hex_inputbox);
+    char hex_buff[10] = {'#'};
+    size_t hex_bufflen = 1, clipboard_datalen = strlen(clipboard_data);
+    for(size_t i=0;i<clipboard_datalen;i++) {
+        if(i == 0 && clipboard_data[0] == '#') {
+            continue;
+        }
+        char hex_char = tolower(clipboard_data[i]);
+        if(!((hex_char <= SDLK_9 && hex_char >= SDLK_0 ||
+            hex_char <= SDLK_f && hex_char >= SDLK_a))) {
+            break;
+        }
+        strcat(hex_buff+1, (const char[2]){toupper(clipboard_data[i])});
+        hex_bufflen++;
+        if(hex_bufflen == 9) {
+            break;
+        }
+    }
+    if(hex_bufflen == 1) {
+        strcat(hex_buff, "FFFFFFFF");
+        hex_bufflen += 8;
+    }
+    if(!hex_input->data) {
+        mplayer_inputbox_addinputdata(hex_inputbox, hex_buff);
+        return true;
+    }
+    size_t hex_nullindex = 10 - hex_input->character_count;
+    hex_buff[hex_nullindex] = '\0';
+    if(hex_nullindex == 1) {
+        return false;
+    }
+    mplayer_inputbox_addinputdata(hex_inputbox, hex_buff+1);
+    free(clipboard_data);
+    return true;
+}
+
 void mplayer_colorpicker_handlehex_inputbox_event(mplayer_t* mplayer,
     mplayer_colorpicker_t* color_picker) {
     color_slider_t* sliders = color_picker->sliders;
@@ -347,16 +403,34 @@ void mplayer_colorpicker_handlehex_inputbox_event(mplayer_t* mplayer,
     switch(mplayer->e.type) {
         case SDL_KEYDOWN:
             int key = mplayer->e.key.keysym.sym;
+            if(SDL_GetModState() & KMOD_CTRL && (key == SDLK_a
+                || key == SDLK_c || key == SDLK_v)) {
+                if(key == SDLK_v) {
+                    if(mplayer_colorpicker_handlehex_inputpaste(color_picker)) {
+                        sscanf(hex_input->data, "#%2x%2x%2x%2x", r, g, b, a);
+                    }
+                    update_color = true;
+                    break;
+                }
+                mplayer_inputbox_handle_events(mplayer, hex_inputbox);
+                break;
+            }
             if((key <= SDLK_9 && key >= SDLK_0 ||
                 key <= SDLK_f && key >= SDLK_a) && hex_input->character_count < 9) {
-                mplayer_inputbox_addinputdata(hex_inputbox, (const char[]){toupper(key), '\0'});
+                mplayer_inputbox_addinputdata(hex_inputbox, (const char[2]){toupper(key)});
                 if(hex_input->character_count > 1) {
-                    sscanf(hex_input->data+1, "%2x%2x%2x%2x", r, g, b, a);
+                    sscanf(hex_input->data, "#%2x%2x%2x%2x", r, g, b, a);
                     update_color = true;
                 }
-            } else if(key == SDLK_LEFT || key == SDLK_RIGHT) {
+            } else if(key == SDLK_LEFT && hex_input->cursor_pos > 1) {
+                if(hex_input->selection_count && !hex_input->selection_start) {
+                    hex_input->selection_start = 1;
+                }
                 mplayer_inputbox_handle_events(mplayer, hex_inputbox);
-            } else if(key == SDLK_BACKSPACE && hex_input->cursor_pos > 1) {
+            } else if(key == SDLK_RIGHT) {
+                mplayer_inputbox_handle_events(mplayer, hex_inputbox);
+            } else if(key == SDLK_BACKSPACE && (hex_input->cursor_pos > 1
+                || hex_input->selection_count)) {
                 mplayer_inputbox_handle_events(mplayer, hex_inputbox);
                 sscanf(hex_input->data, "#%2x%2x%2x%2x", r, g, b, a);
                 update_color = true;

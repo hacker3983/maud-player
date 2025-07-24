@@ -24,6 +24,7 @@ void mplayer_colorpicker_setcolor(mplayer_colorpicker_t* color_picker, int r, in
 void mplayer_colorpicker_setcolorfromhandle(mplayer_colorpicker_t* color_picker);
 void mplayer_colorpicker_handleslider_inputbox_event(mplayer_t* mplayer,
     mplayer_colorpicker_t* color_picker, int slider_type);
+bool mplayer_colorpicker_handlehex_inputpaste(mplayer_colorpicker_t* color_picker);
 void mplayer_colorpicker_handlehex_inputbox_event(mplayer_t* mplayer,
     mplayer_colorpicker_t* color_picker);
 void mplayer_colorpicker_handleinputbox_events(mplayer_t* mplayer,

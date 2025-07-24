@@ -187,60 +187,60 @@ typedef struct mplayer {
         music_selectionmenu_addto_dropdown, addtoplaylist_modalcanvases[3];
 } mplayer_t;
 
-void mplayer_init();
-void mplayer_createsearch_bar(mplayer_t* mplayer);
-bool mplayer_music_searchsubstr(mplayer_t* mplayer, size_t search_index);
-void mplayer_setcurrent_searchquery(mplayer_t* mplayer);
-void mplayer_setcurrent_searchquery_data(mplayer_t* mplayer);
-void mplayer_clearcurrent_searchquery_data(mplayer_t* mplayer);
-void mplayer_search_music(mplayer_t* mplayer);
-void mplayer_createsongs_box(mplayer_t* mplayer);
-void mplayer_setcontrolbtns_position(mplayer_t* mplayer);
-void mplayer_setprogressbar_size(mplayer_t* mplayer);
-void mplayer_rendercontrol_btns(mplayer_t* mplayer);
-void mplayer_getduration_progression(mplayer_t* mplayer, mtime_t* curr_duration,
+void maud_init();
+void maud_createsearch_bar(maud_t* mplayer);
+bool maud_music_searchsubstr(maud_t* mplayer, size_t search_index);
+void maud_setcurrent_searchquery(maud_t* mplayer);
+void maud_setcurrent_searchquery_data(maud_t* mplayer);
+void maud_clearcurrent_searchquery_data(maud_t* mplayer);
+void maud_search_music(maud_t* mplayer);
+void maud_createsongs_box(maud_t* mplayer);
+void maud_setcontrolbtns_position(maud_t* mplayer);
+void maud_setprogressbar_size(maud_t* mplayer);
+void maud_rendercontrol_btns(maud_t* mplayer);
+void maud_getduration_progression(maud_t* mplayer, mtime_t* curr_duration,
     mtime_t* full_duration);
-void mplayer_getcurrent_musicplaying_sizetext(mplayer_t* mplayer, text_info_t* current_music);
-void mplayer_rendercontrol_btns(mplayer_t* mplayer);
-void mplayer_createmusicbar(mplayer_t* mplayer);
-void mplayer_createapp(mplayer_t* mplayer);
-int mplayer_getsize_t_length(size_t number);
-char* mplayer_size_t_tostring(size_t number, int* digit_count);
-SDL_Window* mplayer_createwindow(const char* title, int width, int height);
-SDL_Renderer* mplayer_createrenderer(SDL_Window* window);
-TTF_Font* mplayer_openfont(const char* file, int size);
-void mplayer_run(mplayer_t* mplayer);
-void mplayer_defaultmenu(mplayer_t* mplayer);
-void mplayer_setcursor(mplayer_t* mplayer, int cursor_type);
-void mplayer_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color);
-void mplayer_set_window_title(mplayer_t* mplayer, const char* title);
-bool mplayer_tab_hover(mplayer_t* mplayer, tabinfo_t tab);
-bool mplayer_rect_hover(mplayer_t* mplayer, SDL_Rect rect);
-bool mplayer_tabs_hover(mplayer_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t tab_count);
-bool mplayer_music_hover(mplayer_t* mplayer, size_t i);
-bool mplayer_songsbox_hover(mplayer_t* mplayer);
-bool mplayer_progressbar_hover(mplayer_t* mplayer);
-bool mplayer_musiclist_playbutton_hover(mplayer_t* mplayer);
+void maud_getcurrent_musicplaying_sizetext(maud_t* mplayer, text_info_t* current_music);
+void maud_rendercontrol_btns(maud_t* mplayer);
+void maud_createmusicbar(maud_t* mplayer);
+void maud_createapp(maud_t* mplayer);
+int maud_getsize_t_length(size_t number);
+char* maud_size_t_tostring(size_t number, int* digit_count);
+SDL_Window* maud_createwindow(const char* title, int width, int height);
+SDL_Renderer* maud_createrenderer(SDL_Window* window);
+TTF_Font* maud_openfont(const char* file, int size);
+void maud_run(maud_t* mplayer);
+void maud_defaultmenu(maud_t* mplayer);
+void maud_setcursor(maud_t* mplayer, int cursor_type);
+void maud_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color);
+void maud_set_window_title(maud_t* mplayer, const char* title);
+bool maud_tab_hover(maud_t* mplayer, tabinfo_t tab);
+bool maud_rect_hover(maud_t* mplayer, SDL_Rect rect);
+bool maud_tabs_hover(maud_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t tab_count);
+bool maud_music_hover(maud_t* mplayer, size_t i);
+bool maud_songsbox_hover(maud_t* mplayer);
+bool maud_progressbar_hover(maud_t* mplayer);
+bool maud_musiclist_playbutton_hover(maud_t* mplayer);
 #ifdef _WIN32
-wchar_t* mplayer_stringtowide(const char* string);
-char* mplayer_widetoutf8(wchar_t* wstring);
+wchar_t* maud_stringtowide(const char* string);
+char* maud_widetoutf8(wchar_t* wstring);
 #else
-Uint16* mplayer_stringtouint16(char* string);
+Uint16* maud_stringtouint16(char* string);
 #endif
-void mplayer_renderscroll_bar(mplayer_t* mplayer, mplayer_scrollbar_t* scrollbar, size_t max_textures);
-void mplayer_renderprogress_bar(mplayer_t* mplayer, SDL_Color bar_color, SDL_Color line_color,
+void maud_renderscroll_bar(maud_t* mplayer, maud_scrollbar_t* scrollbar, size_t max_textures);
+void maud_renderprogress_bar(maud_t* mplayer, SDL_Color bar_color, SDL_Color line_color,
     double curr_durationsecs, double full_durationsecs);
-SDL_Texture* mplayer_rendertab(mplayer_t* mplayer, tabinfo_t* tab_info);
-void mplayer_getcurrentmusic_progression(mplayer_t* mplayer);
-void mplayer_controlmusic_progression(mplayer_t* mplayer);
-void mplayer_setmusicname_position(mplayer_t* mplayer, text_info_t* current_music,
+SDL_Texture* maud_rendertab(maud_t* mplayer, tabinfo_t* tab_info);
+void maud_getcurrentmusic_progression(maud_t* mplayer);
+void maud_controlmusic_progression(maud_t* mplayer);
+void maud_setmusicname_position(maud_t* mplayer, text_info_t* current_music,
     text_info_t* next_musicname);
-void mplayer_displaymusic_status(mplayer_t* mplayer, mtime_t curr_duration, mtime_t full_duration);
-void mplayer_displayprogression_control(mplayer_t* mplayer);
-void mplayer_renderactive_tab(mplayer_t* mplayer, tabinfo_t* tab_info);
-void mplayer_centertext(mplayer_t* mplayer, text_info_t* text_info);
-void mplayer_centerx(mplayer_t* mplayer, text_info_t* text_info);
-void mplayer_centery(mplayer_t* mplayer, text_info_t* text_info);
-void mplayer_destroyapp(mplayer_t* mplayer);
+void maud_displaymusic_status(maud_t* mplayer, mtime_t curr_duration, mtime_t full_duration);
+void maud_displayprogression_control(maud_t* mplayer);
+void maud_renderactive_tab(maud_t* mplayer, tabinfo_t* tab_info);
+void maud_centertext(maud_t* mplayer, text_info_t* text_info);
+void maud_centerx(maud_t* mplayer, text_info_t* text_info);
+void maud_centery(maud_t* mplayer, text_info_t* text_info);
+void maud_destroyapp(maud_t* mplayer);
 #include "music_playerinfo_extern.h"
 #endif

@@ -19,6 +19,8 @@ void mplayer_inputbox_addselectionright(mplayer_inputbox_t* inputbox);
 void mplayer_inputbox_addselection(mplayer_inputbox_t* inputbox, int direction);
 void mplayer_inputbox_selectall(mplayer_inputbox_t* inputbox);
 char* mplayer_inputbox_getselectiondata(mplayer_inputbox_t* inputbox);
+bool mplayer_inputbox_deleteselection(mplayer_inputbox_t* inputbox);
+void mplayer_inputbox_clearselection(mplayer_inputbox_t* inputbox);
 void mplayer_inputbox_printselection(mplayer_inputbox_t* inputbox);
 void mplayer_inputbox_cursor_resetblink(mplayer_inputbox_t* inputbox);
 char* mplayer_inputbox_getinputdata(mplayer_inputbox_t* inputbox);

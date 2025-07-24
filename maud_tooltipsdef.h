@@ -4,7 +4,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
-typedef struct mplayer_tooltip {
+typedef struct maud_tooltip {
     char* text;                 // The text that will be displayed in the tooltip
     int x, y;                   // The horizontal (x) and vertical (y) position of the tooltip when the element is hovered
                                 // by the user (Note the x and y positions will be always relative to the position of
@@ -22,8 +22,8 @@ typedef struct mplayer_tooltip {
                                 // specified then the tooltip will display for ever)
     int font_size;              // The font size of the text that should be displayed within the tooltip
     TTF_Font* font;             // The font that should be used to render text within the tooltip
-    int w, h;                   // the width and the height of the tooltip returned by mplayer_tooltip_getsize()
-    text_info_t* contents;      // The content list is returned whenever mplayer_tooltip_render() is called
+    int w, h;                   // the width and the height of the tooltip returned by maud_tooltip_getsize()
+    text_info_t* contents;      // The content list is returned whenever maud_tooltip_render() is called
     size_t content_count;       // The content count
-} mplayer_tooltip_t;
+} maud_tooltip_t;
 #endif
