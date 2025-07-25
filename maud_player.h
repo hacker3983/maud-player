@@ -1,5 +1,5 @@
-#ifndef _MPLAYER_H
-#define _MPLAYER_H
+#ifndef _MAUD_H
+#define _MAUD_H
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -10,16 +10,17 @@
 #include <locale.h>
 #include <errno.h>
 #include <wctype.h>
-#include "music_inputboxesdef.h"
-#include "music_queuedef.h"
-#include "music_notificationdef.h"
-#include "music_tooltipsdef.h"
-#include "music_playlistmanagerdef.h"
-#include "music_scrollcontainerdef.h"
-#include "music_colorpickerdef.h"
-#include "music_playerbutton_types.h"
-#include "music_playertexture_types.h"
-#include "music_playerscroll_types.h"
+#include "maud_inputboxesdef.h"
+#include "maud_queuedef.h"
+#include "maud_notificationdef.h"
+#include "maud_tooltipsdef.h"
+#include "maud_playlistmanagerdef.h"
+#include "maud_scrollcontainerdef.h"
+#include "maud_colorpickerdef.h"
+#include "maud_playerbutton_types.h"
+#include "maud_playertexture_types.h"
+#include "maud_playerscroll_types.h"
+#include "maud_textinfodef.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <shlwapi.h>
@@ -27,7 +28,6 @@
 #include <shlobj.h>
 #include <io.h>
 #include <fcntl.h>
-#include "music_textinfodef.h"
 #else
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -46,14 +46,14 @@ typedef struct music_time {
     int hrs, mins, secs;
 } mtime_t;
 
-typedef struct mplayer_menu {
+typedef struct maud_menu {
     text_info_t* texts;
     SDL_Texture** textures[TEXTURE_TYPECOUNT];
     SDL_Rect* texture_canvases[TEXTURE_TYPECOUNT];
     SDL_Rect* canvases;
     size_t texture_sizes[TEXTURE_TYPECOUNT],
            text_count, canvas_count;
-} mplayer_menu_t;
+} maud_menu_t;
 
 // structure representing music
 typedef struct music {
@@ -106,7 +106,7 @@ enum TAB_ID {
         COLORPICKER_TAB
 };
 
-typedef struct mplayer_scrollbar {
+typedef struct maud_scrollbar {
     SDL_Rect rect;        // A rectangle representing the dimension and position x, y of the scrollbar
     int orientation;      // Orientation of the scrollbar (vertical or horizontal)
     size_t start_pos;     // The starting position of the first visible element in the scroll area
@@ -116,18 +116,18 @@ typedef struct mplayer_scrollbar {
     int padding_x;        // The spacing between the left/right edge of the width of the scroll area
     int padding_y;        // the spacing between the top/bottom edge of the height of the scroll area
     SDL_Rect scroll_area;
-} mplayer_scrollbar_t;
+} maud_scrollbar_t;
 
 enum cursor_types {
-    MPLAYER_CURSOR_TYPEABLE,
-    MPLAYER_CURSOR_POINTER,
-    MPLAYER_CURSOR_DEFAULT
+    MAUD_CURSOR_TYPEABLE,
+    MAUD_CURSOR_POINTER,
+    MAUD_CURSOR_DEFAULT
 };
 
 #define EVAL_CURSOR(cursor) \
-    (cursor == MPLAYER_CURSOR_DEFAULT) ? "DEFAULT CURSOR" : \
-    (cursor == MPLAYER_CURSOR_POINTER) ? "POINTER CURSOR" : \
-    (cursor == MPLAYER_CURSOR_TYPEABLE) ? "TYPEABLE CURSOR" : \
+    (cursor == MAUD_CURSOR_DEFAULT) ? "DEFAULT CURSOR" : \
+    (cursor == MAUD_CURSOR_POINTER) ? "POINTER CURSOR" : \
+    (cursor == MAUD_CURSOR_TYPEABLE) ? "TYPEABLE CURSOR" : \
     "UNDEFINED CURSOR"
 
 // Structure representing music player's graphical utilities, music information
@@ -139,7 +139,7 @@ typedef struct mplayer {
     TTF_Font* font, *music_font; // fonts
     SDL_Event e; // event
     int menu_opt, quit, cursor;
-    mplayer_menu_t menus[MENU_COUNT], *menu;
+    maud_menu_t menus[MENU_COUNT], *menu;
     SDL_Cursor* cursors[3];
     bool window_resized, cursor_active;
     Uint32 blink_timeout;
@@ -149,30 +149,30 @@ typedef struct mplayer {
     size_t location_count, total_filecount;
 
     // Notification system
-    music_notification_t notification;
+    maud_notification_t notification;
 
     // Color picker system
-    mplayer_colorpicker_t color_picker;
+    maud_colorpicker_t color_picker;
 
     music_t *music_list, *music_templist, *music_lists[2];
     size_t music_counts[2], music_count, music_renderpos, tick_count;
-    music_queue_t play_queue, searchresults_queue, selection_queue;
+    maud_queue_t play_queue, searchresults_queue, selection_queue;
     size_t search_index;
     bool searchresults_ready;
-    mplayer_playlistmanager_t playlist_manager;
-    music_scrollcontainer_t queue_scrollcontainer;
+    maud_playlistmanager_t playlist_manager;
+    maud_scrollcontainer_t queue_scrollcontainer;
     bool item_selected, remove_btnclicked;
 
-    mplayer_tooltip_t music_tooltip;
+    maud_tooltip_t music_tooltip;
     bool display_musictooltip;
 
     int repeat_id, mouse_x, mouse_y, scroll_type, scroll_y;
     char *current_musicsearch_query;
     size_t music_failcount, music_maxrenderpos, music_renderinit,
         musicpending_removalcount, musiclocation_count, current_musicsearch_querylen;
-    mplayer_inputbox_t playlist_inputbox, search_inputbox;
-    music_itemcontainer_t settingmenu_itemcontainer;
-    music_scrollcontainer_t settingmenu_scrollcontainer;
+    maud_inputbox_t playlist_inputbox, search_inputbox;
+    maud_itemcontainer_t settingmenu_itemcontainer;
+    maud_scrollcontainer_t settingmenu_scrollcontainer;
     size_t settingmenu_contentcount;
     bool mouse_clicked, music_hover, music_newsearch,
          scroll, progressbar_clicked, progressbar_dragged, mouse_buttondown, music_locationremoved,
@@ -185,7 +185,7 @@ typedef struct mplayer {
     SDL_Rect progress_bar, progress_count, music_searchbar,
         music_selectionmenu, music_selectionmenu_addtocanvas,
         music_selectionmenu_addto_dropdown, addtoplaylist_modalcanvases[3];
-} mplayer_t;
+} maud_t;
 
 void maud_init();
 void maud_createsearch_bar(maud_t* mplayer);
@@ -242,5 +242,5 @@ void maud_centertext(maud_t* mplayer, text_info_t* text_info);
 void maud_centerx(maud_t* mplayer, text_info_t* text_info);
 void maud_centery(maud_t* mplayer, text_info_t* text_info);
 void maud_destroyapp(maud_t* mplayer);
-#include "music_playerinfo_extern.h"
+#include "maud_playerinfo_extern.h"
 #endif

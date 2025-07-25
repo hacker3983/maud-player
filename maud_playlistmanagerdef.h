@@ -1,11 +1,11 @@
-#ifndef _MUSIC_PLAYLISTMANAGERDEF_H
-#define _MUSIC_PLAYLISTMANAGERDEF_H
-#include "music_queuedef.h"
-#include "music_playlists.h"
-#include "music_tooltipsdef.h"
-#include "music_textinfodef.h"
-#include "music_inputboxesdef.h"
-#include "music_scrollcontainerdef.h"
+#ifndef _MAUD_PLAYLISTMANAGERDEF_H
+#define _MAUD_PLAYLISTMANAGERDEF_H
+#include "maud_queuedef.h"
+#include "maud_playlists.h"
+#include "maud_tooltipsdef.h"
+#include "maud_textinfodef.h"
+#include "maud_inputboxesdef.h"
+#include "maud_scrollcontainerdef.h"
 
 typedef struct newplaylist_button {
     text_info_t text;
@@ -31,22 +31,22 @@ typedef struct button_bar {
 } button_bar_t;
 
 // A structure of the playlist manager
-typedef struct mplayer_playlistmanager {
-    mplayer_playlist_t* playlists; // An array of playlists with their songs queue
+typedef struct maud_playlistmanager {
+    maud_playlist_t* playlists; // An array of playlists with their songs queue
     int playlistmenu_collapsex,
         playlistmenu_collapsey;
     bool playlistmenu_collapse, playlistmenu_scrolled,
          playlistmenu_shouldscroll;
 
     button_bar_t button_bar;
-    mplayer_tooltip_t playlist_tooltip;
-    mplayer_inputbox_t playlist_inputbox;
+    maud_tooltip_t playlist_tooltip;
+    maud_inputbox_t playlist_inputbox;
     bool createplaylistbtn_clicked, playlistname_empty,
          playlistname_exists;
-    mplayer_inputbox_t rename_inputbox;
-    music_itemcontainer_t playlist_contentitems;
+    maud_inputbox_t rename_inputbox;
+    maud_itemcontainer_t playlist_contentitems;
     bool scroll_playlistcontent;
-    music_scrollcontainer_t playlist_itemcontainer,
+    maud_scrollcontainer_t playlist_itemcontainer,
         playlist_container;
     bool rename_clicked, rename_inputinited;
     SDL_Rect layoutbtn;
@@ -54,5 +54,5 @@ typedef struct mplayer_playlistmanager {
     size_t playlist_count;  // The number of playlists that were created / parsed
     size_t playlist_selectionindex;
     bool playlist_selected, playlist_inputboxinited;
-} mplayer_playlistmanager_t;
+} maud_playlistmanager_t;
 #endif

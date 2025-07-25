@@ -1,11 +1,11 @@
-#ifndef _MPLAYER_SELECTIONMENU_H
-#define _MPLAYER_SELECTIONMENU_H
-#include "music_player.h"
-#include "music_checkboxes.h"
-#include "music_inputboxes.h"
-#include "music_textmanager.h"
-#include "music_queue.h"
-#include "music_playlistmanager.h"
+#ifndef _MAUD_SELECTIONMENU_H
+#define _MAUD_SELECTIONMENU_H
+#include "maud_player.h"
+#include "maud_checkboxes.h"
+#include "maud_inputboxes.h"
+#include "maud_textmanager.h"
+#include "maud_queue.h"
+#include "maud_playlistmanager.h"
 
 enum addtoplaylist_modalcanvases {
     ADDTOPLAYLIST_MODALCANVAS,
@@ -13,31 +13,31 @@ enum addtoplaylist_modalcanvases {
     ADDTOPLAYLIST_MODALCANVAS_CANCELBTN
 };
 
-void mplayer_selectionmenu_create(mplayer_t* mplayer);
-void mplayer_selectionmenu_clearmusic_selection(mplayer_t* mplayer);
-void mplayer_selectionmenu_display_addbtn(mplayer_t* mplayer, SDL_Rect playnext_btnbackground);
-void mplayer_selectionmenu_display_addtoplaylist_modal(mplayer_t* mplayer);
-void mplayer_selectionmenu_handle_addtoplaylist_modalevents(mplayer_t* mplayer);
-void mplayer_selectionmenu_handle_addtobtn(mplayer_t* mplayer);
-void mplayer_selectionmenu_display_playbtn(mplayer_t* mplayer, text_info_t songs_selectioninfo,
+void maud_selectionmenu_create(maud_t* maud);
+void maud_selectionmenu_clearmusic_selection(maud_t* maud);
+void maud_selectionmenu_display_addbtn(maud_t* maud, SDL_Rect playnext_btnbackground);
+void maud_selectionmenu_display_addtoplaylist_modal(maud_t* maud);
+void maud_selectionmenu_handle_addtoplaylist_modalevents(maud_t* maud);
+void maud_selectionmenu_handle_addtobtn(maud_t* maud);
+void maud_selectionmenu_display_playbtn(maud_t* maud, text_info_t songs_selectioninfo,
     SDL_Rect* playbtn_backgroundref);
-void mplayer_selectionmenu_handle_playbtn(mplayer_t* mplayer, SDL_Rect playbtn_background);
-void mplayer_selectionmenu_display_playnextbtn(mplayer_t* mplayer, SDL_Rect playbtn_background,
+void maud_selectionmenu_handle_playbtn(maud_t* maud, SDL_Rect playbtn_background);
+void maud_selectionmenu_display_playnextbtn(maud_t* maud, SDL_Rect playbtn_background,
     SDL_Rect* playnext_backgroundref);
-void mplayer_selectionmenu_handle_playnextbtn(mplayer_t* mplayer, SDL_Rect playnext_btncanvas);
-void mplayer_selectionmenu_display_removebtn(mplayer_t* mplayer, SDL_Rect* removebtn_ref);
-void mplayer_selectionmenu_handle_removebtn(mplayer_t* mplayer, SDL_Rect removebtn);
-void mplayer_selectionmenu_display_movebtn(mplayer_t* mplayer, int type, SDL_Rect prevbtn,
+void maud_selectionmenu_handle_playnextbtn(maud_t* maud, SDL_Rect playnext_btncanvas);
+void maud_selectionmenu_display_removebtn(maud_t* maud, SDL_Rect* removebtn_ref);
+void maud_selectionmenu_handle_removebtn(maud_t* maud, SDL_Rect removebtn);
+void maud_selectionmenu_display_movebtn(maud_t* maud, int type, SDL_Rect prevbtn,
     SDL_Rect* move_btnref);
-void mplayer_selectionmenu_handle_moveup(mplayer_t* mplayer, SDL_Rect movebtn);
-void mplayer_selectionmenu_handle_movedown(mplayer_t* mplayer, SDL_Rect movebtn);
-void mplayer_selectionmenu_display_songselectioninfo(mplayer_t* mplayer, text_info_t* songs_selectioninfo);
-void mplayer_selectionmenu_display_checkallbtn(mplayer_t* mplayer);
-void mplayer_selectionmenu_handle_checkallbtn_toggleoption(mplayer_t* mplayer, text_info_t songs_selectioninfo);
-bool mplayer_selectionmenu_toggleitem_checkboxmusic_queue(mplayer_t* mplayer, music_queue_t* queue,
+void maud_selectionmenu_handle_moveup(maud_t* maud, SDL_Rect movebtn);
+void maud_selectionmenu_handle_movedown(maud_t* maud, SDL_Rect movebtn);
+void maud_selectionmenu_display_songselectioninfo(maud_t* maud, text_info_t* songs_selectioninfo);
+void maud_selectionmenu_display_checkallbtn(maud_t* maud);
+void maud_selectionmenu_handle_checkallbtn_toggleoption(maud_t* maud, text_info_t songs_selectioninfo);
+bool maud_selectionmenu_toggleitem_checkboxmusic_queue(maud_t* maud, maud_queue_t* queue,
     size_t item_index);
-bool mplayer_selectionmenu_togglesong_checkbox(mplayer_t* mplayer, music_t* music_list, size_t music_checkbox_index);
+bool maud_selectionmenu_togglesong_checkbox(maud_t* maud, music_t* music_list, size_t music_checkbox_index);
 
-bool mplayer_selectionmenu_togglecheckbox(mplayer_t* mplayer, music_queue_t* queue, size_t queue_itemindex,
+bool maud_selectionmenu_togglecheckbox(maud_t* maud, maud_queue_t* queue, size_t queue_itemindex,
     music_t* music_list, size_t music_checkbox_index);
 #endif

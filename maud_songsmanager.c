@@ -1,19 +1,19 @@
-#include "music_songsmanager.h"
-#include "music_notification.h"
+#include "maud_songsmanager.h"
+#include "maud_notification.h"
 
-void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
+void maud_songsmanager_songstab_rendersongs(maud_t* maud) {
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
     int default_w = 0, default_h = 0;
     SDL_Rect outer_canvas = utext.text_canvas;
-    music_t* music_list = mplayer->music_list;
-    size_t music_count = mplayer->music_count, max_renderpos = mplayer->music_maxrenderpos,
-           *music_renderpos = &mplayer->music_renderpos;
-    /*if(mplayer->musicsearchbar_data && mplayer->music_searchresult &&
-        mplayer->music_searchresult_count < mplayer->music_searchresult_indicescount) {
-        music_list = mplayer->music_searchresult;
-        music_count = mplayer->music_searchresult_count;
-        music_renderpos = &mplayer->music_searchrenderpos;
-        max_renderpos = mplayer->match_maxrenderpos;
+    music_t* music_list = maud->music_list;
+    size_t music_count = maud->music_count, max_renderpos = maud->music_maxrenderpos,
+           *music_renderpos = &maud->music_renderpos;
+    /*if(maud->musicsearchbar_data && maud->music_searchresult &&
+        maud->music_searchresult_count < maud->music_searchresult_indicescount) {
+        music_list = maud->music_searchresult;
+        music_count = maud->music_searchresult_count;
+        music_renderpos = &maud->music_searchrenderpos;
+        max_renderpos = maud->match_maxrenderpos;
     }*/
     // if the music_count is zero then we exit the render songs function
     if(!music_count) {
@@ -25,8 +25,8 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
     /*  get the size of a character so we can determine the maximum amount of textures
         we can render with in the songs box
     */
-    TTF_SetFontSize(mplayer->music_font, utext.font_size);
-    TTF_SizeUTF8(mplayer->music_font, "A", &utext.text_canvas.w, &utext.text_canvas.h);
+    TTF_SetFontSize(maud->music_font, utext.font_size);
+    TTF_SizeUTF8(maud->music_font, "A", &utext.text_canvas.w, &utext.text_canvas.h);
     default_w = utext.text_canvas.w, default_h = utext.text_canvas.h + 22;
     // calculation for the scrollability
     int def_outerheight = 22;
@@ -57,7 +57,7 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
         utext = music_list[i].text_info;
         outer_canvas = music_list[i].outer_canvas;
         default_h = utext.text_canvas.h, default_w = utext.text_canvas.w;
-        if(music_list[i].search_match && !mplayer->search_inputbox.input.data) {
+        if(music_list[i].search_match && !maud->search_inputbox.input.data) {
             music_list[i].search_match = false;
             music_list[i].search_render = false;
             if(songs_box.h < utext.text_canvas.h + def_outerheight) {
@@ -67,19 +67,19 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
             }
         }
         SDL_Rect temp_canvas = music_list[i].outer_canvas;
-        if(mplayer_selectionmenu_togglesong_checkbox(mplayer, music_list, i)) {
+        if(maud_selectionmenu_togglesong_checkbox(maud, music_list, i)) {
             continue;
         }
         if(def_outerheight < 22 && music_list[i].text_info.text_canvas.h + def_outerheight < temp_canvas.h) {
             music_list[i].outer_canvas.h = music_list[i].text_info.text_canvas.h + def_outerheight;
         }
-        /*if(mplayer->musicsearchbar_data && !music_list[i].search_render && mplayer->music_searchresult) { continue; }
+        /*if(maud->musicsearchbar_data && !music_list[i].search_render && maud->music_searchresult) { continue; }
         else*/
-        if(!music_list[i].render /*&& !mplayer->musicsearchbar_data*/) { continue; }
+        if(!music_list[i].render /*&& !maud->musicsearchbar_data*/) { continue; }
         // set the calculated x, y position and other related info for the music text and outer canvas
         music_list[i].outer_canvas.x = prev_canvas.x,
         music_list[i].outer_canvas.y = prev_canvas.y;
-        music_list[i].outer_canvas.w = mplayer->win_width - scrollbar.w - 5;
+        music_list[i].outer_canvas.w = maud->win_width - scrollbar.w - 5;
         music_list[i].text_info.text_canvas.y = outer_canvas.y +
             ((music_list[i].outer_canvas.h -
             utext.text_canvas.h) / 2);
@@ -89,14 +89,14 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
         if(music_rendercount <= max_rendercount) {
             music_renderlist[music_rendercount] = i;
             // Handling scroll events
-            if(!music_addplaylistbtn.clicked && !mplayer->music_selectionmenu_addtobtn_clicked && mplayer->scroll
-                && mplayer_rect_hover(mplayer, songs_box) /*&& (mplayer->music_searchresult ||
-                    !mplayer->musicsearchbar_data)*/) {
+            if(!music_addplaylistbtn.clicked && !maud->music_selectionmenu_addtobtn_clicked && maud->scroll
+                && maud_rect_hover(maud, songs_box) /*&& (maud->music_searchresult ||
+                    !maud->musicsearchbar_data)*/) {
                 size_t index = music_renderlist[music_rendercount];
-                bool *music_renderstatus = /*(mplayer->music_searchresult) ? &music_list[i].search_render :*/
+                bool *music_renderstatus = /*(maud->music_searchresult) ? &music_list[i].search_render :*/
                                         &music_list[i].render;
-                switch(mplayer->scroll_type) {
-                    case MPLAYERSCROLL_DOWN:
+                switch(maud->scroll_type) {
+                    case MAUDSCROLL_DOWN:
                         int musicendpos_y = (music_list[max_renderpos].outer_canvas.y +
                         music_list[max_renderpos].text_info.text_canvas.h + def_outerheight);
                         if(max_renderpos - index >= max_textures && index < max_renderpos) {
@@ -126,14 +126,14 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
                             }
                         }
                         break;
-                    case MPLAYERSCROLL_UP:
+                    case MAUDSCROLL_UP:
                         if(index >= 0) {
                             music_list[index].outer_canvas.h += 8;
                             if(music_list[index].outer_canvas.h >= def_outerheight) {
                                 music_list[index].outer_canvas.h = default_h + def_outerheight;
                                 if(index > 0) {
                                     index--; (*music_renderpos)--;
-                                    music_renderstatus = /*(mplayer->music_searchresult) ? &music_list[index].search_render :*/
+                                    music_renderstatus = /*(maud->music_searchresult) ? &music_list[index].search_render :*/
                                         &music_list[index].render;
                                 }
                             }
@@ -141,7 +141,7 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
                         }
                         break;
                 }
-                mplayer->scroll = false;
+                maud->scroll = false;
             }
             size_t next_index = (i < max_renderpos - 1) ? i+1 : i;
             SDL_Rect next_outercanvas = music_list[next_index].outer_canvas;
@@ -170,42 +170,42 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
                 }
                 music_list[i].fit = true;
             }
-            mplayer_songsmanager_rendersong_canvas(mplayer, music_list, music_renderlist[music_rendercount]);
+            maud_songsmanager_rendersong_canvas(maud, music_list, music_renderlist[music_rendercount]);
             SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
             fill_color = {0}/*{0xFF, 0xA5, 0x00, 0xff}*/;
             checkbox_size.x = outer_canvas.x+5;
             checkbox_size.h = outer_canvas.h-10;
             checkbox_size.y = outer_canvas.y + ((outer_canvas.h - checkbox_size.h)/2);
             // Do not modify the x, y, width, and height of the music list play btn canvas whenever we selected music
-            if(!mplayer->tick_count) {
+            if(!maud->tick_count) {
                 music_listplaybtn.btn_canvas.w = 30, music_listplaybtn.btn_canvas.h = outer_canvas.h - 10;
                 music_listplaybtn.btn_canvas.x = (checkbox_size.x + checkbox_size.w) + 20,
                 music_listplaybtn.btn_canvas.y = checkbox_size.y;
             }
-            int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y;
-            mplayer_songsmanager_handlesong_playbutton_hover(mplayer, outer_canvas);
-            mplayer_songsmanager_handleprevbutton(mplayer);
-            mplayer_songsmanager_handleskipbutton(mplayer);
-            mplayer_songsmanager_handlesongselection(mplayer, music_list, i, &utext);
-            if(mplayer->tick_count) {
+            int mouse_x = maud->mouse_x, mouse_y = maud->mouse_y;
+            maud_songsmanager_handlesong_playbutton_hover(maud, outer_canvas);
+            maud_songsmanager_handleprevbutton(maud);
+            maud_songsmanager_handleskipbutton(maud);
+            maud_songsmanager_handlesongselection(maud, music_list, i, &utext);
+            if(maud->tick_count) {
                 // whenever any checkbox is ticked and the current music we are current music we are rendering is not ticked
                 // we ensure that we set the checkbox fill state to false before drawing its checkbox
-                if(!music_list[i].checkbox_ticked && !mplayer_music_hover(mplayer, i)) {
+                if(!music_list[i].checkbox_ticked && !maud_music_hover(maud, i)) {
                     music_list[i].fill = false;
                 }
-                mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, music_list[i].fill, tick_color,
+                maud_drawmusic_checkbox(maud, box_color, fill_color, music_list[i].fill, tick_color,
                     music_list[i].checkbox_ticked);
-            } else if(mplayer_music_hover(mplayer, i)) {
+            } else if(maud_music_hover(maud, i)) {
                 // whenever no checkbox is ticked and we hover over the music we display the check box
                 // so that the user can click it or select it
-                if(mplayer_checkbox_hovered(mplayer)) {
-                    mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, music_list[i].fill, tick_color,
+                if(maud_checkbox_hovered(maud)) {
+                    maud_drawmusic_checkbox(maud, box_color, fill_color, music_list[i].fill, tick_color,
                         music_list[i].checkbox_ticked);
-                } else if(!mplayer_checkbox_hovered(mplayer)) {
-                    mplayer_drawmusic_checkbox(mplayer, box_color, fill_color, false, tick_color, false);
+                } else if(!maud_checkbox_hovered(maud)) {
+                    maud_drawmusic_checkbox(maud, box_color, fill_color, false, tick_color, false);
                 }
             }
-            SDL_RenderCopy(mplayer->renderer, music_list[music_renderlist[music_rendercount]].text_texture, NULL,
+            SDL_RenderCopy(maud->renderer, music_list[music_renderlist[music_rendercount]].text_texture, NULL,
                 &utext.text_canvas);
             music_rendercount++;
         } else {
@@ -229,7 +229,7 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
        As long as the conditions above are true then we adjust the height of the previous textures that are not being
        rendered to the screen so that they fit entirely within the songs_box
     */
-    if(mplayer->window_resized && index == max_renderpos && songsbox_endpos_y - endpos_y > music_list[index].text_info.text_canvas.h) {
+    if(maud->window_resized && index == max_renderpos && songsbox_endpos_y - endpos_y > music_list[index].text_info.text_canvas.h) {
         /* Determine the total height of each texture that is currently being rendered to the screen */
         for(size_t i=0;i<music_rendercount;i++) {
             songs_renderheight_total += music_list[music_renderlist[i]].outer_canvas.h;
@@ -249,17 +249,17 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
         size_t first_renderpos = music_renderlist[0];
         if(first_renderpos > amount_notbeing_rendered) {
             for(size_t i=first_renderpos-amount_notbeing_rendered;i<=first_renderpos;i++) {
-                bool* render_status = /*(mplayer->music_searchresult) ? &music_list[i].search_render :*/
+                bool* render_status = /*(maud->music_searchresult) ? &music_list[i].search_render :*/
                                         &music_list[i].render;
                 music_list[i].outer_canvas.h = music_list[i].text_info.text_canvas.h + def_outerheight;
                 //music_list[i].render = true;
-                mplayer->music_renderpos--;
+                maud->music_renderpos--;
                 *render_status = true;
             }
         }
     }
     // scroll bar related information
-    mplayer_scrollbar_t songsbox_scrollbar = {
+    maud_scrollbar_t songsbox_scrollbar = {
         .rect = scrollbar,
         .displacement = 0.0,
         .orientation = 0,
@@ -269,33 +269,33 @@ void mplayer_songsmanager_songstab_rendersongs(mplayer_t* mplayer) {
         .padding_y = -(2 + (int)((double)scrollbar.h / 2.0)),
         .scroll_area = songs_box
     };
-    mplayer->scroll = false;
-    mplayer_renderscroll_bar(mplayer, &songsbox_scrollbar, max_textures);
-    mplayer->window_resized = false;
+    maud->scroll = false;
+    maud_renderscroll_bar(maud, &songsbox_scrollbar, max_textures);
+    maud->window_resized = false;
     free(music_renderlist); music_renderlist = NULL;
 }
 
-void mplayer_songsmanager_rendersong_canvas(mplayer_t* mplayer, music_t* music_list, size_t music_id) {
-    SDL_SetRenderDrawColor(mplayer->renderer, 0, 42, 50, 0xFF /*0x3B, 0x35, 0x61, 0xFF*/);
-    SDL_RenderDrawRect(mplayer->renderer, &music_list[music_id].outer_canvas);
-    SDL_RenderFillRect(mplayer->renderer, &music_list[music_id].outer_canvas);
+void maud_songsmanager_rendersong_canvas(maud_t* maud, music_t* music_list, size_t music_id) {
+    SDL_SetRenderDrawColor(maud->renderer, 0, 42, 50, 0xFF /*0x3B, 0x35, 0x61, 0xFF*/);
+    SDL_RenderDrawRect(maud->renderer, &music_list[music_id].outer_canvas);
+    SDL_RenderFillRect(maud->renderer, &music_list[music_id].outer_canvas);
 }
 
-void mplayer_songsmanager_handlesong_playbutton_hover(mplayer_t* mplayer, SDL_Rect outer_canvas) {
+void maud_songsmanager_handlesong_playbutton_hover(maud_t* maud, SDL_Rect outer_canvas) {
     SDL_Rect hoverbg_canvas = {0};
     // check if we hover over the play button and we haven't ticked any checkbox
-    if(mplayer_musiclist_playbutton_hover(mplayer) && !mplayer->music_selectionmenu_addtobtn_clicked
-        && !mplayer->tick_count) {
+    if(maud_musiclist_playbutton_hover(maud) && !maud->music_selectionmenu_addtobtn_clicked
+        && !maud->tick_count) {
         hoverbg_canvas = music_listplaybtn.btn_canvas;
         hoverbg_canvas.x -= 5, hoverbg_canvas.w += 5;
         hoverbg_canvas.h = outer_canvas.h, hoverbg_canvas.y = outer_canvas.y;
-        SDL_SetRenderDrawColor(mplayer->renderer, 0x00, 0x00, 0x00, 0x00);
-        SDL_RenderDrawRect(mplayer->renderer, &hoverbg_canvas);
-        SDL_RenderFillRect(mplayer->renderer, &hoverbg_canvas);
+        SDL_SetRenderDrawColor(maud->renderer, 0x00, 0x00, 0x00, 0x00);
+        SDL_RenderDrawRect(maud->renderer, &hoverbg_canvas);
+        SDL_RenderFillRect(maud->renderer, &hoverbg_canvas);
     }
 }
 
-void mplayer_songsmanager_addplayback_error(mplayer_t* mplayer, const char* music_name) {
+void maud_songsmanager_addplayback_error(maud_t* maud, const char* music_name) {
     size_t msg_len = 112 + strlen(music_name);
     char msg_buff[msg_len+1];
     sprintf(msg_buff,
@@ -304,7 +304,7 @@ void mplayer_songsmanager_addplayback_error(mplayer_t* mplayer, const char* musi
         music_name
     );
     msg_buff[msg_len] = '\0';
-    mplayer_notification_push(&mplayer->notification, mplayer->font, 20,
+    maud_notification_push(&maud->notification, maud->font, 20,
         (SDL_Color){0x12, 0x12, 012, 0x12},
         msg_buff,
         white,
@@ -315,20 +315,20 @@ void mplayer_songsmanager_addplayback_error(mplayer_t* mplayer, const char* musi
     );
 }
 
-void mplayer_songsmanager_handleplaybutton(mplayer_t* mplayer, music_t* music_list, size_t music_id) {
-    music_queue_t* play_queue = &mplayer->play_queue;
+void maud_songsmanager_handleplaybutton(maud_t* maud, music_t* music_list, size_t music_id) {
+    maud_queue_t* play_queue = &maud->play_queue;
     size_t prev_playid = play_queue->playid;
-    if(mplayer_musiclist_playbutton_hover(mplayer) && !music_addplaylistbtn.clicked &&
-        !mplayer->music_selectionmenu_addtobtn_clicked
-        && !mplayer->tick_count) {
-        if(mplayer->mouse_clicked) {
+    if(maud_musiclist_playbutton_hover(maud) && !music_addplaylistbtn.clicked &&
+        !maud->music_selectionmenu_addtobtn_clicked
+        && !maud->tick_count) {
+        if(maud->mouse_clicked) {
             // Whenever we click the play button for a particular music we play the current play queue and
             // add the new music ids
 
-            mplayer_queue_destroy(play_queue);
+            maud_queue_destroy(play_queue);
             play_queue->playid = music_id;
-            for(size_t i=0;i<mplayer->music_count;i++) {
-                    mplayer_queue_addmusic(play_queue, 0, 0, i);
+            for(size_t i=0;i<maud->music_count;i++) {
+                    maud_queue_addmusic(play_queue, 0, 0, i);
             }
             /* whenever we hover over the playbutton on the music
                we determine if we should restart the current playing music or play a new music
@@ -342,39 +342,39 @@ void mplayer_songsmanager_handleplaybutton(mplayer_t* mplayer, music_t* music_li
                 if(Mix_PlayingMusic()) {
                     Mix_HaltMusic();
                 }
-                if(Mix_PlayMusic(mplayer->music_list[music_id].music, 1) == -1) {
+                if(Mix_PlayMusic(maud->music_list[music_id].music, 1) == -1) {
                     printf("Failed to play music\n");
-                    mplayer_songsmanager_addplayback_error(mplayer, mplayer->music_list[music_id].music_name);
+                    maud_songsmanager_addplayback_error(maud, maud->music_list[music_id].music_name);
                 }
             }
-            mplayer->mouse_clicked = false;
+            maud->mouse_clicked = false;
         }
-        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
+        maud_setcursor(maud, MAUD_CURSOR_POINTER);
     }
 }
 
 
-void mplayer_songsmanager_handlesongselection(mplayer_t* mplayer, music_t* music_list, size_t music_id, text_info_t* music_textinfo) {
-    if(!music_addplaylistbtn.clicked && !mplayer->music_selectionmenu_addtobtn_clicked
-        && mplayer_music_hover(mplayer, music_id)
-            /*&& (mplayer->music_searchresult || !mplayer->musicsearchbar_data)*/) {
-        mplayer_songsmanager_handlecheckbox_musicselection(mplayer, music_list, music_id);
-        mplayer_songsmanager_handleplaybutton(mplayer, music_list, music_id);
-        mplayer->menu->texture_canvases[MPLAYER_BUTTON_TEXTURE][music_listplaybtn.texture_idx] =
+void maud_songsmanager_handlesongselection(maud_t* maud, music_t* music_list, size_t music_id, text_info_t* music_textinfo) {
+    if(!music_addplaylistbtn.clicked && !maud->music_selectionmenu_addtobtn_clicked
+        && maud_music_hover(maud, music_id)
+            /*&& (maud->music_searchresult || !maud->musicsearchbar_data)*/) {
+        maud_songsmanager_handlecheckbox_musicselection(maud, music_list, music_id);
+        maud_songsmanager_handleplaybutton(maud, music_list, music_id);
+        maud->menu->texture_canvases[MAUD_BUTTON_TEXTURE][music_listplaybtn.texture_idx] =
             music_listplaybtn.btn_canvas;
-        if(!mplayer->tick_count) {
+        if(!maud->tick_count) {
             // if we haven't ticked any checkbox then we render the music list play button to the screen
             music_textinfo->text_canvas.x += music_listplaybtn.btn_canvas.w + 20;
-            SDL_RenderCopy(mplayer->renderer, mplayer->menu->textures[MPLAYER_BUTTON_TEXTURE]
+            SDL_RenderCopy(maud->renderer, maud->menu->textures[MAUD_BUTTON_TEXTURE]
                 [music_listplaybtn.texture_idx], NULL, &music_listplaybtn.btn_canvas);
         }
     }
 }
 
-void mplayer_songsmanager_handlecheckbox_musicselection(mplayer_t* mplayer, music_t* music_list, size_t music_id) {
+void maud_songsmanager_handlecheckbox_musicselection(maud_t* maud, music_t* music_list, size_t music_id) {
     // check if the mouse is hovered over the music
-    if(mplayer_checkbox_hovered(mplayer)) {
-        if(mplayer->mouse_clicked) {
+    if(maud_checkbox_hovered(maud)) {
+        if(maud->mouse_clicked) {
             // if we are in the position of the checkbox and we clicked it
             switch(music_list[music_id].checkbox_ticked) {
                 case false:
@@ -383,8 +383,8 @@ void mplayer_songsmanager_handlecheckbox_musicselection(mplayer_t* mplayer, musi
                     */
                     music_list[music_id].fill = true;
                     music_list[music_id].checkbox_ticked = true;
-                    mplayer_queue_addmusic(&mplayer->selection_queue, 0, 0, music_id);
-                    mplayer->tick_count++;
+                    maud_queue_addmusic(&maud->selection_queue, 0, 0, music_id);
+                    maud->tick_count++;
                     break;
                 case true:
                     /* whenever the checkbox is already ticked then we set the checkbox as not ticked
@@ -392,71 +392,71 @@ void mplayer_songsmanager_handlecheckbox_musicselection(mplayer_t* mplayer, musi
                     */
                     music_list[music_id].fill = false;
                     music_list[music_id].checkbox_ticked = false;
-                    mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, 0, music_id);
-                    mplayer->tick_count--;
-                    if(!mplayer->tick_count && mplayer->music_selectionmenu_checkbox_tickall) {
-                        mplayer->music_selectionmenu_checkbox_tickall = false;
+                    maud_queue_removemusicby_musiclistidx_id(&maud->selection_queue, 0, music_id);
+                    maud->tick_count--;
+                    if(!maud->tick_count && maud->music_selectionmenu_checkbox_tickall) {
+                        maud->music_selectionmenu_checkbox_tickall = false;
                     }
                     break;
             }
-            mplayer->music_selected = true;
-                mplayer->mouse_clicked = false;
+            maud->music_selected = true;
+                maud->mouse_clicked = false;
         } else {
             /* if we just hover over the checkbox without clicking it then we set that checkbox
                 fill equal to true
             */
             music_list[music_id].fill = true;
         }
-        mplayer_setcursor(mplayer, MPLAYER_CURSOR_POINTER);
-    } else if(mplayer->tick_count && mplayer->mouse_clicked && !music_addplaylistbtn.clicked &&
-        !mplayer->music_selectionmenu_addtobtn_clicked) {
+        maud_setcursor(maud, MAUD_CURSOR_POINTER);
+    } else if(maud->tick_count && maud->mouse_clicked && !music_addplaylistbtn.clicked &&
+        !maud->music_selectionmenu_addtobtn_clicked) {
         // whenever we click the music without clicking any of its elements
         // we set clicked equal to false to prevent it from performing any action that we do not want
         if(music_list[music_id].checkbox_ticked) {
-            mplayer->music_selected = true;
-            mplayer->tick_count--;
-            if(!mplayer->tick_count && mplayer->music_selectionmenu_checkbox_tickall) {
-                mplayer->music_selectionmenu_checkbox_tickall = false;
+            maud->music_selected = true;
+            maud->tick_count--;
+            if(!maud->tick_count && maud->music_selectionmenu_checkbox_tickall) {
+                maud->music_selectionmenu_checkbox_tickall = false;
             }
-            mplayer_queue_removemusicby_musiclistidx_id(&mplayer->selection_queue, 0, music_id);
+            maud_queue_removemusicby_musiclistidx_id(&maud->selection_queue, 0, music_id);
             music_list[music_id].fill = false;
             music_list[music_id].checkbox_ticked = false;
-        } else if(mplayer->tick_count) {
-            mplayer->music_selected = true;
-            mplayer_queue_addmusic(&mplayer->selection_queue, 0, 0, music_id);
-            mplayer->tick_count++;
+        } else if(maud->tick_count) {
+            maud->music_selected = true;
+            maud_queue_addmusic(&maud->selection_queue, 0, 0, music_id);
+            maud->tick_count++;
             music_list[music_id].fill = true;
             music_list[music_id].checkbox_ticked = true;
         }
-        mplayer->mouse_clicked = false;
+        maud->mouse_clicked = false;
     }
 }
 
-void mplayer_songsmanager_handleskipbutton(mplayer_t* mplayer) {
-    music_queue_t* play_queue = &mplayer->play_queue;
-    if(!(music_btns[MUSIC_SKIPBTN].clicked && play_queue->items)) {
+void maud_songsmanager_handleskipbutton(maud_t* maud) {
+    maud_queue_t* play_queue = &maud->play_queue;
+    if(!(music_btns[MAUD_SKIPBTN].clicked && play_queue->items)) {
         return;
     }
     size_t *playid = &play_queue->playid,
            music_listindex = play_queue->items[*playid].music_listindex,
            music_id = play_queue->items[*playid].music_id;
-    music_t **music_lists = mplayer->music_lists, *music_list = music_lists[music_listindex];
+    music_t **music_lists = maud->music_lists, *music_list = music_lists[music_listindex];
     (*playid)++;
     (*playid) %= play_queue->item_count;
-    mplayer_songsmanager_togglemusic_playback(mplayer);
-    music_btns[MUSIC_SKIPBTN].clicked = false;
+    maud_songsmanager_togglemusic_playback(maud);
+    music_btns[MAUD_SKIPBTN].clicked = false;
 }
 
-void mplayer_songsmanager_handleprevbutton(mplayer_t* mplayer) {
-    music_queue_t* play_queue = &mplayer->play_queue;
-    if(!(music_btns[MUSIC_PREVBTN].clicked && play_queue->items)) {
+void maud_songsmanager_handleprevbutton(maud_t* maud) {
+    maud_queue_t* play_queue = &maud->play_queue;
+    if(!(music_btns[MAUD_PREVBTN].clicked && play_queue->items)) {
         return;
     }
     // Select the play id
     size_t *playid = &play_queue->playid,
            music_listindex = play_queue->items[*playid].music_listindex,
            music_id = play_queue->items[*playid].music_id;
-    music_t **music_lists = mplayer->music_lists,
+    music_t **music_lists = maud->music_lists,
             *music_list = music_lists[music_listindex];
 
     if(*playid) {
@@ -464,19 +464,19 @@ void mplayer_songsmanager_handleprevbutton(mplayer_t* mplayer) {
     }
     // Halt any current music playing and play the actual music when we press the play button
     // Depending on whether it is paused or not
-    mplayer_songsmanager_togglemusic_playback(mplayer);
-    music_btns[MUSIC_PREVBTN].clicked = false;
+    maud_songsmanager_togglemusic_playback(maud);
+    music_btns[MAUD_PREVBTN].clicked = false;
 }
 
-int mplayer_songsmanager_playmusic(mplayer_t* mplayer) {
-    music_queue_t* play_queue = &mplayer->play_queue;
+int maud_songsmanager_playmusic(maud_t* maud) {
+    maud_queue_t* play_queue = &maud->play_queue;
     if(!play_queue->items) {
         return -1;
     }
     size_t *playid = &play_queue->playid,
            music_listindex = play_queue->items[*playid].music_listindex,
            music_id = play_queue->items[*playid].music_id;
-    music_t **music_lists = mplayer->music_lists,
+    music_t **music_lists = maud->music_lists,
             *music_list = music_lists[music_listindex];
     if(!music_list[music_id].music) {
         size_t msg_len = 120 + strlen(music_list[music_id].music_name);
@@ -487,7 +487,7 @@ int mplayer_songsmanager_playmusic(mplayer_t* mplayer) {
             music_list[music_id].music_name
         );
         msg_buff[msg_len] = '\0';
-        mplayer_notification_push(&mplayer->notification, mplayer->font, 20,
+        maud_notification_push(&maud->notification, maud->font, 20,
             (SDL_Color){0x12, 0x12, 012, 0x12},
             msg_buff,
             white,
@@ -500,28 +500,28 @@ int mplayer_songsmanager_playmusic(mplayer_t* mplayer) {
     return Mix_PlayMusic(music_list[music_id].music, 1);
 }
 
-void mplayer_songsmanager_playmusic_pause(mplayer_t* mplayer) {
-    if(!mplayer_songsmanager_playmusic(mplayer)) {
+void maud_songsmanager_playmusic_pause(maud_t* maud) {
+    if(!maud_songsmanager_playmusic(maud)) {
         Mix_PauseMusic();
     }
 }
 
-void mplayer_songsmanager_togglemusic_playback(mplayer_t* mplayer) {
-    music_queue_t* play_queue = &mplayer->play_queue;
+void maud_songsmanager_togglemusic_playback(maud_t* maud) {
+    maud_queue_t* play_queue = &maud->play_queue;
     if(!play_queue->items) {
         return;
     }
     size_t *playid = &play_queue->playid,
            music_listindex = play_queue->items[*playid].music_listindex,
            music_id = play_queue->items[*playid].music_id;
-    music_t **music_lists = mplayer->music_lists,
+    music_t **music_lists = maud->music_lists,
             *music_list = music_lists[music_listindex];
     Mix_HaltMusic();
     if(!Mix_PausedMusic()) {
-        if(!mplayer_songsmanager_playmusic(mplayer)) {
+        if(!maud_songsmanager_playmusic(maud)) {
             printf("Playing music %s\n", music_list[music_id].music_name);
         }
         return;
     }
-    mplayer_songsmanager_playmusic_pause(mplayer);
+    maud_songsmanager_playmusic_pause(maud);
 }

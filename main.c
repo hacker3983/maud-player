@@ -2,13 +2,13 @@
 #include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "music_player.h"
+#include "maud_player.h"
 
 int main(int argc, char** argv) {
-    mplayer_t mplayer = {0};
-    mplayer_init();
-    mplayer_createapp(&mplayer);
-    mplayer_run(&mplayer);
-    mplayer_destroyapp(&mplayer);
+    maud_t maud = {0};
+    maud_init();
+    maud_createapp(&maud);
+    maud_run(&maud);
+    maud_destroyapp(&maud);
     return 0;
 }

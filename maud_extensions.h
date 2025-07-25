@@ -1,12 +1,12 @@
-#ifndef _MUSIC_EXTENSIONS_H
-#define _MUSIC_EXTENSIONS_H
+#ifndef _MAUD_EXTENSIONS_H
+#define _MAUD_EXTENSIONS_H
 
 enum music_extensions {
-        MPLAYER_MP3EXT,
-        MPLAYER_FLACEXT,
-        MPLAYER_OGGEXT,
-        MPLAYER_OPUSEXT,
-        MPLAYER_WAVEXT,
-        MPLAYER_M4AEXT
+        MAUD_MP3EXT,
+        MAUD_FLACEXT,
+        MAUD_OGGEXT,
+        MAUD_OPUSEXT,
+        MAUD_WAVEXT,
+        MAUD_M4AEXT
 };
 #endif

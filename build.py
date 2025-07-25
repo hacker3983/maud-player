@@ -7,37 +7,37 @@ if platform.system() == "Windows":
 LINK_FILES += "-lm -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image -lSDL2_mixer"
 
 C_FILES = [
-    "music_player.c",
-    "music_string.c",
-    "music_tooltips.c",
+    "maud_player.c",
+    "maud_string.c",
+    "maud_tooltips.c",
     "stringlist.c",
-    "music_queue.c",
-    "music_colorpicker.c",
-    "music_notification.c",
-    "music_checkboxes.c",
-    "music_inputboxes.c",
-    "music_menumanager.c",
-    "music_filemanager.c",
-    "music_textmanager.c",
-    "music_texturemanager.c",
-    "music_itemcontainer.c",
-    "music_scrollcontainer.c",
-    "music_selectionmenu.c",
-    "music_settingsmenu.c",
-    "music_playerscroll_types.c",
-    "music_playerbutton_manager.c",
-    "music_playlists.c",
-    "music_playlistmanager.c",
-    "music_playlistmanager_datareader.c",
-    "music_playlistmanager_datawriter.c",
-    "music_songsmanager.c"
+    "maud_queue.c",
+    "maud_colorpicker.c",
+    "maud_notification.c",
+    "maud_checkboxes.c",
+    "maud_inputboxes.c",
+    "maud_menumanager.c",
+    "maud_filemanager.c",
+    "maud_textmanager.c",
+    "maud_texturemanager.c",
+    "maud_itemcontainer.c",
+    "maud_scrollcontainer.c",
+    "maud_selectionmenu.c",
+    "maud_settingsmenu.c",
+    "maud_playerscroll_types.c",
+    "maud_playerbutton_manager.c",
+    "maud_playlists.c",
+    "maud_playlistmanager.c",
+    "maud_playlistmanager_datareader.c",
+    "maud_playlistmanager_datawriter.c",
+    "maud_songsmanager.c"
 ]
 
 print("Building music player...")
-os.system(f"gcc main.c {' '.join(C_FILES)} {LINK_FILES} -o mplayer")
+os.system(f"gcc main.c {' '.join(C_FILES)} {LINK_FILES} -o maud")
 print("Running music player...")
 
 if platform.system() == "Linux":
-    os.system("./mplayer")
+    os.system("./maud")
 else:
-    os.system(f"mplayer.exe")
+    os.system(f"maud.exe")

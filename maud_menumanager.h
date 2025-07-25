@@ -1,18 +1,18 @@
-#ifndef _MUSIC_MENUMANAGER_H
-#define _MUSIC_MENUMANAGER_H
-#include "music_player.h"
-#include "music_texturemanager.h"
+#ifndef _MAUD_MENUMANAGER_H
+#define _MAUD_MENUMANAGER_H
+#include "maud_player.h"
+#include "maud_texturemanager.h"
 
 enum menu_options {
-    MPLAYER_DEFAULT_MENU,
-    MPLAYER_SETTINGS_MENU
+    MAUD_DEFAULT_MENU,
+    MAUD_SETTINGS_MENU
 };
 
-void mplayer_menumanager_setup_menu(mplayer_t* mplayer);
-void mplayer_menumanager_createmenu_texture(mplayer_t* mplayer, int type, size_t amount);
-void mplayer_menumanager_addmenu_texture(mplayer_t* mplayer, int type);
-void mplayer_menumanager_menuplace_texture(mplayer_t* mplayer, int type, SDL_Texture* texture, SDL_Rect canvas);
-void mplayer_menumanager_menuadd_canvas(mplayer_t* mplayer, SDL_Rect canvas);
-void mplayer_menumanager_appendtext(mplayer_t* mplayer, text_info_t text);
-void mplayer_menumanager_menu_freetext(mplayer_t* mplayer, int menu_option);
+void maud_menumanager_setup_menu(maud_t* maud);
+void maud_menumanager_createmenu_texture(maud_t* maud, int type, size_t amount);
+void maud_menumanager_addmenu_texture(maud_t* maud, int type);
+void maud_menumanager_menuplace_texture(maud_t* maud, int type, SDL_Texture* texture, SDL_Rect canvas);
+void maud_menumanager_menuadd_canvas(maud_t* maud, SDL_Rect canvas);
+void maud_menumanager_appendtext(maud_t* maud, text_info_t text);
+void maud_menumanager_menu_freetext(maud_t* maud, int menu_option);
 #endif

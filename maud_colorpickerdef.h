@@ -1,9 +1,9 @@
-#ifndef _MUSIC_COLORPICKER_DEF_H
-#define _MUSIC_COLORPICKER_DEF_H
+#ifndef _MAUD_COLORPICKER_DEF_H
+#define _MAUD_COLORPICKER_DEF_H
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include "music_textinfodef.h"
-#include "music_inputboxesdef.h"
+#include "maud_textinfodef.h"
+#include "maud_inputboxesdef.h"
 
 enum color_slider_type {
     COLOR_SLIDER_R,
@@ -26,7 +26,7 @@ typedef struct color_slider {
     int track_namespacing;
     text_info_t track_nameinfo;
     int track_segmentwidth;
-    mplayer_inputbox_t inputbox;
+    maud_inputbox_t inputbox;
     SDL_Rect track; // The static background for the slider
     SDL_Rect handle; // The handle that the user drags over the slider
     SDL_Color handle_color;
@@ -38,7 +38,7 @@ typedef struct color_picker {
     color_slider_t sliders[4]; // 4 sliders for rgba respectively
     int max_trackname_width;
     SDL_Rect preview_canvas; // A canvas that display the current color
-    mplayer_inputbox_t hex_inputbox;
+    maud_inputbox_t hex_inputbox;
     SDL_Color color; // The current color
-} mplayer_colorpicker_t;
+} maud_colorpicker_t;
 #endif

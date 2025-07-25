@@ -1,6 +1,6 @@
 #ifndef _MUSIC_TOOLTIPSDEF_H
 #define _MUSIC_TOOLTIPSDEF_H
-#include "music_textinfodef.h"
+#include "maud_textinfodef.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 

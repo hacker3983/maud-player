@@ -1,13 +1,13 @@
-#ifndef _MUSIC_PLAYERSCROLL_TYPES_H
-#define _MUSIC_PLAYERSCROLL_TYPES_H
+#ifndef _MAUD_PLAYERSCROLL_TYPES_H
+#define _MAUD_PLAYERSCROLL_TYPES_H
 #include <SDL2/SDL.h>
 
 enum scroll_types {
-    MPLAYERSCROLL_UP,
-    MPLAYERSCROLL_DOWN,
-    MPLAYERSCROLL_RIGHT,
-    MPLAYERSCROLL_LEFT
+    MAUDSCROLL_UP,
+    MAUDSCROLL_DOWN,
+    MAUDSCROLL_RIGHT,
+    MAUDSCROLL_LEFT
 };
 
-int mplayer_scrolltype_getmousewheel_scrolltype(SDL_Event e, int* scroll_typeptr);
+int maud_scrolltype_getmousewheel_scrolltype(SDL_Event e, int* scroll_typeptr);
 #endif

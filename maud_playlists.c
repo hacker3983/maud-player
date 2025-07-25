@@ -1,25 +1,25 @@
-#include "music_playlists.h"
-#include "music_queue.h"
+#include "maud_playlists.h"
+#include "maud_queue.h"
 
-bool mplayer_playlist_create(mplayer_playlist_t** playlists, size_t* playlist_count, const char* playlist_name) {
-    mplayer_playlist_t* new_playlists = NULL;
+bool maud_playlist_create(maud_playlist_t** playlists, size_t* playlist_count, const char* playlist_name) {
+    maud_playlist_t* new_playlists = NULL;
     size_t new_playlistcount = 0;
-    if(mplayer_playlist_exists(*playlists, *playlist_count, playlist_name)) {
+    if(maud_playlist_exists(*playlists, *playlist_count, playlist_name)) {
         return true;
     }
     // Duplicate the playlist name that was passed in a parameter
-    char* playlistname_duplicate = mplayer_dupstr(playlist_name, strlen(playlist_name));
+    char* playlistname_duplicate = maud_dupstr(playlist_name, strlen(playlist_name));
     // If a heap memory allocation failure occurs then we return false from the function
     if(!playlistname_duplicate) {
         return false;
     }
     // Allocate memory for the new playlist structure
     if(!(*playlists)) {
-        new_playlists = (mplayer_playlist_t*)malloc(sizeof(mplayer_playlist_t));
+        new_playlists = (maud_playlist_t*)malloc(sizeof(maud_playlist_t));
     } else {
         new_playlistcount = *playlist_count;
-        new_playlists = (mplayer_playlist_t*)realloc((*playlists), (new_playlistcount + 1)
-            * sizeof(mplayer_playlist_t));
+        new_playlists = (maud_playlist_t*)realloc((*playlists), (new_playlistcount + 1)
+            * sizeof(maud_playlist_t));
     }
     // If we failed to allocate memory for the new playlists structure then we return false
     if(!new_playlists) {
@@ -27,14 +27,14 @@ bool mplayer_playlist_create(mplayer_playlist_t** playlists, size_t* playlist_co
     }
     // If all there was no memory allocation failure then we initialize all the properties of the newly
     // created playlist
-    memset(new_playlists+new_playlistcount, 0, sizeof(mplayer_playlist_t));
+    memset(new_playlists+new_playlistcount, 0, sizeof(maud_playlist_t));
     new_playlists[new_playlistcount++].name = playlistname_duplicate;
     *playlists = new_playlists, *playlist_count = new_playlistcount;
     return true;
 }
 
-bool mplayer_playlist_rename(mplayer_playlist_t** playlists, size_t playlist_count, const char* playlist_name, const char* new_name) {
-    if(!mplayer_playlist_exists(*playlists, playlist_count, playlist_name)) {
+bool maud_playlist_rename(maud_playlist_t** playlists, size_t playlist_count, const char* playlist_name, const char* new_name) {
+    if(!maud_playlist_exists(*playlists, playlist_count, playlist_name)) {
         return false;
     }
     for(size_t i=0;i<playlist_count;i++) {
@@ -49,16 +49,16 @@ bool mplayer_playlist_rename(mplayer_playlist_t** playlists, size_t playlist_cou
     return false;
 }
 
-bool mplayer_playlist_remove(mplayer_playlist_t** playlists, size_t* playlist_count, const char* playlist_name) {
-    if(!mplayer_playlist_exists(*playlists, *playlist_count, playlist_name)) {
+bool maud_playlist_remove(maud_playlist_t** playlists, size_t* playlist_count, const char* playlist_name) {
+    if(!maud_playlist_exists(*playlists, *playlist_count, playlist_name)) {
         return false;
     }
     size_t modified_count = (*playlist_count) ? (*playlist_count)-1 : 0, new_index = 0;
-    mplayer_playlist_t* modified_playlists = (modified_count) ? calloc(modified_count,
-        sizeof(mplayer_playlist_t)) : NULL;
+    maud_playlist_t* modified_playlists = (modified_count) ? calloc(modified_count,
+        sizeof(maud_playlist_t)) : NULL;
     for(size_t i=0;i<(*playlist_count);i++) {
         if(strcmp((*playlists)[i].name, playlist_name) == 0) {
-            mplayer_playlist_destroy(&(*playlists)[i]);
+            maud_playlist_destroy(&(*playlists)[i]);
             continue;
         }
         modified_playlists[new_index++] = (*playlists)[i];
@@ -68,7 +68,7 @@ bool mplayer_playlist_remove(mplayer_playlist_t** playlists, size_t* playlist_co
     return true;
 }
 
-bool mplayer_playlist_exists(mplayer_playlist_t* playlists, size_t playlist_count, const char* playlist_name) {
+bool maud_playlist_exists(maud_playlist_t* playlists, size_t playlist_count, const char* playlist_name) {
     for(size_t i=0;i<playlist_count;i++) {
         if(strcmp(playlists[i].name, playlist_name) == 0) {
             return true;
@@ -77,14 +77,14 @@ bool mplayer_playlist_exists(mplayer_playlist_t* playlists, size_t playlist_coun
     return false;
 }
 
-void mplayer_playlist_destroy(mplayer_playlist_t* playlist) {
+void maud_playlist_destroy(maud_playlist_t* playlist) {
     free(playlist->name); playlist->name = NULL;
-    mplayer_queue_destroy(&playlist->queue); 
+    maud_queue_destroy(&playlist->queue); 
 }
 
-void mplayer_playlists_destroy(mplayer_playlist_t** playlists, size_t* playlist_count) {
+void maud_playlists_destroy(maud_playlist_t** playlists, size_t* playlist_count) {
     for(size_t i=0;i<(*playlist_count);i++) {
-        mplayer_playlist_destroy(&(*playlists)[i]);
+        maud_playlist_destroy(&(*playlists)[i]);
     }
     *playlists = NULL; *playlist_count = 0;
 }

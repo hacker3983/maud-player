@@ -1,6 +1,6 @@
-#include "music_string.h"
+#include "maud_string.h"
 
-char* mplayer_stringtolower(char** string, size_t wlen) {
+char* maud_stringtolower(char** string, size_t wlen) {
     char* new_string = calloc(wlen+1, sizeof(char));
     for(size_t i=0;i<wlen;i++) {
         new_string[i] = tolower((*string)[i]);
@@ -9,7 +9,7 @@ char* mplayer_stringtolower(char** string, size_t wlen) {
     return new_string;
 }
 
-wchar_t* mplayer_widetolower(wchar_t** wstring, size_t len) {
+wchar_t* maud_widetolower(wchar_t** wstring, size_t len) {
     wchar_t* new_wstring = calloc(len+1, sizeof(wchar_t));
     for(size_t i=0;i<len;i++) {
         new_wstring[i] = towlower((*wstring)[i]);
@@ -18,9 +18,9 @@ wchar_t* mplayer_widetolower(wchar_t** wstring, size_t len) {
     return new_wstring;
 }
 
-wchar_t* mplayer_stringtowide(const char* string) {
+wchar_t* maud_stringtowide(const char* string) {
     if(!string) {
-        printf("From mplayer string to wide(): the string give as a parameter is NULL\n");
+        printf("From maud string to wide(): the string give as a parameter is NULL\n");
         return NULL;
     }
     size_t wstr_len = mbstowcs(NULL, string, 0)+1; // get the length of the string in wide characters
@@ -44,7 +44,7 @@ wchar_t* mplayer_stringtowide(const char* string) {
     return wstring;
 }
 
-char* mplayer_widetoutf8(wchar_t* wstring) {
+char* maud_widetoutf8(wchar_t* wstring) {
     size_t len_wstr = 0;
     char* string = NULL;
     #ifdef _WIN32
@@ -59,7 +59,7 @@ char* mplayer_widetoutf8(wchar_t* wstring) {
     return string;
 }
 
-char* mplayer_strcasestr(char* haystack, char* needle) {
+char* maud_strcasestr(char* haystack, char* needle) {
     size_t haystack_len = 0, needle_len = 0, match_substrlen = 0;
     if(!haystack) {
         return NULL;
@@ -68,21 +68,21 @@ char* mplayer_strcasestr(char* haystack, char* needle) {
         return NULL;
     }
     haystack_len = strlen((char*)haystack), needle_len = strlen((char*)needle);
-    char *haystack_dup = (char*)mplayer_dupstr(haystack, haystack_len),
-         *needle_dup = (char*)mplayer_dupstr(needle, needle_len);
-    mplayer_stringtolower(&haystack_dup, haystack_len);
-    mplayer_stringtolower(&needle_dup, needle_len);
+    char *haystack_dup = (char*)maud_dupstr(haystack, haystack_len),
+         *needle_dup = (char*)maud_dupstr(needle, needle_len);
+    maud_stringtolower(&haystack_dup, haystack_len);
+    maud_stringtolower(&needle_dup, needle_len);
     char* match_substr = strstr(haystack_dup, needle_dup);
     if(match_substr) {
         match_substrlen = strlen(match_substr);
-        match_substr = (char*)mplayer_dupstr(match_substr, match_substrlen);
+        match_substr = (char*)maud_dupstr(match_substr, match_substrlen);
     }
     free(haystack_dup); haystack_dup = NULL;
     free(needle_dup); needle_dup = NULL;
     return match_substr;
 }
 
-char* mplayer_dupstr(const char* string, size_t len) {
+char* maud_dupstr(const char* string, size_t len) {
     if(!string) {
         return NULL;
     }
@@ -91,7 +91,7 @@ char* mplayer_dupstr(const char* string, size_t len) {
     return new_dupstr;
 }
 
-char* mplayer_getutf8_charunixlike(const char* utf8_string, size_t* index, size_t utf8_stringlen) {
+char* maud_getutf8_charunixlike(const char* utf8_string, size_t* index, size_t utf8_stringlen) {
     mbstate_t state = {0};
     wchar_t widechar = L'\0';
     int num_bytes = 0;
@@ -108,7 +108,7 @@ char* mplayer_getutf8_charunixlike(const char* utf8_string, size_t* index, size_
     return utf8_char;
 }
 
-char* mplayer_getutf8_charwindows(const char* utf8_string, size_t* index, size_t utf8_stringlen) {
+char* maud_getutf8_charwindows(const char* utf8_string, size_t* index, size_t utf8_stringlen) {
     wchar_t wchar = L'\0';
     int num_bytes = 0;
     char* utf8_char = NULL;
@@ -136,21 +136,21 @@ char* mplayer_getutf8_charwindows(const char* utf8_string, size_t* index, size_t
     return utf8_char;
 }
 
-char* mplayer_getutf8_char(const char* utf8_string, size_t* index, size_t utf8_stringlen) {
+char* maud_getutf8_char(const char* utf8_string, size_t* index, size_t utf8_stringlen) {
     char* utf8_char = NULL;
     #ifdef _WIN32
-    utf8_char = mplayer_getutf8_charwindows(utf8_string, index, utf8_stringlen);
+    utf8_char = maud_getutf8_charwindows(utf8_string, index, utf8_stringlen);
     #else
-    utf8_char = mplayer_getutf8_charunixlike(utf8_string, index, utf8_stringlen);
+    utf8_char = maud_getutf8_charunixlike(utf8_string, index, utf8_stringlen);
     #endif
     return utf8_char;
 }
 
-bool mplayer_isascii(int c) {
+bool maud_isascii(int c) {
     return !(c & 0x80);
 }
 
-bool mplayer_concatstr(char** destination_string, const char* source_string) {
+bool maud_concatstr(char** destination_string, const char* source_string) {
     size_t destination_stringlen = 0, source_stringlen = 0;
     if(!(*destination_string) && !source_string) {
         return true;

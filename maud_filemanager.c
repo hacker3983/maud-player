@@ -1,7 +1,7 @@
-#include "music_filemanager.h"
+#include "maud_filemanager.h"
 
 #ifdef _WIN32
-void mplayer_filemanager_getroot_path(char* root_path) {
+void maud_filemanager_getroot_path(char* root_path) {
         size_t directory_length = GetCurrentDirectoryA(0, NULL);
         char* directory = calloc(directory_length, sizeof(char));
         GetCurrentDirectoryA(directory_length, directory);
@@ -12,14 +12,14 @@ void mplayer_filemanager_getroot_path(char* root_path) {
 }
 #endif
 
-void mplayer_filemanager_getmusic_locations(mplayer_t* mplayer) {
+void maud_filemanager_getmusic_locations(maud_t* maud) {
     FILE* f = fopen(MUSIC_PATHINFO_FILE, "r");
     if(f == NULL) {
         printf("Error: %s file doesn't exist: Creating %s file...\n", MUSIC_PATHINFO_FILE, MUSIC_PATHINFO_FILE);
-        mplayer->music_count = 0;
-        mplayer->music_list = NULL;
-        mplayer->locations = NULL;
-        mplayer->location_count = 0;
+        maud->music_count = 0;
+        maud->music_list = NULL;
+        maud->locations = NULL;
+        maud->location_count = 0;
         return;
     }
     musloc_t* music_loclist = calloc(1, sizeof(musloc_t));
@@ -74,33 +74,33 @@ void mplayer_filemanager_getmusic_locations(mplayer_t* mplayer) {
        to the system.
     */
     (mloc_len == 0) ? free(music_loc) : (music_loclist[muslist_count++].path = music_loc);
-    mplayer->locations = music_loclist;
-    mplayer->location_count = muslist_count;
+    maud->locations = music_loclist;
+    maud->location_count = muslist_count;
 }
 
-void mplayer_filemanager_getmusic_filepaths(mplayer_t* mplayer) {
+void maud_filemanager_getmusic_filepaths(maud_t* maud) {
     // If there are no music locations present in the file then we exit the function
-    if(mplayer->locations == NULL) {
+    if(maud->locations == NULL) {
         return;
     }
     // Initialize the total_filecount by setting it to zero and the list that will contain the music location files
-    mplayer->total_filecount = 0;
+    maud->total_filecount = 0;
     musloc_t* musiclocation_files = calloc(1, sizeof(musloc_t));
     size_t musicloc_filecount = 0;
-    for(size_t i=0;i<mplayer->location_count;i++) {
+    for(size_t i=0;i<maud->location_count;i++) {
         #ifdef _WIN32
-        size_t location_len = wcslen(mplayer->locations[i].path);
+        size_t location_len = wcslen(maud->locations[i].path);
         size_t pathpat_len = location_len + 8;
         #else
-        size_t location_len = strlen(mplayer->locations[i].path);
+        size_t location_len = strlen(maud->locations[i].path);
         #endif
         #ifdef _WIN32
-        if(!PathFileExistsW(mplayer->locations[i].path)) {
+        if(!PathFileExistsW(maud->locations[i].path)) {
             LPSTR messageBuffer = NULL;
             size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
                 | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                 (LPSTR)&messageBuffer, 0, NULL);
-            char* path = mplayer_widetoutf8(mplayer->locations[i].path);
+            char* path = maud_widetoutf8(maud->locations[i].path);
             fprintf(stderr, "Error: The music location %s: %s", path, messageBuffer);
             free(path); path = NULL;
             LocalFree(messageBuffer);
@@ -108,7 +108,7 @@ void mplayer_filemanager_getmusic_filepaths(mplayer_t* mplayer) {
         }
         wchar_t* path_pattern = calloc(pathpat_len, sizeof(wchar_t));
         for(int j=0;FILE_EXTENSIONS[j] != NULL;j++) {
-            wcscpy(path_pattern, mplayer->locations[i].path);
+            wcscpy(path_pattern, maud->locations[i].path);
             wcscat(path_pattern, L"\\*.");
             wcscat(path_pattern, FILE_EXTENSIONS[j]);
 
@@ -118,14 +118,14 @@ void mplayer_filemanager_getmusic_filepaths(mplayer_t* mplayer) {
                 continue;
             }
             do {
-                char *altstr = mplayer_widetoutf8(fd.cAlternateFileName),
-                    *altpathstr = mplayer_widetoutf8(mplayer->locations[i].path);
+                char *altstr = maud_widetoutf8(fd.cAlternateFileName),
+                    *altpathstr = maud_widetoutf8(maud->locations[i].path);
                 size_t length_str = wcslen(fd.cFileName), length_altstr = wcslen(fd.cAlternateFileName);
                 size_t path_len = location_len + length_str + 7,
                     altpath_len = location_len + length_altstr + 7;
 
                 musiclocation_files[musicloc_filecount].path = calloc(path_len+1, sizeof(wchar_t));
-                wcscpy(musiclocation_files[musicloc_filecount].path, mplayer->locations[i].path);
+                wcscpy(musiclocation_files[musicloc_filecount].path, maud->locations[i].path);
                 wcscat(musiclocation_files[musicloc_filecount].path, L"\\");
                 wcsncat(musiclocation_files[musicloc_filecount].path, fd.cFileName, length_str);
 
@@ -135,8 +135,8 @@ void mplayer_filemanager_getmusic_filepaths(mplayer_t* mplayer) {
                 strncat(musiclocation_files[musicloc_filecount].altpath, altstr, length_altstr);
                 free(altstr); altstr = NULL;
                 free(altpathstr); altpathstr = NULL;
-                musiclocation_files[musicloc_filecount].location_index = mplayer->total_filecount;
-                musicloc_filecount++; mplayer->total_filecount++;
+                musiclocation_files[musicloc_filecount].location_index = maud->total_filecount;
+                musicloc_filecount++; maud->total_filecount++;
                 musiclocation_files = realloc(musiclocation_files, (musicloc_filecount + 1) *
                                                 sizeof(musloc_t));
                 musiclocation_files[musicloc_filecount].path = NULL;
@@ -148,7 +148,7 @@ void mplayer_filemanager_getmusic_filepaths(mplayer_t* mplayer) {
         }
         free(path_pattern);
         #else
-        char* path = mplayer->locations[i].path;
+        char* path = maud->locations[i].path;
         DIR* dirp = opendir(path);
         if(!dirp) {
             fprintf(stderr, "Error: The music location %s: %s\n", path, strerror(errno));
@@ -169,8 +169,8 @@ void mplayer_filemanager_getmusic_filepaths(mplayer_t* mplayer) {
                     strcpy(musiclocation_files[musicloc_filecount].path, path);
                     strcat(musiclocation_files[musicloc_filecount].path, "/");
                     strcat(musiclocation_files[musicloc_filecount].path, entry->d_name);
-                    musiclocation_files[musicloc_filecount].location_index = mplayer->total_filecount;
-                    musicloc_filecount++; mplayer->total_filecount++;
+                    musiclocation_files[musicloc_filecount].location_index = maud->total_filecount;
+                    musicloc_filecount++; maud->total_filecount++;
                     musiclocation_files = realloc(musiclocation_files, (musicloc_filecount+1) * sizeof(musloc_t));
                     musiclocation_files[musicloc_filecount].path = NULL;
                     break;
@@ -180,36 +180,36 @@ void mplayer_filemanager_getmusic_filepaths(mplayer_t* mplayer) {
         }
         closedir(dirp);
         #endif
-        mplayer->locations[i].files = musiclocation_files;
-        mplayer->locations[i].file_count = musicloc_filecount;
-        mplayer->locations[i].render = true;
+        maud->locations[i].files = musiclocation_files;
+        maud->locations[i].file_count = musicloc_filecount;
+        maud->locations[i].render = true;
         musiclocation_files = NULL, musiclocation_files = calloc(1, sizeof(musloc_t));
         musicloc_filecount = 0;
     }
 }
 
-void mplayer_filemanager_getmusicpath_info(mplayer_t* mplayer) {
-    mplayer_filemanager_getmusic_locations(mplayer);
-    mplayer_filemanager_getmusic_filepaths(mplayer);
+void maud_filemanager_getmusicpath_info(maud_t* maud) {
+    maud_filemanager_getmusic_locations(maud);
+    maud_filemanager_getmusic_filepaths(maud);
 }
 
-bool mplayer_filemanager_musiclocation_exists(mplayer_t* mplayer, void* locationv) {
-    if(mplayer->location_count == 0) {
-        mplayer_filemanager_getmusic_locations(mplayer);
+bool maud_filemanager_musiclocation_exists(maud_t* maud, void* locationv) {
+    if(maud->location_count == 0) {
+        maud_filemanager_getmusic_locations(maud);
     }
     #ifdef _WIN32
     wchar_t* location = (wchar_t*)locationv;
     #else
     char* location = (char*)locationv;
     #endif
-    for(size_t i=0;i<mplayer->location_count;i++) {
+    for(size_t i=0;i<maud->location_count;i++) {
         #ifdef _WIN32
         printf("location: %ls\n", location);
-        if(wcscmp(mplayer->locations[i].path, location) == 0) {
+        if(wcscmp(maud->locations[i].path, location) == 0) {
             return true;
         }
         #else
-        if(strcmp(mplayer->locations[i].path, location) == 0) {
+        if(strcmp(maud->locations[i].path, location) == 0) {
             return true;
         }
         #endif
@@ -217,7 +217,7 @@ bool mplayer_filemanager_musiclocation_exists(mplayer_t* mplayer, void* location
     return false;
 }
 
-void mplayer_filemanager_addmusic_location(mplayer_t* mplayer, void* locationv) {
+void maud_filemanager_addmusic_location(maud_t* maud, void* locationv) {
     FILE* f = fopen(MUSIC_PATHINFO_FILE, "a+");
     fseek(f, 0, SEEK_END);
     size_t size = ftell(f), location_length = 0;
@@ -228,7 +228,7 @@ void mplayer_filemanager_addmusic_location(mplayer_t* mplayer, void* locationv) 
     // whenever it exists we just close the file stream and exit the function otherwise we just add a new line
     // to accomodate the location we are going to add to the music path info file
     if(size > 0) {
-        if(mplayer_filemanager_musiclocation_exists(mplayer, locationv)) {
+        if(maud_filemanager_musiclocation_exists(maud, locationv)) {
             fclose(f);
             return;
         }
@@ -240,7 +240,7 @@ void mplayer_filemanager_addmusic_location(mplayer_t* mplayer, void* locationv) 
     // whenever on windows we use wchar_t to store the unicode data
     // on any other platform we use just a regular char*
     #ifdef _WIN32
-    location = mplayer_widetoutf8((wchar_t*)locationv);
+    location = maud_widetoutf8((wchar_t*)locationv);
     location_length = wcslen((wchar_t*)locationv);
     #else
     location = (char*)locationv;
@@ -261,22 +261,22 @@ void mplayer_filemanager_addmusic_location(mplayer_t* mplayer, void* locationv) 
 
     // reload the music locations, also the music list
     printf("Freeing music path info\n");
-    mplayer_filemanager_freemusicpath_info(mplayer);
+    maud_filemanager_freemusicpath_info(maud);
     printf("Getting music path info\n");
-    mplayer_filemanager_getmusicpath_info(mplayer);
-    mplayer->music_locationadded = true;
+    maud_filemanager_getmusicpath_info(maud);
+    maud->music_locationadded = true;
     printf("Reloading musics\n");
-    mplayer_filemanager_loadmusics(mplayer);
-    mplayer->music_locationadded = false;
+    maud_filemanager_loadmusics(maud);
+    maud->music_locationadded = false;
     printf("Successfully added music locations and reloaded the musics:\n");
-    printf("mplayer->total_filecount: %zu, mplayer->music_count is %zu\n", mplayer->total_filecount, mplayer->music_count);
+    printf("maud->total_filecount: %zu, maud->music_count is %zu\n", maud->total_filecount, maud->music_count);
 }
 
-void mplayer_filemanager_delmusic_locationindex(mplayer_t* mplayer, size_t loc_index) {
+void maud_filemanager_delmusic_locationindex(maud_t* maud, size_t loc_index) {
     // reset the music pending removal count to zero before calling the del music location index
     // to prevent curruption or segmentation faults
-    mplayer->musicpending_removalcount = 0;
-    if(loc_index >= mplayer->location_count) {
+    maud->musicpending_removalcount = 0;
+    if(loc_index >= maud->location_count) {
         return;
     }
     // Open the MUSIC PATH INFO FILE in write mode
@@ -284,34 +284,34 @@ void mplayer_filemanager_delmusic_locationindex(mplayer_t* mplayer, size_t loc_i
     char* locations_buff = NULL;
     size_t size = 0;
     // iterate through the location list
-    for(size_t i=0;i<mplayer->location_count;i++) {
+    for(size_t i=0;i<maud->location_count;i++) {
         // whenever the current location index is equal to the location index that should be removed
         // we set the remove status of the musics in that particular location to true as long as this condition is true
         // we skip over the music index that should be removed in the location list
         if(i == loc_index) {
-            for(size_t j=0;j<mplayer->locations[i].file_count;j++) {
+            for(size_t j=0;j<maud->locations[i].file_count;j++) {
                 // retrieve the index of the music in the location that should be removed
                 // and set the remove status to true
-                size_t music_index = mplayer->locations[i].files[j].location_index;
-                mplayer->music_list[music_index].remove = true;
-                if(mplayer->music_list[music_index].checkbox_ticked) {
-                    mplayer->tick_count--;
+                size_t music_index = maud->locations[i].files[j].location_index;
+                maud->music_list[music_index].remove = true;
+                if(maud->music_list[music_index].checkbox_ticked) {
+                    maud->tick_count--;
                 }
             }
             // store the amount of musics that should be removed at that particular location
-            // in the variable mplayer->musicpending_removalcount
-            mplayer->musicpending_removalcount = mplayer->locations[i].file_count;
+            // in the variable maud->musicpending_removalcount
+            maud->musicpending_removalcount = maud->locations[i].file_count;
             continue;
         }
 
         // retrieve the length of the music locations that are not gonna be removed
         #ifdef _WIN32
         // convert from wchar_t to multibyte string path when on windows
-        size_t len = wcslen(mplayer->locations[i].path);
-        char* loc_str = mplayer_widetoutf8(mplayer->locations[i].path);
+        size_t len = wcslen(maud->locations[i].path);
+        char* loc_str = maud_widetoutf8(maud->locations[i].path);
         #else
-        size_t len = strlen(mplayer->locations[i].path);
-        char* loc_str = mplayer->locations[i].path;
+        size_t len = strlen(maud->locations[i].path);
+        char* loc_str = maud->locations[i].path;
         #endif
         // once we get the length of that particular music location we increment the amount of bytes that will be
         // added to the MUSICPATHS.info file
@@ -322,20 +322,20 @@ void mplayer_filemanager_delmusic_locationindex(mplayer_t* mplayer, size_t loc_i
             // allocate memory to store the location plus a null byte to separate the location
             locations_buff = calloc(size+1, sizeof(char));
             strncpy(locations_buff, loc_str, len); // actually copy the location into the locations_buff
-            if(i+1 == loc_index && i+1 == mplayer->location_count-1) {
+            if(i+1 == loc_index && i+1 == maud->location_count-1) {
                 /* whenever the current location index plus 1 is equal to the location index and it is equal to the
                    location_count-1 then that means we should set the locations_buff[size-1] equal to NULL since the
                    location index that should be removed will be at the end
                 */
                 locations_buff[size-1] = '\0';
                 size--;
-            } else if(i < loc_index && i+1 != mplayer->location_count) {
+            } else if(i < loc_index && i+1 != maud->location_count) {
                 /* whenever the current location index is less than the location index and i+1 is not equal the location_count
                    that means we have more locations before the actually location that should be removed so we separate the
                    locations with a \n or 0xa byte by concatenating with strcat function
                 */
                 strcat(locations_buff, "\n");
-            } else if(i > loc_index && i+1 != mplayer->location_count) {
+            } else if(i > loc_index && i+1 != maud->location_count) {
                 /* whenever the current location index is greater than the loc_index and the current location index + 1
                    is not equal to the location count that means the there are locations that come after the location index
                    that should be removed therefore we seperate the current location with a new line character
@@ -356,12 +356,12 @@ void mplayer_filemanager_delmusic_locationindex(mplayer_t* mplayer, size_t loc_i
         // actually place the new location string into the buffer
         strncat(locations_buff, loc_str, len);
 
-        if(i+1 == loc_index && i+1 == mplayer->location_count-1) {
+        if(i+1 == loc_index && i+1 == maud->location_count-1) {
             locations_buff[size-1] = '\0';
             size--;
-        } else if(i < loc_index && i != mplayer->location_count) {
+        } else if(i < loc_index && i != maud->location_count) {
             locations_buff[size-1] = '\n';
-        } else if(i > loc_index && i+1 != mplayer->location_count) {
+        } else if(i > loc_index && i+1 != maud->location_count) {
             locations_buff[size-1] = '\n';
         } else {
             locations_buff[size-1] = '\0';
@@ -378,26 +378,26 @@ void mplayer_filemanager_delmusic_locationindex(mplayer_t* mplayer, size_t loc_i
     fclose(f);
     free(locations_buff); locations_buff = NULL;
     // Reload the music paths and the music after deleting the location
-    mplayer_filemanager_freemusicpath_info(mplayer);
-    mplayer_filemanager_getmusicpath_info(mplayer);
+    maud_filemanager_freemusicpath_info(maud);
+    maud_filemanager_getmusicpath_info(maud);
     // whenever the location that was removed contains music then we actually reload the musics in the music list
     // otherwise the music list remains constant or unchanged.
-    if(mplayer->musicpending_removalcount > 0) {
-        mplayer->music_locationremoved = true;
-        mplayer_filemanager_loadmusics(mplayer);
+    if(maud->musicpending_removalcount > 0) {
+        maud->music_locationremoved = true;
+        maud_filemanager_loadmusics(maud);
         // Whenever for example a music location is removed and the music count becomes zero then we set the selection menu
         // check all button clicked and ticked status to false;
-        if(mplayer->music_selectionmenu_checkbox_tickall && !mplayer->music_count) {
-            mplayer->music_selectionmenu_checkbox_fillall = false;
-            mplayer->music_selectionmenu_checkbox_tickall = false;
-            mplayer->music_selectionmenu_checkbox_clicked = false;
+        if(maud->music_selectionmenu_checkbox_tickall && !maud->music_count) {
+            maud->music_selectionmenu_checkbox_fillall = false;
+            maud->music_selectionmenu_checkbox_tickall = false;
+            maud->music_selectionmenu_checkbox_clicked = false;
         }
-        mplayer->music_locationremoved = false;
+        maud->music_locationremoved = false;
     }
 }
 
-void mplayer_filemanager_copymusicinfo_fromsearchindex(mplayer_t* mplayer, size_t index, music_t* music_info) {
-    Mix_Music* music = mplayer->music_list[index].music;
+void maud_filemanager_copymusicinfo_fromsearchindex(maud_t* maud, size_t index, music_t* music_info) {
+    Mix_Music* music = maud->music_list[index].music;
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
     SDL_Rect outer_canvas = utext.text_canvas;
     double music_durationsecs = 0;
@@ -406,27 +406,27 @@ void mplayer_filemanager_copymusicinfo_fromsearchindex(mplayer_t* mplayer, size_
     music_info->searchmusic_id = index;
 
     /* Render the music_name and initialize the other infos (positions, texture, etc) */
-    music_info->music_name = mplayer_filemanager_getmusic_namefrompath(music, mplayer->music_list[index].music_path);
-    music_info->text_texture = mplayer_textmanager_renderunicode(mplayer, mplayer->music_font,
-        &mplayer->music_list[index].text_info);
-    music_info->music_path = mplayer->music_list[index].music_path;
+    music_info->music_name = maud_filemanager_getmusic_namefrompath(music, maud->music_list[index].music_path);
+    music_info->text_texture = maud_textmanager_renderunicode(maud, maud->music_font,
+        &maud->music_list[index].text_info);
+    music_info->music_path = maud->music_list[index].music_path;
     #ifdef _WIN32
-    music_info->music_alternatepath = mplayer->music_list[index].music_alternatepath;
+    music_info->music_alternatepath = maud->music_list[index].music_alternatepath;
     #endif
     music_info->music_position.hrs = 0, music_info->music_position.mins = 0,
     music_info->music_position.secs = 0;
     music_info->music_durationsecs = music_durationsecs;
-    music_info->music_duration = mplayer_filemanager_music_gettime(music_durationsecs);
-    music_info->search_match = mplayer->music_list[index].search_match;
-    music_info->search_render = mplayer->music_list[index].search_render;
-    music_info->text_info = mplayer->music_list[index].text_info;
-    music_info->outer_canvas = mplayer->music_list[index].outer_canvas;
-    music_info->render = mplayer->music_list[index].render;
+    music_info->music_duration = maud_filemanager_music_gettime(music_durationsecs);
+    music_info->search_match = maud->music_list[index].search_match;
+    music_info->search_render = maud->music_list[index].search_render;
+    music_info->text_info = maud->music_list[index].text_info;
+    music_info->outer_canvas = maud->music_list[index].outer_canvas;
+    music_info->render = maud->music_list[index].render;
     music_info->checkbox_ticked = false;
     music_info->fill = false;
 }
 
-void mplayer_filemanager_copymusic_info(music_t* src_info, music_t* dest_info) {
+void maud_filemanager_copymusic_info(music_t* src_info, music_t* dest_info) {
     dest_info->checkbox_size = src_info->checkbox_size;
     dest_info->checkbox_ticked = src_info->checkbox_ticked;
     dest_info->fill = src_info->fill;
@@ -445,95 +445,95 @@ void mplayer_filemanager_copymusic_info(music_t* src_info, music_t* dest_info) {
     #endif
 }
 
-void mplayer_filemanager_removemusics_pendingremoval(mplayer_t* mplayer) {
-    if(!mplayer->musicpending_removalcount) {
+void maud_filemanager_removemusics_pendingremoval(maud_t* maud) {
+    if(!maud->musicpending_removalcount) {
         return;
     }
     // if music_count is equal to zero then we exit the function
-    if(mplayer->music_count == 0) {
+    if(maud->music_count == 0) {
         return;
     }
     text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
     SDL_Rect outer_canvas = utext.text_canvas;
     // determine the new music count after removing the musics it would basically be equal to the total_filecount
-    // in mplayer_structure
-    size_t newmusic_count = mplayer->music_count - mplayer->musicpending_removalcount, j = 0, new_playid = 0;
+    // in maud_structure
+    size_t newmusic_count = maud->music_count - maud->musicpending_removalcount, j = 0, new_playid = 0;
     bool preserve_playid = false;
 
     // create a new list to store the musics that were not marked for removal
     music_t *newmusic_list = (newmusic_count == 0) ? NULL : calloc(newmusic_count, sizeof(music_t)),
             *oldmusic_list = NULL;
     size_t new_locationindex = 0, new_location_filecount = 0;
-    for(size_t i=0;i<mplayer->music_count;i++) {
+    for(size_t i=0;i<maud->music_count;i++) {
         // As long as the new music list is NULL we exit the loop
         if(!newmusic_list) {
-            mplayer->music_renderpos = 0;
-            mplayer->music_maxrenderpos = 0;
+            maud->music_renderpos = 0;
+            maud->music_maxrenderpos = 0;
             break;
         }
-        if(i+1 >= mplayer->music_renderpos && mplayer->music_list[i].remove) {
+        if(i+1 >= maud->music_renderpos && maud->music_list[i].remove) {
             printf("i+1 is greater than the music_renderpos\n");
             /* Whenever the the music index i is equal to the current render position or scroll bar position
                we set the current music render position equal to the new music render position j this will
                allow the user to maintain there scroll position without it resetting every time a music location
                is removed
             */
-            if(i+1 == mplayer->music_renderpos) {
-                mplayer->music_renderpos = j+1;
+            if(i+1 == maud->music_renderpos) {
+                maud->music_renderpos = j+1;
             }
             // calculate the canvas positions and dimensions for the current music that will not be removed
-            utext = mplayer->music_list[i].text_info;
+            utext = maud->music_list[i].text_info;
             outer_canvas.h = utext.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
             utext.text_canvas.x = outer_canvas.x + 50,
             utext.text_canvas.y = outer_canvas.y + ((outer_canvas.h - utext.text_canvas.h) / 2);
     
-            mplayer->music_list[i].text_info.text_canvas = utext.text_canvas;
-            mplayer->music_list[i].outer_canvas = outer_canvas;
+            maud->music_list[i].text_info.text_canvas = utext.text_canvas;
+            maud->music_list[i].outer_canvas = outer_canvas;
         }
         // iterate through the music list and whenever we find a music that was marked for removal we check if that
         // current music is playing if it is playing then we halt it and set the playing status and the playing status
         // to false
-        /*if(mplayer->music_list[i].remove) {
+        /*if(maud->music_list[i].remove) {
             TODO: REIMPLEMENT THIS
-            if(Mix_PlayingMusic() && mplayer->playid == i) {
+            if(Mix_PlayingMusic() && maud->playid == i) {
                 Mix_HaltMusic();
-//                mplayer->music_list[i].music_playing = false;
-//                mplayer->current_music = NULL;
+//                maud->music_list[i].music_playing = false;
+//                maud->current_music = NULL;
             }
-            mplayer->music_list[i].remove = false;       
-            mplayer_filemanager_freemusic(&mplayer->music_list[i]);
+            maud->music_list[i].remove = false;       
+            maud_filemanager_freemusic(&maud->music_list[i]);
             continue;
         }*/
         /* whenever a music is being played that was not marked for removal we preserve the playid for that music by
            assigning a new playid for that currently playing music since we are deallocating the music list which can
            happen in any random position.
         */
-        /*if(Mix_PlayingMusic() && mplayer->playid == i) {
+        /*if(Mix_PlayingMusic() && maud->playid == i) {
             new_playid = j; preserve_playid = true;
         }*/
 
         /* As long as the file count in the current location index is greater than zero then we increment the file
            count by 1 each time we are iterating and also adding the new music path to the new music list
         */
-        if(mplayer->locations[new_locationindex].file_count > 0) {
-            mplayer->music_list[i].music_path = mplayer->locations[new_locationindex].files[new_location_filecount].path;
+        if(maud->locations[new_locationindex].file_count > 0) {
+            maud->music_list[i].music_path = maud->locations[new_locationindex].files[new_location_filecount].path;
             new_location_filecount++;
         }
 
         // determine the music location index for the file
-        mplayer->music_list[i].location_index = new_locationindex;
+        maud->music_list[i].location_index = new_locationindex;
         // whenever the new location file count is equal to the number of files in that particular location
         // we increment the new location index and set the new_location_filecount equal to zero that way we can
         // determine which music location index for the music file
-        if(new_location_filecount == mplayer->locations[new_locationindex].file_count) {
+        if(new_location_filecount == maud->locations[new_locationindex].file_count) {
             new_locationindex++; new_location_filecount = 0;
         }
-        mplayer->music_list[i].fit = true;
+        maud->music_list[i].fit = true;
         /* Whenever removing a music we want to maintain the scroll position therefore we check if the current index i
-           is equal to the mplayer->music_renderpos as long as that is true we set mplayer->music_renderpos equal to j
+           is equal to the maud->music_renderpos as long as that is true we set maud->music_renderpos equal to j
            which represents the new music render position after removal of the music location and its music files
         */
-        mplayer_filemanager_copymusic_info(&mplayer->music_list[i], &newmusic_list[j++]);
+        maud_filemanager_copymusic_info(&maud->music_list[i], &newmusic_list[j++]);
 
         // calculate the canvas positions and dimensions for the current music that will not be removed
         utext.text_canvas.y += utext.text_canvas.h + 22;
@@ -542,7 +542,7 @@ void mplayer_filemanager_removemusics_pendingremoval(mplayer_t* mplayer) {
     // check if the newmusic list is not NULL
     if(newmusic_list) {
         bool resume_playing = false;
-        oldmusic_list = mplayer->music_list;
+        oldmusic_list = maud->music_list;
         // whenever we should preserve the playid for a currently playing music we changed the current playid to the new
         // playid and set the current music to link or point to the new music index at that particular playid
         if(!Mix_PausedMusic() && Mix_PlayingMusic()) {
@@ -551,9 +551,9 @@ void mplayer_filemanager_removemusics_pendingremoval(mplayer_t* mplayer) {
             printf("The music was paused for a moment due to the removal process\n");
         }
         if(preserve_playid) {
-            // set the current music pointer to be equal to newmusic_list[new_playid] before chaning the mplayer->playid
-  //          mplayer->current_music = &newmusic_list[new_playid];
-            //mplayer->playid = new_playid;
+            // set the current music pointer to be equal to newmusic_list[new_playid] before chaning the maud->playid
+  //          maud->current_music = &newmusic_list[new_playid];
+            //maud->playid = new_playid;
         }
         
         if(resume_playing) {
@@ -563,17 +563,17 @@ void mplayer_filemanager_removemusics_pendingremoval(mplayer_t* mplayer) {
             printf("The music was resumed due to the removal process being completed\n");
             Mix_ResumeMusic();
         }
-        mplayer->music_list = newmusic_list;
-        mplayer->music_count = newmusic_count;
-        mplayer->music_maxrenderpos = newmusic_count-1;
+        maud->music_list = newmusic_list;
+        maud->music_count = newmusic_count;
+        maud->music_maxrenderpos = newmusic_count-1;
         free(oldmusic_list); oldmusic_list = NULL;
     }
-    mplayer->musicpending_removalcount = 0;
+    maud->musicpending_removalcount = 0;
 }
 
-void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
-    if(!mplayer->total_filecount) {
-        mplayer_filemanager_freemusic_list(mplayer);
+void maud_filemanager_loadmusics(maud_t* maud) {
+    if(!maud->total_filecount) {
+        maud_filemanager_freemusic_list(maud);
         return;
     }
     music_t* music_list = NULL;
@@ -583,68 +583,68 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
     SDL_Rect outer_canvas = utext.text_canvas;
     double music_durationsecs = 0;
     size_t startlocation_index = 0;
-    if(mplayer->music_locationremoved) {
-        mplayer_filemanager_removemusics_pendingremoval(mplayer);
-        if(mplayer->search_inputbox.input.data) {
-            mplayer->music_newsearch = true;
+    if(maud->music_locationremoved) {
+        maud_filemanager_removemusics_pendingremoval(maud);
+        if(maud->search_inputbox.input.data) {
+            maud->music_newsearch = true;
         }
         return;
     }
 
-    if(!mplayer->music_list) {
-        music_list = calloc(mplayer->total_filecount, sizeof(music_t));
-        // As long as the music count is greater than zero then we save the mplayer->music_list
-        for(size_t i=0;i<mplayer->music_count;i++) {
-            music_list[i] = mplayer->music_list[i];
+    if(!maud->music_list) {
+        music_list = calloc(maud->total_filecount, sizeof(music_t));
+        // As long as the music count is greater than zero then we save the maud->music_list
+        for(size_t i=0;i<maud->music_count;i++) {
+            music_list[i] = maud->music_list[i];
         }
-    } else if(mplayer->total_filecount > mplayer->music_count) {
+    } else if(maud->total_filecount > maud->music_count) {
         bool resume_music = false;
         if(Mix_PlayingMusic() && !Mix_PausedMusic()) {
             Mix_PauseMusic();
             resume_music = true;
         }
         printf("Reallocating memory\n");
-        mplayer->music_list = (music_t*)realloc(mplayer->music_list, mplayer->total_filecount * sizeof(music_t));
+        maud->music_list = (music_t*)realloc(maud->music_list, maud->total_filecount * sizeof(music_t));
         if(Mix_PlayingMusic()) {
-//            mplayer->current_music = &mplayer->music_list[mplayer->playid];
+//            maud->current_music = &maud->music_list[maud->playid];
         }
-        if(mplayer->music_list == NULL) {
+        if(maud->music_list == NULL) {
             printf("Realloc failed\n");
         }
-        size_t size_diff = mplayer->total_filecount - mplayer->music_count;
-        memset((music_t*)mplayer->music_list + mplayer->music_count, 0, size_diff * sizeof(music_t));
-        music_list = mplayer->music_list;
+        size_t size_diff = maud->total_filecount - maud->music_count;
+        memset((music_t*)maud->music_list + maud->music_count, 0, size_diff * sizeof(music_t));
+        music_list = maud->music_list;
         if(resume_music) {
             SDL_Delay(10);
             Mix_ResumeMusic();
         }
     }
-    if(mplayer->music_locationadded) {
-        free(mplayer->settingmenu_scrollcontainer.item_container.items);
-        mplayer->settingmenu_scrollcontainer.item_container.items = NULL;
-        mplayer->settingmenu_scrollcontainer.init = false;
-        music_count = mplayer->music_count;
-        startlocation_index = mplayer->location_count-1;
+    if(maud->music_locationadded) {
+        free(maud->settingmenu_scrollcontainer.item_container.items);
+        maud->settingmenu_scrollcontainer.item_container.items = NULL;
+        maud->settingmenu_scrollcontainer.init = false;
+        music_count = maud->music_count;
+        startlocation_index = maud->location_count-1;
     }
-    for(size_t i=startlocation_index;i<mplayer->location_count;i++) {
-        for(size_t j=0;j<mplayer->locations[i].file_count;j++) {
+    for(size_t i=startlocation_index;i<maud->location_count;i++) {
+        for(size_t j=0;j<maud->locations[i].file_count;j++) {
             music = music_list[music_count].music;
             if(!music) {
                 #ifdef _WIN32
-                char* music_path = mplayer_widetoutf8(mplayer->locations[i].files[j].path);
+                char* music_path = maud_widetoutf8(maud->locations[i].files[j].path);
                 #else
-                char* music_path = mplayer->locations[i].files[j].path;
+                char* music_path = maud->locations[i].files[j].path;
                 #endif
                 music = Mix_LoadMUS(music_path);
                 if(music == NULL) {
                     #ifdef _WIN32
-                    music = Mix_LoadMUS(mplayer->locations[i].files[j].altpath);
+                    music = Mix_LoadMUS(maud->locations[i].files[j].altpath);
                     #endif
                     if(music == NULL) {
                         #ifdef _WIN32
-                        printf("Error: Failed to load music %ls\n", mplayer->locations[i].files[j].path);
+                        printf("Error: Failed to load music %ls\n", maud->locations[i].files[j].path);
                         #else
-                        printf("Error: Failed to load music %s\n", mplayer->locations[i].files[j].path);
+                        printf("Error: Failed to load music %s\n", maud->locations[i].files[j].path);
                         #endif
                     }
                 }
@@ -659,26 +659,26 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
   
                 music_durationsecs = Mix_MusicDuration(music);
                 music_list[music_count].music_durationsecs = music_durationsecs;
-                music_list[music_count].music_duration = mplayer_filemanager_music_gettime(music_durationsecs);
+                music_list[music_count].music_duration = maud_filemanager_music_gettime(music_durationsecs);
             }
             music_list[music_count].location_index = i;
-            mplayer->locations[i].files[j].location_index = music_count;
+            maud->locations[i].files[j].location_index = music_count;
 
             /* Render the music_name and initialize the other infos (positions, texture, etc) */
             if(!music_list[music_count].music_name) {
-                music_list[music_count].music_name = mplayer_filemanager_getmusic_namefrompath(music, mplayer->locations[i].files[j].path);
+                music_list[music_count].music_name = maud_filemanager_getmusic_namefrompath(music, maud->locations[i].files[j].path);
             }
-            if(mplayer->music_selectionmenu_checkbox_tickall) {
+            if(maud->music_selectionmenu_checkbox_tickall) {
                 music_list[music_count].fill = true;
                 music_list[music_count].checkbox_ticked = true;
-                mplayer->tick_count++;
+                maud->tick_count++;
             }
             utext.utext = music_list[music_count].music_name;
             utext.text_canvas = music_list[music_count].text_info.text_canvas;
             music_list[music_count].render = true;
 
             if(!music_list[music_count].text_texture) {
-                music_list[music_count].text_texture = mplayer_textmanager_renderunicode(mplayer, mplayer->music_font, &utext);
+                music_list[music_count].text_texture = maud_textmanager_renderunicode(maud, maud->music_font, &utext);
             }
             outer_canvas.h = utext.text_canvas.h + 22, outer_canvas.w = WIDTH - scrollbar.w;
             utext.text_canvas.x = outer_canvas.x + 50,
@@ -688,13 +688,13 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
             music_list[music_count].fit = true;
             utext.text_canvas.y += utext.text_canvas.h + 22;
             outer_canvas.y += utext.text_canvas.h + 25;
-            mplayer->music_maxrenderpos = music_count;
+            maud->music_maxrenderpos = music_count;
             if(!music_list[music_count].music_path) {
-                music_list[music_count].music_path = mplayer->locations[i].files[j].path;
+                music_list[music_count].music_path = maud->locations[i].files[j].path;
             }
             #ifdef _WIN32
             if(!music_list[music_count].music_alternatepath) {
-                music_list[music_count].music_alternatepath = mplayer->locations[i].files[j].altpath;
+                music_list[music_count].music_alternatepath = maud->locations[i].files[j].altpath;
             }
             #endif
             music_count++;
@@ -703,16 +703,16 @@ void mplayer_filemanager_loadmusics(mplayer_t* mplayer) {
     // Before modifiying the music list ensure that the location that was added contains music files
     // to prevent crashing
     if(music_list) {
-        mplayer->music_list = music_list;
-        mplayer->music_count = mplayer->total_filecount;
+        maud->music_list = music_list;
+        maud->music_count = maud->total_filecount;
 
-        mplayer->music_lists[0] = mplayer->music_list;
-        mplayer->music_counts[0] = mplayer->music_count;
+        maud->music_lists[0] = maud->music_list;
+        maud->music_counts[0] = maud->music_count;
         // as long as data is present in the search bar then we set new search equal to true so when we return back to the
         // default menu the music search results gets updated if a music location was removed vice versa.
-        /*if(mplayer->musicsearchbar_data) {
-            mplayer->music_newsearch = true;
-            mplayer->update_searchresults = true;
+        /*if(maud->musicsearchbar_data) {
+            maud->music_newsearch = true;
+            maud->update_searchresults = true;
         }*/
     }
 }
@@ -725,11 +725,11 @@ int CALLBACK set_browsertitle(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData
 }
 #endif
 
-void mplayer_filemanager_browsefolder(mplayer_t* mplayer) {
+void maud_filemanager_browsefolder(maud_t* maud) {
     #ifdef _WIN32
     SDL_SysWMinfo info;
     SDL_GetVersion(&info.version);
-    SDL_GetWindowWMInfo(mplayer->window, &info);
+    SDL_GetWindowWMInfo(maud->window, &info);
     wchar_t foldername[MAX_PATH+1] = {0}, folder_path[MAX_PATH+1] = {0};
     int img = 0;
     HWND hWnd = info.info.win.window;
@@ -747,7 +747,7 @@ void mplayer_filemanager_browsefolder(mplayer_t* mplayer) {
         printf("folder_browser.pzDisplayName = %ls\n", foldername);
         if(SHGetPathFromIDListW(item_info, folder_path) == TRUE) {
             printf("folder_path: %ls\n", folder_path);
-            mplayer_filemanager_addmusic_location(mplayer, folder_path);
+            maud_filemanager_addmusic_location(maud, folder_path);
         }
     }
     #else
@@ -772,13 +772,13 @@ void mplayer_filemanager_browsefolder(mplayer_t* mplayer) {
        in zenity.
     */
     if(dirlen > 0) {
-        mplayer_filemanager_addmusic_location(mplayer, directory);
+        maud_filemanager_addmusic_location(maud, directory);
     }
     free(directory);
     #endif
 }
 
-char* mplayer_filemanager_getmusic_namefrompath(Mix_Music* music, void* path) {
+char* maud_filemanager_getmusic_namefrompath(Mix_Music* music, void* path) {
     // If the music file path is NULL we just return NULL
     if(path == NULL) {
         return NULL;
@@ -813,12 +813,12 @@ char* mplayer_filemanager_getmusic_namefrompath(Mix_Music* music, void* path) {
     #endif
     int music_type = Mix_GetMusicType(music);
     switch(music_type) {
-        case MUS_MP3:  string_concat(ext, FILE_EXTENSIONS[MPLAYER_MP3EXT]);  break;
-        case MUS_FLAC: string_concat(ext, FILE_EXTENSIONS[MPLAYER_FLACEXT]); break;
-        case MUS_OGG:  string_concat(ext, FILE_EXTENSIONS[MPLAYER_OGGEXT]);  break;
-        case MUS_OPUS: string_concat(ext, FILE_EXTENSIONS[MPLAYER_OPUSEXT]); break;
-        case MUS_WAV:  string_concat(ext, FILE_EXTENSIONS[MPLAYER_WAVEXT]);  break;
-        default:       string_concat(ext, FILE_EXTENSIONS[MPLAYER_M4AEXT]);
+        case MUS_MP3:  string_concat(ext, FILE_EXTENSIONS[MAUD_MP3EXT]);  break;
+        case MUS_FLAC: string_concat(ext, FILE_EXTENSIONS[MAUD_FLACEXT]); break;
+        case MUS_OGG:  string_concat(ext, FILE_EXTENSIONS[MAUD_OGGEXT]);  break;
+        case MUS_OPUS: string_concat(ext, FILE_EXTENSIONS[MAUD_OPUSEXT]); break;
+        case MUS_WAV:  string_concat(ext, FILE_EXTENSIONS[MAUD_WAVEXT]);  break;
+        default:       string_concat(ext, FILE_EXTENSIONS[MAUD_M4AEXT]);
     }
     for(size_t i=0;i<name_len;i++) {
         filename++;
@@ -841,14 +841,14 @@ char* mplayer_filemanager_getmusic_namefrompath(Mix_Music* music, void* path) {
         On windows we need to convert wchar_t into a multibyte string in utf8 encoding
     */
     #ifdef _WIN32
-    music_name = mplayer_widetoutf8(filename_cp);
+    music_name = maud_widetoutf8(filename_cp);
     #else
     music_name = filename_cp;
     #endif
     return music_name;
 }
 
-mtime_t mplayer_filemanager_music_gettime(double seconds) {
+mtime_t maud_filemanager_music_gettime(double seconds) {
     mtime_t music_time = {0};
 
     // Calculate hours
@@ -866,7 +866,7 @@ mtime_t mplayer_filemanager_music_gettime(double seconds) {
     return music_time;
 }
 
-void mplayer_filemanager_freemusic_searchresult(music_t** music_searchresult, size_t* music_resultcount) {
+void maud_filemanager_freemusic_searchresult(music_t** music_searchresult, size_t* music_resultcount) {
     if(!(*music_searchresult)) {
         return;
     }
@@ -880,25 +880,25 @@ void mplayer_filemanager_freemusic_searchresult(music_t** music_searchresult, si
     *music_resultcount = 0;
 }
 
-void mplayer_filemanager_freemusicpath_info(mplayer_t* mplayer) {
-    for(size_t i=0;i<mplayer->location_count;i++) {
-        for(size_t j=0;j<mplayer->locations[i].file_count;j++) {
-            free(mplayer->locations[i].files[j].path); mplayer->locations[i].files[j].path = NULL;
+void maud_filemanager_freemusicpath_info(maud_t* maud) {
+    for(size_t i=0;i<maud->location_count;i++) {
+        for(size_t j=0;j<maud->locations[i].file_count;j++) {
+            free(maud->locations[i].files[j].path); maud->locations[i].files[j].path = NULL;
             #ifdef _WIN32
-            free(mplayer->locations[i].files[j].altpath); mplayer->locations[i].files[j].altpath = NULL;
+            free(maud->locations[i].files[j].altpath); maud->locations[i].files[j].altpath = NULL;
             #endif
         }
-        free(mplayer->locations[i].path); mplayer->locations[i].path = NULL;
-        free(mplayer->locations[i].files); mplayer->locations[i].files = NULL;
-        mplayer->locations[i].file_count = 0;
+        free(maud->locations[i].path); maud->locations[i].path = NULL;
+        free(maud->locations[i].files); maud->locations[i].files = NULL;
+        maud->locations[i].file_count = 0;
     }
     
-    mplayer->total_filecount = 0;
-    mplayer->location_count = 0;
-    free(mplayer->locations); mplayer->locations = NULL;
+    maud->total_filecount = 0;
+    maud->location_count = 0;
+    free(maud->locations); maud->locations = NULL;
 }
 
-void mplayer_filemanager_freemusic(music_t* music_ref) {
+void maud_filemanager_freemusic(music_t* music_ref) {
     // release the memory used for the music name, music name texture, and other music related data that was
     // allocaterd in memory
     SDL_DestroyTexture(music_ref->text_texture); music_ref->text_texture = NULL;
@@ -910,16 +910,16 @@ void mplayer_filemanager_freemusic(music_t* music_ref) {
     Mix_FreeMusic(music_ref->music); music_ref->music = NULL;
 }
 
-void mplayer_filemanager_freemusic_list(mplayer_t* mplayer) {
+void maud_filemanager_freemusic_list(maud_t* maud) {
     /* Release the memory used by the music list back to the system */
-    for(size_t i=0;i<mplayer->music_count;i++) {
-        mplayer_filemanager_freemusic(&mplayer->music_list[i]);
+    for(size_t i=0;i<maud->music_count;i++) {
+        maud_filemanager_freemusic(&maud->music_list[i]);
     }
-    //mplayer_filemanager_freemusic_searchresult(&mplayer->music_searchresult, &mplayer->music_searchresult_count);
-    free(mplayer->music_list); mplayer->music_list = NULL; mplayer->music_count = 0;
-    mplayer->musicpending_removalcount = 0;
-    mplayer->music_renderpos = 0;
-    mplayer->music_maxrenderpos = 0;
-    //mplayer->match_maxrenderpos = 0;
-    //mplayer->music_searchrenderpos = 0;
+    //maud_filemanager_freemusic_searchresult(&maud->music_searchresult, &maud->music_searchresult_count);
+    free(maud->music_list); maud->music_list = NULL; maud->music_count = 0;
+    maud->musicpending_removalcount = 0;
+    maud->music_renderpos = 0;
+    maud->music_maxrenderpos = 0;
+    //maud->match_maxrenderpos = 0;
+    //maud->music_searchrenderpos = 0;
 }

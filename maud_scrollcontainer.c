@@ -1,31 +1,31 @@
-#include "music_scrollcontainer.h"
-#include "music_itemcontainer.h"
+#include "maud_scrollcontainer.h"
+#include "maud_itemcontainer.h"
 
-void mplayer_scrollcontainer_init(music_scrollcontainer_t* container) {
+void maud_scrollcontainer_init(maud_scrollcontainer_t* container) {
     container->init = true;
 }
 
-void mplayer_scrollcontainer_setcontent_count(music_scrollcontainer_t* container, size_t content_count) {
+void maud_scrollcontainer_setcontent_count(maud_scrollcontainer_t* container, size_t content_count) {
     container->content_count = content_count;
 }
 
-void mplayer_scrollcontainer_setscroll_area(music_scrollcontainer_t* container, SDL_Rect scroll_area) {
+void maud_scrollcontainer_setscroll_area(maud_scrollcontainer_t* container, SDL_Rect scroll_area) {
     container->scroll_area = scroll_area;
 }
 
-void mplayer_scrollcontainer_setscroll_y(music_scrollcontainer_t* container, int scroll_y) {
+void maud_scrollcontainer_setscroll_y(maud_scrollcontainer_t* container, int scroll_y) {
     container->scroll_y = scroll_y;
 }
 
-void mplayer_scrollcontainer_setscroll_yfromscroll_area(music_scrollcontainer_t* container) {
+void maud_scrollcontainer_setscroll_yfromscroll_area(maud_scrollcontainer_t* container) {
     container->scroll_y = container->scroll_area.y;
 }
 
-void mplayer_scrollcontainer_setscroll_speed(music_scrollcontainer_t* container, int scroll_speed) {
+void maud_scrollcontainer_setscroll_speed(maud_scrollcontainer_t* container, int scroll_speed) {
     container->scroll_speed = scroll_speed;
 }
 
-void mplayer_scrollcontainer_setprops(music_scrollcontainer_t* container, SDL_Rect scroll_area,
+void maud_scrollcontainer_setprops(maud_scrollcontainer_t* container, SDL_Rect scroll_area,
     int scroll_speed, size_t content_count) {
     if(container->init) {
         return;
@@ -36,39 +36,39 @@ void mplayer_scrollcontainer_setprops(music_scrollcontainer_t* container, SDL_Re
     container->scroll_speed = scroll_speed;
 }
 
-void mplayer_scrollcontainer_setnext_itemcanvas(music_scrollcontainer_t* container, SDL_Rect canvas) {
+void maud_scrollcontainer_setnext_itemcanvas(maud_scrollcontainer_t* container, SDL_Rect canvas) {
     if(container->init) {
-        mplayer_itemcontainer_setnextitem_canvas(&container->item_container, canvas);
+        maud_itemcontainer_setnextitem_canvas(&container->item_container, canvas);
     }
 }
 
-void mplayer_scrollcontainer_resetitem_index(music_scrollcontainer_t* container) {
-    mplayer_itemcontainer_resetitem_index(&container->item_container);
+void maud_scrollcontainer_resetitem_index(maud_scrollcontainer_t* container) {
+    maud_itemcontainer_resetitem_index(&container->item_container);
 }
 
-void mplayer_scrollcontainer_additem(music_scrollcontainer_t* container, SDL_Rect scroll_item) {
+void maud_scrollcontainer_additem(maud_scrollcontainer_t* container, SDL_Rect scroll_item) {
     if(container->init && !container->update) {
         return;
     }
-    mplayer_itemcontainer_additems(&container->item_container, 1);
-    mplayer_itemcontainer_setnextitem_canvas(&container->item_container, scroll_item);
+    maud_itemcontainer_additems(&container->item_container, 1);
+    maud_itemcontainer_setnextitem_canvas(&container->item_container, scroll_item);
 }
 
-bool mplayer_scrollcontainer_hover_scrollarea(mplayer_t* mplayer, music_scrollcontainer_t container) {
-    if(mplayer_rect_hover(mplayer, container.scroll_area)) {
+bool maud_scrollcontainer_hover_scrollarea(maud_t* maud, maud_scrollcontainer_t container) {
+    if(maud_rect_hover(maud, container.scroll_area)) {
         return true;
     }
     return false;
 }
 
-void mplayer_scrollcontainer_performscroll_overscrollarea(mplayer_t* mplayer, music_scrollcontainer_t* container) {
-    if(!mplayer_scrollcontainer_hover_scrollarea(mplayer, *container)) {
+void maud_scrollcontainer_performscroll_overscrollarea(maud_t* maud, maud_scrollcontainer_t* container) {
+    if(!maud_scrollcontainer_hover_scrollarea(maud, *container)) {
         return;
     }    
-    mplayer_scrollcontainer_performscroll(mplayer, container, container->scroll_area.y);
+    maud_scrollcontainer_performscroll(maud, container, container->scroll_area.y);
 }
 
-void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollcontainer_t* container, int scroll_y) {
+void maud_scrollcontainer_performscroll(maud_t* maud, maud_scrollcontainer_t* container, int scroll_y) {
     if(!container->init) {
         if(container->item_container.items) {
             printf("Init flag is false but items is not NULL\n");
@@ -83,7 +83,7 @@ void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollconta
         container->item_container.item_count);
         return;
     }
-    if(mplayer->scroll_type == MPLAYERSCROLL_DOWN) {
+    if(maud->scroll_type == MAUDSCROLL_DOWN) {
         int disappear_y = scroll_y - container->item_container.items[0].h;
         printf("Perform scroll line 58, container->content_renderpos: %zu, container->content_count: %zu, item_count: %zu\n",
             container->content_renderpos, container->content_count, container->item_container.item_count);
@@ -112,12 +112,12 @@ void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollconta
                 container->init = false;
             }
         }
-    } else if(mplayer->scroll_type == MPLAYERSCROLL_UP) {
+    } else if(maud->scroll_type == MAUDSCROLL_UP) {
         printf("Scroll UP\n");
         if(container->scroll_y == scroll_y && container->content_renderpos) {
             container->scroll_y = container->scroll_y - container->item_container.items[0].h;
         }
-        if(mplayer->scroll_y < scroll_y) {
+        if(maud->scroll_y < scroll_y) {
             container->scroll_y += container->scroll_speed;
             if(container->scroll_y >= scroll_y) {
                 container->scroll_y = scroll_y;
@@ -131,10 +131,10 @@ void mplayer_scrollcontainer_performscroll(mplayer_t* mplayer, music_scrollconta
     }
 }
 
-void mplayer_scrollcontainer_destroy(music_scrollcontainer_t* container) {
+void maud_scrollcontainer_destroy(maud_scrollcontainer_t* container) {
     container->content_renderpos = 0;
     container->content_count = 0;
-    mplayer_itemcontainer_destroy(&container->item_container);
+    maud_itemcontainer_destroy(&container->item_container);
     container->scroll_area.x = 0, container->scroll_area.y = 0,
     container->scroll_area.h = 0, container->scroll_area.w = 0;
     container->init = false;

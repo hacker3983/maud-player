@@ -1,15 +1,15 @@
-#ifndef _MUSIC_TEXTMANAGER_H
-#define _MUSIC_TEXTMANAGER_H
-#include "music_player.h"
-#include "music_string.h"
+#ifndef _MAUD_TEXTMANAGER_H
+#define _MAUD_TEXTMANAGER_H
+#include "maud_player.h"
+#include "maud_string.h"
 
-int mplayer_textmanager_sizetext(TTF_Font* font, text_info_t* utext_info);
-SDL_Texture* mplayer_textmanager_rendertext(mplayer_t* mplayer, TTF_Font* font, text_info_t* text_info);
-SDL_Texture* mplayer_textmanager_renderunicode(mplayer_t* mplayer, TTF_Font* font, text_info_t* utext_info);
-char* mplayer_textmanager_truncateascii(TTF_Font* font, text_info_t* text_info, int maximum_width);
-char* mplayer_textmanager_truncateunicode(TTF_Font* font, text_info_t* text_info, int maximum_width);
-char* mplayer_textmanager_truncatetext(TTF_Font* font, text_info_t* text_info, int maximum_width);
-void mplayer_textmanager_centerx(mplayer_t* mplayer, text_info_t* text_info);
-void mplayer_textmanager_centery(mplayer_t* mplayer, text_info_t* text_info);
-void mplayer_textmanager_centertext(mplayer_t* mplayer, text_info_t* text_info);
+int maud_textmanager_sizetext(TTF_Font* font, text_info_t* utext_info);
+SDL_Texture* maud_textmanager_rendertext(maud_t* maud, TTF_Font* font, text_info_t* text_info);
+SDL_Texture* maud_textmanager_renderunicode(maud_t* maud, TTF_Font* font, text_info_t* utext_info);
+char* maud_textmanager_truncateascii(TTF_Font* font, text_info_t* text_info, int maximum_width);
+char* maud_textmanager_truncateunicode(TTF_Font* font, text_info_t* text_info, int maximum_width);
+char* maud_textmanager_truncatetext(TTF_Font* font, text_info_t* text_info, int maximum_width);
+void maud_textmanager_centerx(maud_t* maud, text_info_t* text_info);
+void maud_textmanager_centery(maud_t* maud, text_info_t* text_info);
+void maud_textmanager_centertext(maud_t* maud, text_info_t* text_info);
 #endif

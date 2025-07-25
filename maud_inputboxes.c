@@ -1,7 +1,7 @@
-#include "music_inputboxes.h"
-#include "music_notification.h"
+#include "maud_inputboxes.h"
+#include "maud_notification.h"
 
-void mplayer_inputbox_init(mplayer_inputbox_t* inputbox, TTF_Font* font, int font_size, SDL_Color color,
+void maud_inputbox_init(maud_inputbox_t* inputbox, TTF_Font* font, int font_size, SDL_Color color,
     const char* placeholder, SDL_Color placeholder_color, SDL_Color cursor_color,
     SDL_Color text_color, int x, int y, int width, int height, int cursor_width,
     int cursor_height) {
@@ -14,7 +14,7 @@ void mplayer_inputbox_init(mplayer_inputbox_t* inputbox, TTF_Font* font, int fon
     inputbox->cursor_width = cursor_width;
     inputbox->cursor_height = cursor_height;
     if(placeholder) {
-        inputbox->placeholder = mplayer_dupstr(placeholder, strlen(placeholder));
+        inputbox->placeholder = maud_dupstr(placeholder, strlen(placeholder));
     }
     inputbox->placeholder_color = placeholder_color;
     inputbox->placeholder_show = true;
@@ -28,17 +28,17 @@ void mplayer_inputbox_init(mplayer_inputbox_t* inputbox, TTF_Font* font, int fon
     inputbox->cursor_blink = true;
 }
 
-mplayer_inputbox_t mplayer_inputbox_create(TTF_Font* font, int font_size, SDL_Color color,
+maud_inputbox_t maud_inputbox_create(TTF_Font* font, int font_size, SDL_Color color,
     const char* placeholder, SDL_Color placeholder_color, SDL_Color cursor_color,
     SDL_Color text_color, int x, int y, int width, int height, int cursor_width,
     int cursor_height) {
-    mplayer_inputbox_t new_inputbox = {0};
-    mplayer_inputbox_init(&new_inputbox, font, font_size, color, placeholder, placeholder_color,
+    maud_inputbox_t new_inputbox = {0};
+    maud_inputbox_init(&new_inputbox, font, font_size, color, placeholder, placeholder_color,
         cursor_color, text_color, x, y, width, height, cursor_width, cursor_height);
     return new_inputbox;
 }
 
-void mplayer_inputbox_addinputchar(mplayer_inputbox_t* inputbox, char* utf8_char) {
+void maud_inputbox_addinputchar(maud_inputbox_t* inputbox, char* utf8_char) {
     inputdata_t* input = &inputbox->input;
     size_t new_count = input->character_count + 1;
     inputchar_t* new_characters = realloc(input->characters, new_count * sizeof(inputchar_t));
@@ -65,16 +65,16 @@ void mplayer_inputbox_addinputchar(mplayer_inputbox_t* inputbox, char* utf8_char
     input->character_count = new_count;
 }
 
-void mplayer_inputbox_addinputdata(mplayer_inputbox_t* inputbox, const char* utf8_string) {
+void maud_inputbox_addinputdata(maud_inputbox_t* inputbox, const char* utf8_string) {
     size_t utf8_stringsize = strlen(utf8_string);
     for(size_t i=0;i<utf8_stringsize;i++) {
-        char* utf8_char = mplayer_getutf8_char(utf8_string, &i, utf8_stringsize);
-        mplayer_inputbox_addinputchar(inputbox, utf8_char);
+        char* utf8_char = maud_getutf8_char(utf8_string, &i, utf8_stringsize);
+        maud_inputbox_addinputchar(inputbox, utf8_char);
     }
-    mplayer_inputbox_getprimaryinputdata(inputbox);
+    maud_inputbox_getprimaryinputdata(inputbox);
 }
 
-bool mplayer_inputbox_deleteselection(mplayer_inputbox_t* inputbox) {
+bool maud_inputbox_deleteselection(maud_inputbox_t* inputbox) {
     inputdata_t* input = &inputbox->input;
     if(input->selection_count) {
         input->cursor_pos = input->selection_end;
@@ -82,16 +82,16 @@ bool mplayer_inputbox_deleteselection(mplayer_inputbox_t* inputbox) {
             inputbox->render_pos = 0;
         }
         for(size_t i=0;i<input->selection_count;i++) {
-            mplayer_inputbox_backspace(inputbox);
+            maud_inputbox_backspace(inputbox);
         }
-        mplayer_inputbox_clearselection(inputbox);
-        mplayer_inputbox_getprimaryinputdata(inputbox);
+        maud_inputbox_clearselection(inputbox);
+        maud_inputbox_getprimaryinputdata(inputbox);
         return true;
     }
     return false;
 }
 
-char* mplayer_inputbox_getinputdata(mplayer_inputbox_t* inputbox) {
+char* maud_inputbox_getinputdata(maud_inputbox_t* inputbox) {
     if(!inputbox->input.characters || !inputbox->input.character_count) {
         return NULL;
     }
@@ -102,12 +102,12 @@ char* mplayer_inputbox_getinputdata(mplayer_inputbox_t* inputbox) {
     return new_data;
 }
 
-void mplayer_inputbox_getprimaryinputdata(mplayer_inputbox_t* inputbox) {
+void maud_inputbox_getprimaryinputdata(maud_inputbox_t* inputbox) {
     free(inputbox->input.data);
-    inputbox->input.data = mplayer_inputbox_getinputdata(inputbox);
+    inputbox->input.data = maud_inputbox_getinputdata(inputbox);
 }
 
-void mplayer_inputbox_backspace(mplayer_inputbox_t* inputbox) {
+void maud_inputbox_backspace(maud_inputbox_t* inputbox) {
     inputdata_t* input = &inputbox->input;
     if(!input->characters || !input->cursor_pos) {
         return;
@@ -129,7 +129,7 @@ void mplayer_inputbox_backspace(mplayer_inputbox_t* inputbox) {
     input->characters = realloc(input->characters, input->character_count * sizeof(inputchar_t));
 }
 
-void mplayer_inputbox_addselectionleft(mplayer_inputbox_t* inputbox) {
+void maud_inputbox_addselectionleft(maud_inputbox_t* inputbox) {
     inputdata_t* input = &inputbox->input;
     if(!input->cursor_pos) {
         return;
@@ -149,7 +149,7 @@ void mplayer_inputbox_addselectionleft(mplayer_inputbox_t* inputbox) {
     input->selection_count++;
 }
 
-void mplayer_inputbox_addselectionright(mplayer_inputbox_t* inputbox) {
+void maud_inputbox_addselectionright(maud_inputbox_t* inputbox) {
     inputdata_t* input = &inputbox->input;
     if(input->cursor_pos == input->character_count) {
         return;
@@ -169,7 +169,7 @@ void mplayer_inputbox_addselectionright(mplayer_inputbox_t* inputbox) {
     input->selection_end = input->selection_start + input->selection_count;
 }
 
-void mplayer_inputbox_selectall(mplayer_inputbox_t* inputbox) {
+void maud_inputbox_selectall(maud_inputbox_t* inputbox) {
     inputdata_t* input = &inputbox->input;
     if(!input->characters) {
         return;
@@ -181,32 +181,32 @@ void mplayer_inputbox_selectall(mplayer_inputbox_t* inputbox) {
     input->selection_direction = INPUT_SELECTIONRIGHT;
 }
 
-char* mplayer_inputbox_getselectiondata(mplayer_inputbox_t* inputbox) {
+char* maud_inputbox_getselectiondata(maud_inputbox_t* inputbox) {
     char* data = NULL;
     for(size_t i=inputbox->input.selection_start;i<inputbox->input.selection_end;i++) {
-        mplayer_concatstr(&data, inputbox->input.characters[i].utf8_char);
+        maud_concatstr(&data, inputbox->input.characters[i].utf8_char);
     }    
     return data;
 }
 
-void mplayer_inputbox_addselection(mplayer_inputbox_t* inputbox, int direction) {
+void maud_inputbox_addselection(maud_inputbox_t* inputbox, int direction) {
     switch(direction) {
         case INPUT_SELECTIONLEFT:
-            mplayer_inputbox_addselectionleft(inputbox);
+            maud_inputbox_addselectionleft(inputbox);
             break;
         case INPUT_SELECTIONRIGHT:
-            mplayer_inputbox_addselectionright(inputbox);
+            maud_inputbox_addselectionright(inputbox);
             break;
     }
 }
 
-void mplayer_inputbox_clearselection(mplayer_inputbox_t* inputbox) {
+void maud_inputbox_clearselection(maud_inputbox_t* inputbox) {
     inputbox->input.selection_start = 0;
     inputbox->input.selection_end = 0;
     inputbox->input.selection_count = 0;
 }
 
-void mplayer_inputbox_printselection(mplayer_inputbox_t* inputbox) {
+void maud_inputbox_printselection(maud_inputbox_t* inputbox) {
     if(!inputbox->input.selection_count) {
         return;
     }
@@ -217,60 +217,60 @@ void mplayer_inputbox_printselection(mplayer_inputbox_t* inputbox) {
     printf("\n");
 }
 
-void mplayer_inputbox_cursor_resetblink(mplayer_inputbox_t* inputbox) {
+void maud_inputbox_cursor_resetblink(maud_inputbox_t* inputbox) {
     inputbox->cursor_timeout = 0;
     inputbox->cursor_blinking = false;
 }
 
-void mplayer_inputbox_handle_events(mplayer_t* mplayer, mplayer_inputbox_t* inputbox) {
+void maud_inputbox_handle_events(maud_t* maud, maud_inputbox_t* inputbox) {
     inputdata_t* input = &inputbox->input;
-    switch(mplayer->e.type) {
+    switch(maud->e.type) {
         case SDL_TEXTINPUT:
-            mplayer_inputbox_deleteselection(inputbox);
-            mplayer_inputbox_addinputdata(inputbox, mplayer->e.text.text);
-            mplayer_inputbox_cursor_resetblink(inputbox);
+            maud_inputbox_deleteselection(inputbox);
+            maud_inputbox_addinputdata(inputbox, maud->e.text.text);
+            maud_inputbox_cursor_resetblink(inputbox);
             break;
         case SDL_KEYDOWN:
             if(SDL_GetModState() & KMOD_CTRL) {
-                switch(mplayer->e.key.keysym.sym) {
+                switch(maud->e.key.keysym.sym) {
                     case SDLK_a:
-                        mplayer_inputbox_selectall(inputbox);
+                        maud_inputbox_selectall(inputbox);
                         break;
                     case SDLK_c:
-                        char* selection_data = mplayer_inputbox_getselectiondata(inputbox);
+                        char* selection_data = maud_inputbox_getselectiondata(inputbox);
                         if(selection_data) {
                             SDL_SetClipboardText(selection_data);
                         }
                         break;
                     case SDLK_v:
                         char* clipboard_data = SDL_GetClipboardText();
-                        mplayer_inputbox_deleteselection(inputbox);
-                        mplayer_inputbox_addinputdata(inputbox, clipboard_data);
+                        maud_inputbox_deleteselection(inputbox);
+                        maud_inputbox_addinputdata(inputbox, clipboard_data);
                         free(clipboard_data);
                         break;
                 }
                 break;
             } else if(SDL_GetModState() & KMOD_SHIFT) {
-                switch(mplayer->e.key.keysym.sym) {
+                switch(maud->e.key.keysym.sym) {
                     case SDLK_LEFT:
-                        mplayer_inputbox_addselection(inputbox, INPUT_SELECTIONLEFT);
-                        mplayer_inputbox_printselection(inputbox);
-                        mplayer_inputbox_cursor_resetblink(inputbox);
+                        maud_inputbox_addselection(inputbox, INPUT_SELECTIONLEFT);
+                        maud_inputbox_printselection(inputbox);
+                        maud_inputbox_cursor_resetblink(inputbox);
                         break;
                     case SDLK_RIGHT:
-                        mplayer_inputbox_addselection(inputbox, INPUT_SELECTIONRIGHT);
-                        mplayer_inputbox_printselection(inputbox);
-                        mplayer_inputbox_cursor_resetblink(inputbox);
+                        maud_inputbox_addselection(inputbox, INPUT_SELECTIONRIGHT);
+                        maud_inputbox_printselection(inputbox);
+                        maud_inputbox_cursor_resetblink(inputbox);
                         break;
                 }
                 break;
             }
-            switch(mplayer->e.key.keysym.sym) {
+            switch(maud->e.key.keysym.sym) {
                 case SDLK_LEFT:
-                    mplayer_inputbox_cursor_resetblink(inputbox);
+                    maud_inputbox_cursor_resetblink(inputbox);
                     if(input->selection_count) {
                         input->cursor_pos = input->selection_start;
-                        mplayer_inputbox_clearselection(inputbox);
+                        maud_inputbox_clearselection(inputbox);
                         break;
                     }
                     if(inputbox->input.cursor_pos) {
@@ -278,10 +278,10 @@ void mplayer_inputbox_handle_events(mplayer_t* mplayer, mplayer_inputbox_t* inpu
                     }
                     break;
                 case SDLK_RIGHT:
-                    mplayer_inputbox_cursor_resetblink(inputbox);
+                    maud_inputbox_cursor_resetblink(inputbox);
                     if(input->selection_count) {
                         input->cursor_pos = input->selection_end;
-                        mplayer_inputbox_clearselection(inputbox);
+                        maud_inputbox_clearselection(inputbox);
                         break;
                     }
                     if(inputbox->input.cursor_pos < inputbox->input.character_count) {
@@ -289,12 +289,12 @@ void mplayer_inputbox_handle_events(mplayer_t* mplayer, mplayer_inputbox_t* inpu
                     }
                     break;
                 case SDLK_BACKSPACE:
-                    mplayer_inputbox_cursor_resetblink(inputbox);
-                    if(mplayer_inputbox_deleteselection(inputbox)) {
+                    maud_inputbox_cursor_resetblink(inputbox);
+                    if(maud_inputbox_deleteselection(inputbox)) {
                         break;
                     }
-                    mplayer_inputbox_backspace(inputbox);
-                    mplayer_inputbox_getprimaryinputdata(inputbox);
+                    maud_inputbox_backspace(inputbox);
+                    maud_inputbox_getprimaryinputdata(inputbox);
                     break;
                 case SDLK_RETURN:
                     inputbox->entered = true;
@@ -304,10 +304,10 @@ void mplayer_inputbox_handle_events(mplayer_t* mplayer, mplayer_inputbox_t* inpu
     }
 }
 
-void mplayer_inputbox_rendercharacters(mplayer_t* mplayer, mplayer_inputbox_t* inputbox) {
+void maud_inputbox_rendercharacters(maud_t* maud, maud_inputbox_t* inputbox) {
     inputdata_t* input = &inputbox->input;
     size_t end_renderpos = 0;
-    int mouse_x = mplayer->mouse_x, mouse_y = mplayer->mouse_y,
+    int mouse_x = maud->mouse_x, mouse_y = maud->mouse_y,
         *mouse_startx = &inputbox->mouse_startx, *mouse_endx = &inputbox->mouse_endx;
     for(size_t i=inputbox->render_pos;i<input->character_count;i++) {
         inputchar_t* character = &input->characters[i],
@@ -315,7 +315,7 @@ void mplayer_inputbox_rendercharacters(mplayer_t* mplayer, mplayer_inputbox_t* i
                 &input->characters[i];
         SDL_Surface* char_surface = TTF_RenderUTF8_Blended(inputbox->font, character->utf8_char,
             inputbox->text_color);
-        SDL_Texture* char_texture = SDL_CreateTextureFromSurface(mplayer->renderer, char_surface);
+        SDL_Texture* char_texture = SDL_CreateTextureFromSurface(maud->renderer, char_surface);
         SDL_FreeSurface(char_surface);
         if(i == inputbox->render_pos) {
             character->canvas.x = inputbox->canvas.x;
@@ -329,71 +329,71 @@ void mplayer_inputbox_rendercharacters(mplayer_t* mplayer, mplayer_inputbox_t* i
         }
         size_t previ = (i > 0) ? i-1 : i;
         
-        if(mplayer->mouse_buttondown && mouse_x <= character->canvas.x + character->canvas.w
+        if(maud->mouse_buttondown && mouse_x <= character->canvas.x + character->canvas.w
             && mouse_x >= character->canvas.x + 3
             && mouse_y <= character->canvas.y + character->canvas.h
             && mouse_y >= character->canvas.y && !inputbox->start_xinited) {
             // Set the start mouse x to determine mouse selection type
             *mouse_startx = mouse_x;
             inputbox->start_xinited = true;
-        } else if(mplayer->mouse_buttondown && mouse_x <= character->canvas.x + character->canvas.w
+        } else if(maud->mouse_buttondown && mouse_x <= character->canvas.x + character->canvas.w
             && mouse_x >= character->canvas.x + 3
             && mouse_y <= character->canvas.y + character->canvas.h
             && mouse_y >= character->canvas.y && !inputbox->end_xinited) {
             // Set the end mouse x to determine mouse selection type
             *mouse_endx = mouse_x;
             inputbox->end_xinited = true;
-        } else if(mplayer->mouse_buttondown && mouse_x <= character->canvas.x + character->canvas.w
+        } else if(maud->mouse_buttondown && mouse_x <= character->canvas.x + character->canvas.w
             && mouse_x >= character->canvas.x + 3
             && mouse_y <= character->canvas.y + character->canvas.h
             && mouse_y >= character->canvas.y && !inputbox->mouse_drag
             && inputbox->start_xinited && inputbox->end_xinited) {
             if(input->selection_count) {
-                mplayer_inputbox_clearselection(inputbox);
+                maud_inputbox_clearselection(inputbox);
             }
             input->cursor_pos = i;
             printf("Adding initial Selection point\n");
             if((*mouse_startx) < (*mouse_endx)) {
-                mplayer_inputbox_addselection(inputbox, INPUT_SELECTIONRIGHT);
+                maud_inputbox_addselection(inputbox, INPUT_SELECTIONRIGHT);
             } else {
-                mplayer_inputbox_addselection(inputbox, INPUT_SELECTIONLEFT);
+                maud_inputbox_addselection(inputbox, INPUT_SELECTIONLEFT);
             }    
-            mplayer_inputbox_printselection(inputbox);
+            maud_inputbox_printselection(inputbox);
             inputbox->mouse_drag = true;
         } else if(inputbox->mouse_drag && input->selection_count
             && mouse_x >= character->canvas.x + character->canvas.w &&
             input->selection_direction == INPUT_SELECTIONRIGHT) {
             printf("Adding more selections to right:\n");
             input->cursor_pos = i;
-            mplayer_inputbox_addselection(inputbox, INPUT_SELECTIONRIGHT);
-            mplayer_inputbox_printselection(inputbox);
+            maud_inputbox_addselection(inputbox, INPUT_SELECTIONRIGHT);
+            maud_inputbox_printselection(inputbox);
         } else if(inputbox->mouse_drag && input->selection_count
             && mouse_x <= character->canvas.x + character->canvas.w
             && input->selection_direction == INPUT_SELECTIONLEFT) {
             printf("Adding more selections to left:\n");
             //input->cursor_pos = i;
-            mplayer_inputbox_addselection(inputbox, INPUT_SELECTIONLEFT);
-            mplayer_inputbox_printselection(inputbox);
-        } else if(!mplayer->mouse_buttondown && inputbox->mouse_drag) {
+            maud_inputbox_addselection(inputbox, INPUT_SELECTIONLEFT);
+            maud_inputbox_printselection(inputbox);
+        } else if(!maud->mouse_buttondown && inputbox->mouse_drag) {
             printf("setting drag state to false\n");
             inputbox->mouse_drag = false;
-            mplayer->mouse_clicked = false;
+            maud->mouse_clicked = false;
         } else {
             int diffx = next_character->canvas.x - (character->canvas.x + character->canvas.w);
-            if(mplayer->mouse_clicked && mplayer_rect_hover(mplayer, inputbox->canvas)
+            if(maud->mouse_clicked && maud_rect_hover(maud, inputbox->canvas)
             && !inputbox->mouse_drag) {
                 if(mouse_x <= character->canvas.x + character->canvas.w-1 &&
                     mouse_x >= character->canvas.x && diffx) {
                     printf("Selecting character: %s\n", character->utf8_char); 
                     input->cursor_pos = i;
-                    mplayer_inputbox_clearselection(inputbox);
-                    mplayer->mouse_clicked = false;
+                    maud_inputbox_clearselection(inputbox);
+                    maud->mouse_clicked = false;
                 } else if(mouse_x <= character->canvas.x + character->canvas.w &&
                     mouse_x >= character->canvas.x && !diffx) {
                     printf("Selecting character: %s\n", character->utf8_char);
                     input->cursor_pos = i+1;
-                    mplayer_inputbox_clearselection(inputbox);
-                    mplayer->mouse_clicked = false;
+                    maud_inputbox_clearselection(inputbox);
+                    maud->mouse_clicked = false;
                 }
             } 
         }
@@ -402,19 +402,19 @@ void mplayer_inputbox_rendercharacters(mplayer_t* mplayer, mplayer_inputbox_t* i
             break;
         }
         if(input->selection_count && i <= input->selection_end-1 && i >= input->selection_start) {
-            SDL_SetRenderDrawColor(mplayer->renderer, 0x00, 0xff, 0xff, 0xff);
-            SDL_RenderDrawRect(mplayer->renderer, &character->canvas);
-            SDL_RenderFillRect(mplayer->renderer, &character->canvas);
+            SDL_SetRenderDrawColor(maud->renderer, 0x00, 0xff, 0xff, 0xff);
+            SDL_RenderDrawRect(maud->renderer, &character->canvas);
+            SDL_RenderFillRect(maud->renderer, &character->canvas);
         }
-        SDL_RenderCopy(mplayer->renderer, char_texture, NULL, &character->canvas);
+        SDL_RenderCopy(maud->renderer, char_texture, NULL, &character->canvas);
         SDL_DestroyTexture(char_texture);
     }
-    if(mplayer->mouse_clicked && mplayer_rect_hover(mplayer, inputbox->canvas) &&
+    if(maud->mouse_clicked && maud_rect_hover(maud, inputbox->canvas) &&
         input->characters &&
         mouse_x >= input->characters[end_renderpos-1].canvas.x +
         input->characters[end_renderpos-1].canvas.w) {
         input->cursor_pos = end_renderpos;
-        mplayer->mouse_clicked = false;
+        maud->mouse_clicked = false;
     }
     inputbox->cursor_canvas.x = inputbox->canvas.x + 1;
     if(input->characters && input->cursor_pos == inputbox->render_pos && inputbox->render_pos) {
@@ -430,7 +430,7 @@ void mplayer_inputbox_rendercharacters(mplayer_t* mplayer, mplayer_inputbox_t* i
     }
 }
 
-void mplayer_inputbox_rendercursor(mplayer_t* mplayer,  mplayer_inputbox_t* inputbox) {
+void maud_inputbox_rendercursor(maud_t* maud,  maud_inputbox_t* inputbox) {
     inputdata_t* input = &inputbox->input;
     inputbox->cursor_canvas.w = inputbox->cursor_width;
     inputbox->cursor_canvas.h = inputbox->cursor_height;
@@ -452,68 +452,68 @@ void mplayer_inputbox_rendercursor(mplayer_t* mplayer,  mplayer_inputbox_t* inpu
             inputbox->cursor_blinking = true;
         }
     }
-    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(inputbox->cursor_color));
-    SDL_RenderDrawRect(mplayer->renderer, &inputbox->cursor_canvas);
-    SDL_RenderFillRect(mplayer->renderer, &inputbox->cursor_canvas);
+    SDL_SetRenderDrawColor(maud->renderer, color_toparam(inputbox->cursor_color));
+    SDL_RenderDrawRect(maud->renderer, &inputbox->cursor_canvas);
+    SDL_RenderFillRect(maud->renderer, &inputbox->cursor_canvas);
 }
 
-void mplayer_inputbox_renderplaceholder(mplayer_t* mplayer,  mplayer_inputbox_t* inputbox) {
+void maud_inputbox_renderplaceholder(maud_t* maud,  maud_inputbox_t* inputbox) {
     if(!inputbox->placeholder_show || inputbox->input.characters || !inputbox->placeholder) {
         return;
     }
-    SDL_RenderSetClipRect(mplayer->renderer, &inputbox->canvas);
+    SDL_RenderSetClipRect(maud->renderer, &inputbox->canvas);
     TTF_SetFontSize(inputbox->font, inputbox->font_size);
     TTF_SizeText(inputbox->font, inputbox->placeholder, &inputbox->placeholder_canvas.w,
         &inputbox->placeholder_canvas.h);
     SDL_Surface* placeholder_surface = TTF_RenderUTF8_Blended(inputbox->font,
         inputbox->placeholder, inputbox->placeholder_color);
-    SDL_Texture* placeholder_texture = SDL_CreateTextureFromSurface(mplayer->renderer, placeholder_surface);
+    SDL_Texture* placeholder_texture = SDL_CreateTextureFromSurface(maud->renderer, placeholder_surface);
     SDL_FreeSurface(placeholder_surface);
-    SDL_RenderCopy(mplayer->renderer, placeholder_texture, NULL, &inputbox->placeholder_canvas);
+    SDL_RenderCopy(maud->renderer, placeholder_texture, NULL, &inputbox->placeholder_canvas);
     SDL_DestroyTexture(placeholder_texture);
-    SDL_RenderSetClipRect(mplayer->renderer, NULL);
+    SDL_RenderSetClipRect(maud->renderer, NULL);
 }
 
-void mplayer_inputbox_display(mplayer_t* mplayer,  mplayer_inputbox_t* inputbox) {
-    SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(inputbox->canvas_color));
-    SDL_RenderDrawRect(mplayer->renderer, &inputbox->canvas);
+void maud_inputbox_display(maud_t* maud,  maud_inputbox_t* inputbox) {
+    SDL_SetRenderDrawColor(maud->renderer, color_toparam(inputbox->canvas_color));
+    SDL_RenderDrawRect(maud->renderer, &inputbox->canvas);
     if(inputbox->fill) {
-        SDL_RenderFillRect(mplayer->renderer, &inputbox->canvas);
+        SDL_RenderFillRect(maud->renderer, &inputbox->canvas);
     }
-    if(mplayer_rect_hover(mplayer, inputbox->canvas)) {
-        mplayer_setcursor(mplayer, MPLAYER_CURSOR_TYPEABLE);
+    if(maud_rect_hover(maud, inputbox->canvas)) {
+        maud_setcursor(maud, MAUD_CURSOR_TYPEABLE);
     }
-    mplayer_inputbox_renderplaceholder(mplayer, inputbox);
-    mplayer_inputbox_rendercharacters(mplayer, inputbox);
-    mplayer_inputbox_rendercursor(mplayer, inputbox);
+    maud_inputbox_renderplaceholder(maud, inputbox);
+    maud_inputbox_rendercharacters(maud, inputbox);
+    maud_inputbox_rendercursor(maud, inputbox);
 }
 
-void mplayer_inputbox_clear(mplayer_inputbox_t* inputbox) {
+void maud_inputbox_clear(maud_inputbox_t* inputbox) {
     for(size_t i=0;i<inputbox->input.character_count;i++) {
         free(inputbox->input.characters[i].utf8_char);
     }
     free(inputbox->input.characters); inputbox->input.characters = NULL;
     free(inputbox->input.data); inputbox->input.data = NULL;
-    mplayer_inputbox_clearselection(inputbox);
+    maud_inputbox_clearselection(inputbox);
     inputbox->render_pos = 0;
     inputbox->input.size = 0;
     inputbox->input.cursor_pos = 0;
     inputbox->input.character_count = 0;
 }
 
-bool mplayer_inputbox_hover(mplayer_t* mplayer,  mplayer_inputbox_t* inputbox) {
-    if(mplayer_rect_hover(mplayer, inputbox->canvas)) {
-        mplayer_setcursor(mplayer, MPLAYER_CURSOR_TYPEABLE);
+bool maud_inputbox_hover(maud_t* maud,  maud_inputbox_t* inputbox) {
+    if(maud_rect_hover(maud, inputbox->canvas)) {
+        maud_setcursor(maud, MAUD_CURSOR_TYPEABLE);
         return true;
     }
     return false;
 }
 
-bool mplayer_inputbox_clicked(mplayer_t* mplayer,  mplayer_inputbox_t* inputbox) {
-    if(mplayer->mouse_clicked) {
-        if(mplayer_inputbox_hover(mplayer, inputbox)) {
+bool maud_inputbox_clicked(maud_t* maud,  maud_inputbox_t* inputbox) {
+    if(maud->mouse_clicked) {
+        if(maud_inputbox_hover(maud, inputbox)) {
             inputbox->clicked = true;
-            mplayer->mouse_clicked = false;
+            maud->mouse_clicked = false;
             return true;
         }
         inputbox->clicked = false;
@@ -521,8 +521,8 @@ bool mplayer_inputbox_clicked(mplayer_t* mplayer,  mplayer_inputbox_t* inputbox)
     return false;
 }
 
-void mplayer_inputbox_destroy(mplayer_inputbox_t* inputbox) {
-    mplayer_inputbox_clear(inputbox);
+void maud_inputbox_destroy(maud_inputbox_t* inputbox) {
+    maud_inputbox_clear(inputbox);
     free(inputbox->placeholder);
     inputbox->placeholder = NULL;
 }

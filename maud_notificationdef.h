@@ -1,9 +1,9 @@
-#ifndef _MUSIC_NOTIFICATIONDEF_H
-#define _MUSIC_NOTIFICATIONDEF_H
+#ifndef _MAUD_NOTIFICATIONDEF_H
+#define _MAUD_NOTIFICATIONDEF_H
 #include <SDL2/SDL.h>
-#include "music_textinfodef.h"
+#include "maud_textinfodef.h"
 
-typedef struct music_notificationitem {
+typedef struct maud_notificationitem {
     TTF_Font* font;
     char* message;
     text_info_t message_info,
@@ -15,10 +15,10 @@ typedef struct music_notificationitem {
     SDL_Color background_color;
     double timeout_secs;
     uint64_t timeout;
-} music_notificationitem_t;
+} maud_notificationitem_t;
 
-typedef struct music_notificationqueue {
-    music_notificationitem_t* items;
+typedef struct maud_notificationqueue {
+    maud_notificationitem_t* items;
     size_t item_count;
-} music_notification_t;
+} maud_notification_t;
 #endif

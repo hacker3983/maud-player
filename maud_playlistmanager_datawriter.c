@@ -1,11 +1,11 @@
-#include "music_playlistmanager.h"
+#include "maud_playlistmanager.h"
 
-void mplayer_playlistmanager_write_data_tofile(mplayer_t* mplayer) {
+void maud_playlistmanager_write_data_tofile(maud_t* maud) {
     FILE* f = fopen(MUSIC_PLAYLISTSINFO_FILE, "w");
-    mplayer_playlist_t* playlists = mplayer->playlist_manager.playlists;
-    size_t playlist_count = mplayer->playlist_manager.playlist_count;
+    maud_playlist_t* playlists = maud->playlist_manager.playlists;
+    size_t playlist_count = maud->playlist_manager.playlist_count;
     for(size_t i=0;i<playlist_count;i++) {
-        mplayer_playlistmanager_write_playlist_tofile(mplayer, f, playlists[i]);
+        maud_playlistmanager_write_playlist_tofile(maud, f, playlists[i]);
         if(i != playlist_count-1) {
             fputc('\n', f);
         }
@@ -13,24 +13,24 @@ void mplayer_playlistmanager_write_data_tofile(mplayer_t* mplayer) {
     fclose(f);
 }
 
-void mplayer_playlistmanager_write_playlist_tofile(mplayer_t* mplayer, FILE* f, mplayer_playlist_t playlist) {
+void maud_playlistmanager_write_playlist_tofile(maud_t* maud, FILE* f, maud_playlist_t playlist) {
     // Write the playlist name to the file
-    mplayer_playlistmanager_write_escapedstring_tofile(f, playlist.name);
+    maud_playlistmanager_write_escapedstring_tofile(f, playlist.name);
     fputs(": ", f);
     // Write the contents of the playlist 
-    music_queue_t queue = playlist.queue;
+    maud_queue_t queue = playlist.queue;
     for(size_t i=0;i<queue.item_count;i++) {
         size_t music_listindex = queue.items[i].music_listindex, music_id = queue.items[i].music_id;
-        char* music_name = mplayer_playlistmanager_getmusicnamefrom_index(mplayer, music_listindex,
+        char* music_name = maud_playlistmanager_getmusicnamefrom_index(maud, music_listindex,
             music_id);
-        mplayer_playlistmanager_write_escapedstring_tofile(f, music_name);
+        maud_playlistmanager_write_escapedstring_tofile(f, music_name);
         if(i != queue.item_count-1) {
             fputs(", ", f);
         }
     }
 }
 
-void mplayer_playlistmanager_write_escapedstring_tofile(FILE* f, const char* string) {
+void maud_playlistmanager_write_escapedstring_tofile(FILE* f, const char* string) {
     size_t string_length = strlen(string);
     fputc('"', f);
     for(size_t i=0;i<string_length;i++) {

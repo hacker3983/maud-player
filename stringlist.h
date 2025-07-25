@@ -1,6 +1,6 @@
 #ifndef _STRINGLIST_H
 #define _STRINGLIST_H
-#include "music_string.h"
+#include "maud_string.h"
 
 typedef struct stringlist {
     char** strings;

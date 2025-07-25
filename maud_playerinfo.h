@@ -1,6 +1,6 @@
-#ifndef _MUSIC_PLAYERINFO_H
-#define _MUSIC_PLAYERINFO_H
-#include "music_player.h"
+#ifndef _MAUD_PLAYERINFO_H
+#define _MAUD_PLAYERINFO_H
+#include "maud_player.h"
 #define MAUD_RELEASE 0
 #define MAUD_PROGRAMDATA "C:\\ProgramData\\Maud Player\\"
 
@@ -66,33 +66,33 @@ tabinfo_t tab_info[] = {
 int active_tab = SONGS_TAB, prev_tab = -1;
 
 ibtn_t music_btns[] = {
-    {"images/play.png", "Play", MUSIC_PLAYBTN, {0, 0, 35, 35}, false, false, 0},
-    {"images/shuffle-arrows (1).png", "Shuffle", MUSIC_SHUFFLEBTN, {0, 0, 35, 35}, false, false, 0},
-    {"images/skip-track.png", "Skip / Next", MUSIC_SKIPBTN, {0, 0, 35, 35}, false, false, 0},
-    {"images/previous.png", "Previous", MUSIC_PREVBTN, {0, 0, 35, 35}, false, false, 0},
-    {"images/pause-button.png", "Pause", MUSIC_PAUSEBTN, {0, 0, 35, 35}, false, false, 0},
+    {"images/play.png", "Play", MAUD_PLAYBTN, {0, 0, 35, 35}, false, false, 0},
+    {"images/shuffle-arrows (1).png", "Shuffle", MAUD_SHUFFLEBTN, {0, 0, 35, 35}, false, false, 0},
+    {"images/skip-track.png", "Skip / Next", MAUD_SKIPBTN, {0, 0, 35, 35}, false, false, 0},
+    {"images/previous.png", "Previous", MAUD_PREVBTN, {0, 0, 35, 35}, false, false, 0},
+    {"images/pause-button.png", "Pause", MAUD_PAUSEBTN, {0, 0, 35, 35}, false, false, 0},
     {
         "images/repeat-all (1).png",
         "Repeat all",
-        MUSIC_REPEATALLBTN,
+        MAUD_REPEATALLBTN,
         {0, 0, 35, 35},
         false,
         false,
     },
-    {"images/repeat-one (1).png", "Repeat one", MUSIC_REPEATONEBTN, {0, 0, 35, 35}, false, false, 0},
-    {"images/repeat-off (1).png", "Repeat Off", MUSIC_REPEATOFFBTN, {0, 0, 35, 35}, false, false, 0}
+    {"images/repeat-one (1).png", "Repeat one", MAUD_REPEATONEBTN, {0, 0, 35, 35}, false, false, 0},
+    {"images/repeat-off (1).png", "Repeat Off", MAUD_REPEATOFFBTN, {0, 0, 35, 35}, false, false, 0}
 },
-music_listplaybtn = {"images/play-button (1).png", "Play", MUSIC_LISTPLAYBTN, {0, 0, 30, 50}, false, false, 0},
-music_addfolderbtn = {"images/add-folder.png", "Add a music location (Directory or Folder)", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0},
-music_addplaylistbtn = {"images/add-to-playlist.png", "Add Playlist", MUSIC_ADDPLAYLISTBTN, {0, 0, 30, 40}, false, false, 0},
-music_addtobtn = {"images/add.png", "Add to", MUSIC_ADDTOBTN, {0, 0, 30, 40}, false, false, 0},
-music_addtocirclebtn = {"images/add 2.png", "Add to", MUSIC_ADDTOCIRCLEBTN, {0, 0, 30, 40}, false, false, 0},
-music_playqueuebtn = {"images/play-queue.png", "Play queue", MUSIC_PLAYQUEUEBTN, {0, 0, 30, 40}, false, false, 0},
-music_playlistbtn = {"images/playlist.png", "Playlist", MUSIC_PLAYLISTBTN, {0, 0, 30, 30}, false, false, 0},
-music_removebtn = {"images/removelocation.png", "Remove", MUSIC_REMOVEBTN, {0, 0, 24, 24}, false, false, 0},
+music_listplaybtn = {"images/play-button (1).png", "Play", MAUD_LISTPLAYBTN, {0, 0, 30, 50}, false, false, 0},
+music_addfolderbtn = {"images/add-folder.png", "Add a music location (Directory or Folder)", MAUD_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0},
+music_addplaylistbtn = {"images/add-to-playlist.png", "Add Playlist", MAUD_ADDPLAYLISTBTN, {0, 0, 30, 40}, false, false, 0},
+music_addtobtn = {"images/add.png", "Add to", MAUD_ADDTOBTN, {0, 0, 30, 40}, false, false, 0},
+music_addtocirclebtn = {"images/add 2.png", "Add to", MAUD_ADDTOCIRCLEBTN, {0, 0, 30, 40}, false, false, 0},
+music_playqueuebtn = {"images/play-queue.png", "Play queue", MAUD_PLAYQUEUEBTN, {0, 0, 30, 40}, false, false, 0},
+music_playlistbtn = {"images/playlist.png", "Playlist", MAUD_PLAYLISTBTN, {0, 0, 30, 30}, false, false, 0},
+music_removebtn = {"images/removelocation.png", "Remove", MAUD_REMOVEBTN, {0, 0, 24, 24}, false, false, 0},
 setting_btns[] = {
     {"images/back-button.png", "Home", BACK_BUTTON, {5, 0, 45, 45}, false, false, 0},
-    {"images/add-folder.png", "Add a music location (Directory or Folder)", MUSIC_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0}
+    {"images/add-folder.png", "Add a music location (Directory or Folder)", MAUD_ADDFOLDERBTN, {0, 5, 45, 45}, false, false, 0}
 },
 setting_iconbtn = {"images/settings (5).png", "Settings", SETTING_BUTTON, {0, 9, 45, 45}, false, false, 0};
 SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},

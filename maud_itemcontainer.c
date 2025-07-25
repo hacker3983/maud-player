@@ -1,31 +1,31 @@
-#include "music_itemcontainer.h"
+#include "maud_itemcontainer.h"
 
-void mplayer_itemcontainer_init(music_itemcontainer_t* item_container) {
+void maud_itemcontainer_init(maud_itemcontainer_t* item_container) {
     item_container->items = NULL;
     item_container->item_index = 0;
     item_container->item_count = 0;
     item_container->has_allitems = false;
 }
 
-void mplayer_itemcontainer_setnextitem_canvas(music_itemcontainer_t* item_container, SDL_Rect canvas) {
+void maud_itemcontainer_setnextitem_canvas(maud_itemcontainer_t* item_container, SDL_Rect canvas) {
     if(item_container->items && item_container->item_index < item_container->item_count) {
         item_container->items[item_container->item_index++] = canvas;
     }
 }
 
-void mplayer_itemcontainer_set_hasallitems_status(music_itemcontainer_t* item_container, bool status) {
+void maud_itemcontainer_set_hasallitems_status(maud_itemcontainer_t* item_container, bool status) {
     item_container->has_allitems = status;
 }
 
-void mplayer_itemcontainer_additem(music_itemcontainer_t* item_container, SDL_Rect canvas) {
+void maud_itemcontainer_additem(maud_itemcontainer_t* item_container, SDL_Rect canvas) {
     if(item_container->has_allitems) {
         return;
     }
-    mplayer_itemcontainer_additems(item_container, 1);
+    maud_itemcontainer_additems(item_container, 1);
     item_container->items[item_container->item_count-1] = canvas;
 }
 
-void mplayer_itemcontainer_additems(music_itemcontainer_t* item_container, size_t amount) {
+void maud_itemcontainer_additems(maud_itemcontainer_t* item_container, size_t amount) {
     if(item_container->has_allitems) {
         printf("Adding item from item container function\n");
         return;
@@ -50,7 +50,7 @@ void mplayer_itemcontainer_additems(music_itemcontainer_t* item_container, size_
     printf("Successfully added item\n");
 }
 
-void mplayer_itemcontainer_popitems(music_itemcontainer_t* item_container, size_t amount) {
+void maud_itemcontainer_popitems(maud_itemcontainer_t* item_container, size_t amount) {
     if((amount > item_container->item_count) ||
         (!item_container->items) || (!amount)) {
         return;
@@ -62,11 +62,11 @@ void mplayer_itemcontainer_popitems(music_itemcontainer_t* item_container, size_
     item_container->item_count = new_itemcount;
 }
 
-void mplayer_itemcontainer_resetitem_index(music_itemcontainer_t* item_container) {
+void maud_itemcontainer_resetitem_index(maud_itemcontainer_t* item_container) {
     item_container->item_index = 0;
 }
 
-void mplayer_itemcontainer_destroy(music_itemcontainer_t* item_container) {
+void maud_itemcontainer_destroy(maud_itemcontainer_t* item_container) {
     free(item_container->items);
-    mplayer_itemcontainer_init(item_container);
+    maud_itemcontainer_init(item_container);
 }

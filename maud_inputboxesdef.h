@@ -50,5 +50,5 @@ typedef struct inputbox {
     bool mouse_drag, start_xinited, end_xinited;
     bool entered, fill;
     bool hover, clicked;
-} mplayer_inputbox_t;
+} maud_inputbox_t;
 #endif
