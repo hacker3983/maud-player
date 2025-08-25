@@ -132,7 +132,7 @@ void maud_createapp(maud_t* maud) {
             .track_namespacing = 10
         }
     };
-    maud_colorpicker_t* color_picker = &maud->color_picker;
+    maud_colorpicker_t* color_picker = &maud->setting_navbar.customize_tab.color_picker;
     maud_colorpicker_setpreview_props(color_picker, maud->font, 20,
         400, 150);
     maud_colorpicker_setsliders_props(color_picker,
@@ -177,6 +177,10 @@ void maud_createapp(maud_t* maud) {
 void maud_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color) {
     SDL_SetRenderDrawColor(renderer, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
     SDL_RenderClear(renderer);
+}
+
+void maud_getwindow_size(maud_t* maud) {
+    SDL_GetWindowSize(maud->window, &maud->win_width, &maud->win_height);
 }
 
 void maud_set_window_title(maud_t* maud, const char* title) {
@@ -911,6 +915,7 @@ void maud_run(maud_t* maud) {
     maud_menumanager_setup_menu(maud);
     while(!maud->quit) {
         if(maud->menu_opt == MAUD_DEFAULT_MENU) {
+            maud_menumanager_setup_menu(maud);
             maud_defaultmenu(maud);
         } else if(maud->menu_opt == MAUD_SETTINGS_MENU) {
             maud_settingmenu(maud);
@@ -922,7 +927,6 @@ void maud_run(maud_t* maud) {
 void maud_defaultmenu(maud_t* maud) {
     int tab_hoverid = 0;
     int music_id = 0;
-    //SDL_GetTicks();
     maud_set_window_title(maud, WINDOW_TITLE);
     while(SDL_PollEvent(&maud->e)) {
         if(maud->e.type == SDL_QUIT) {
@@ -939,8 +943,6 @@ void maud_defaultmenu(maud_t* maud) {
                 maud_inputbox_handle_events(maud, &maud->playlist_manager.rename_inputbox);
             } else if(maud->search_inputbox.clicked) {
                 maud_inputbox_handle_events(maud, &maud->search_inputbox);
-            } else {
-                maud_colorpicker_handleinputbox_events(maud, &maud->color_picker);
             }
         } else if(maud->e.type == SDL_KEYDOWN) {
             if(music_addplaylistbtn.clicked) {
@@ -951,8 +953,6 @@ void maud_defaultmenu(maud_t* maud) {
                 maud_inputbox_handle_events(maud, &maud->playlist_manager.rename_inputbox);
             } else if(maud->search_inputbox.clicked) {
                 maud_inputbox_handle_events(maud, &maud->search_inputbox);
-            } else {
-                maud_colorpicker_handleinputbox_events(maud, &maud->color_picker);
             }
         } else if(maud->e.type == SDL_MOUSEMOTION) {
             maud->mouse_x = maud->e.motion.x, maud->mouse_y = maud->e.motion.y;
@@ -1056,6 +1056,7 @@ void maud_defaultmenu(maud_t* maud) {
             maud->mouse_clicked = true;
         }
     }
+
     SDL_GetWindowSize(maud->window, &maud->win_width, &maud->win_height);
     maud_set_window_color(maud->renderer, window_color);
     if(!maud->menu->textures[MAUD_TEXT_TEXTURE][0]) {
@@ -1067,6 +1068,7 @@ void maud_defaultmenu(maud_t* maud) {
     SDL_Rect tab_canvas = tab_info[0].text_canvas, text_canvas = text_info[0].text_canvas;
     tab_info[0].text_canvas.x = text_canvas.x + text_canvas.w + TAB_SPACING;
     if(!TAB_INIT) { TAB_INIT = 1; }
+
     for(int i=0;i<tab_info_size;i++) {
         if(!maud->menu->textures[MAUD_TAB_TEXTURE][i]) {
             maud->menu->textures[MAUD_TAB_TEXTURE][i] = maud_rendertab(maud, &tab_info[i]);
@@ -1110,6 +1112,7 @@ void maud_defaultmenu(maud_t* maud) {
         add_folder_tooltip.x = music_addfolderbtn.btn_canvas.x - add_folder_tooltip.w;
         maud_tooltip_renderhover(maud, &add_folder_tooltip);
     }
+
     // Create settings button on screen
     setting_iconbtn.btn_canvas.x = maud->win_width - setting_iconbtn.btn_canvas.w - 2;
     maud->menu->texture_canvases[MAUD_BUTTON_TEXTURE][setting_iconbtn.texture_idx] =
@@ -1149,6 +1152,7 @@ void maud_defaultmenu(maud_t* maud) {
         maud->playlist_manager.playlist_selected = false;
         maud->playlist_manager.rename_clicked = false;
     }
+
     if(active_tab == SONGS_TAB) {
         /* Create the search bar for searching for music */
         maud_createsearch_bar(maud);
@@ -1211,25 +1215,6 @@ void maud_defaultmenu(maud_t* maud) {
         maud_songsmanager_handleskipbutton(maud);
         maud_playlistmanager_display(maud);
         maud->mouse_clicked = false;
-    } else if(active_tab == COLORPICKER_TAB) {
-        maud_songsmanager_handleprevbutton(maud);
-        maud_songsmanager_handleskipbutton(maud);
-        maud_colorpicker_t* color_picker = &maud->color_picker;
-        maud_colorpicker_setpreview_position(
-            color_picker,
-            20,
-            tab_info[COLORPICKER_TAB].text_canvas.y +
-            tab_info[COLORPICKER_TAB].text_canvas.h + UNDERLINE_THICKNESS + 10
-        );
-        maud_colorpicker_setsliders_trackposition(
-            color_picker,
-            color_picker->preview_canvas.x,
-            color_picker->preview_canvas.y +
-            color_picker->preview_canvas.h + 10,
-            20
-        );
-        maud_colorpicker_display(maud, color_picker);
-        maud->mouse_clicked = false;
     }
     maud_notification_display(maud, &maud->notification);
     if(maud->display_musictooltip) {
@@ -1272,8 +1257,8 @@ void maud_destroyapp(maud_t* maud) {
     // Destroy the playlist manager an its resources
     maud_playlistmanager_destroy(maud);
 
-    // Destroy color picker system
-    maud_colorpicker_destroy(&maud->color_picker);
+    // Destroy setting menu systems
+    maud_settingmenu_destroy(maud);
 
     // free the text informations
     maud_menumanager_menu_freetext(maud, MAUD_DEFAULT_MENU);

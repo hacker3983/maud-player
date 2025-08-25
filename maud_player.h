@@ -21,6 +21,7 @@
 #include "maud_playertexture_types.h"
 #include "maud_playerscroll_types.h"
 #include "maud_textinfodef.h"
+#include "maud_settingsmenudef.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <shlwapi.h>
@@ -102,8 +103,7 @@ typedef struct tab_info {
 enum TAB_ID {
         SONGS_TAB,
         QUEUES_TAB,
-        PLAYLISTS_TAB,
-        COLORPICKER_TAB
+        PLAYLISTS_TAB
 };
 
 typedef struct maud_scrollbar {
@@ -144,15 +144,15 @@ typedef struct mplayer {
     bool window_resized, cursor_active;
     Uint32 blink_timeout;
 
+    // Setting menu navbar
+    maud_settingmenu_navbar_t setting_navbar;
+
     // Music Informations such music name, path, duration, etc
     musloc_t* locations;
     size_t location_count, total_filecount;
 
     // Notification system
     maud_notification_t notification;
-
-    // Color picker system
-    maud_colorpicker_t color_picker;
 
     music_t *music_list, *music_templist, *music_lists[2];
     size_t music_counts[2], music_count, music_renderpos, tick_count;
@@ -214,6 +214,7 @@ void maud_defaultmenu(maud_t* mplayer);
 void maud_setcursor(maud_t* mplayer, int cursor_type);
 void maud_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color);
 void maud_set_window_title(maud_t* mplayer, const char* title);
+void maud_getwindow_size(maud_t* maud);
 bool maud_tab_hover(maud_t* mplayer, tabinfo_t tab);
 bool maud_rect_hover(maud_t* mplayer, SDL_Rect rect);
 bool maud_tabs_hover(maud_t* mplayer, tabinfo_t* tabs, int* tab_id, size_t tab_count);
