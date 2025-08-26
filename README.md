@@ -1,5 +1,5 @@
 # maud-player
-A Music Audio Player Written In C.
+Maud is a Cross Platform Music Audio Player Application Written In C.
 
 **Note: This project is still under development**
 
@@ -9,22 +9,11 @@ A Music Audio Player Written In C.
 * Linux
 
 # Screenshots
-**Linux:**
-<image src="Screenshots/image-3.png">
-<br><br>
-
-<image src="Screenshots/image-4.png">
-<br><br>
-
-**Windows:**
-
-<image src="Screenshots/image-5.png">
-<br><br>
-
-<image src="Screenshots/image.png">
-<br><br>
-
-<image src="Screenshots/image-1.png">
-<br><br>
-
-<image src="Screenshots/image-2.png">
+<image src="Screenshots/Playing Music.png"><br><br>
+<image src="Screenshots/Play Queue.png"><br><br>
+<image src="Screenshots/Playlist grid view.png"><br><br>
+<image src="Screenshots/Playlist list view.png"><br><br>
+<image src="Screenshots/Playlist Open.png"><br><br>
+<image src="Screenshots/Customize Settings.png"><br><br>
+<image src="Screenshots/Music Library Settings.png"><br><br>
+<image src="Screenshots/About Settings.png">
