@@ -24,6 +24,8 @@ C_FILES = [
     "maud_scrollcontainer.c",
     "maud_selectionmenu.c",
     "maud_settingsmenu.c",
+    "maud_settingsmenu_customize.c",
+    "maud_settingsmenu_musiclibrary.c",
     "maud_playerscroll_types.c",
     "maud_playerbutton_manager.c",
     "maud_playlists.c",
