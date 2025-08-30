@@ -26,6 +26,7 @@ C_FILES = [
     "maud_settingsmenu.c",
     "maud_settingsmenu_customize.c",
     "maud_settingsmenu_musiclibrary.c",
+    "maud_settingsmenu_about.c",
     "maud_playerscroll_types.c",
     "maud_playerbutton_manager.c",
     "maud_playlists.c",
