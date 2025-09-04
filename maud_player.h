@@ -72,7 +72,7 @@ typedef struct music {
     mtime_t music_position, music_duration;
     double music_positionsecs, music_durationsecs;
     SDL_Rect outer_canvas, checkbox_size;
-    bool checkbox_ticked, fill, render, search_match, search_render, fit,
+    bool checkbox_ticked, fill, fit,
         remove;
     size_t location_index;
 } music_t;

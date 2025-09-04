@@ -417,11 +417,8 @@ void maud_filemanager_copymusicinfo_fromsearchindex(maud_t* maud, size_t index, 
     music_info->music_position.secs = 0;
     music_info->music_durationsecs = music_durationsecs;
     music_info->music_duration = maud_filemanager_music_gettime(music_durationsecs);
-    music_info->search_match = maud->music_list[index].search_match;
-    music_info->search_render = maud->music_list[index].search_render;
     music_info->text_info = maud->music_list[index].text_info;
     music_info->outer_canvas = maud->music_list[index].outer_canvas;
-    music_info->render = maud->music_list[index].render;
     music_info->checkbox_ticked = false;
     music_info->fill = false;
 }
@@ -434,8 +431,6 @@ void maud_filemanager_copymusic_info(music_t* src_info, music_t* dest_info) {
     dest_info->music_position = src_info->music_position;
     dest_info->music_duration = src_info->music_duration;
     dest_info->music_durationsecs = src_info->music_durationsecs;
-    dest_info->render = src_info->render;
-    dest_info->search_render = src_info->search_render;
     dest_info->music_name = src_info->music_name;
     dest_info->text_info = src_info->text_info;
     dest_info->outer_canvas = src_info->outer_canvas;
@@ -675,7 +670,6 @@ void maud_filemanager_loadmusics(maud_t* maud) {
             }
             utext.utext = music_list[music_count].music_name;
             utext.text_canvas = music_list[music_count].text_info.text_canvas;
-            music_list[music_count].render = true;
 
             if(!music_list[music_count].text_texture) {
                 music_list[music_count].text_texture = maud_textmanager_renderunicode(maud, maud->music_font, &utext);

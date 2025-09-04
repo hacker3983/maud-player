@@ -2,277 +2,116 @@
 #include "maud_notification.h"
 
 void maud_songsmanager_songstab_rendersongs(maud_t* maud) {
-    text_info_t utext = {14, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
-    int default_w = 0, default_h = 0;
-    SDL_Rect outer_canvas = utext.text_canvas;
     music_t* music_list = maud->music_list;
-    size_t music_count = maud->music_count, max_renderpos = maud->music_maxrenderpos,
-           *music_renderpos = &maud->music_renderpos;
-    /*if(maud->musicsearchbar_data && maud->music_searchresult &&
-        maud->music_searchresult_count < maud->music_searchresult_indicescount) {
-        music_list = maud->music_searchresult;
-        music_count = maud->music_searchresult_count;
-        music_renderpos = &maud->music_searchrenderpos;
-        max_renderpos = maud->match_maxrenderpos;
-    }*/
-    // if the music_count is zero then we exit the render songs function
-    if(!music_count) {
-        return;
-    }    
-    if(!music_list) {
+    size_t music_count = maud->music_count;
+    if(!music_count || !music_list) {
         return;
     }
-    /*  get the size of a character so we can determine the maximum amount of textures
-        we can render with in the songs box
-    */
-    TTF_SetFontSize(maud->music_font, utext.font_size);
-    TTF_SizeUTF8(maud->music_font, "A", &utext.text_canvas.w, &utext.text_canvas.h);
-    default_w = utext.text_canvas.w, default_h = utext.text_canvas.h + 22;
-    // calculation for the scrollability
-    int def_outerheight = 22;
-    if(songs_box.h < def_outerheight) {
-        def_outerheight = songs_box.h;
-    }
-    SDL_Rect prev_canvas = {0};
-    size_t max_textures = 0, music_rendercount = 0, *music_renderlist = NULL, max_rendercount = 0;
-    
-    float max_textures_precision = roundf((float)songs_box.h /
-        ((float)music_list[0].text_info.text_canvas.h + (float)def_outerheight));
-    // Ensure that the max_textures_precision is not negative to prevent crashing
-    if(max_textures_precision > 0) {
-        max_textures = (size_t)max_textures_precision;
-        max_rendercount = max_textures;
-        music_renderlist = calloc(max_rendercount+1, sizeof(size_t));
-        prev_canvas = music_list[0].outer_canvas;
-        prev_canvas.x = songs_box.x + 2, prev_canvas.y = songs_box.y + 1;
-        music_list[0].outer_canvas.y = songs_box.y + 1;
-    }
-    /* Ensure that the renderlist is not NULL. this happens whenever the max textures or max_textures precision
-       is less than equal to zero
-    */
-    if(!music_renderlist) {
-        return;
-    }
-    for(size_t i=0;i<music_count;i++) {
-        utext = music_list[i].text_info;
-        outer_canvas = music_list[i].outer_canvas;
-        default_h = utext.text_canvas.h, default_w = utext.text_canvas.w;
-        if(music_list[i].search_match && !maud->search_inputbox.input.data) {
-            music_list[i].search_match = false;
-            music_list[i].search_render = false;
-            if(songs_box.h < utext.text_canvas.h + def_outerheight) {
-                music_list[i].outer_canvas.h = songs_box.h;
-            } else {
-                music_list[i].outer_canvas.h = utext.text_canvas.h + def_outerheight;
-            }
+    SDL_Rect outer_canvas = {.x = songs_box.x + 2, .y = songs_box.y + 1},
+             end_canvas = outer_canvas;
+    text_info_t music_name = {0};
+    size_t end_renderpos = 0;
+    for(size_t i=maud->music_renderpos;i<music_count;i++) {
+        end_canvas.w = maud->win_width - scrollbar.w - 5;
+        end_canvas.h = music_list[i].text_info.text_canvas.h + 22;
+        end_renderpos = i+1;
+        if(end_canvas.y + end_canvas.h >= songs_box.y + songs_box.h) {
+            break;
         }
-        SDL_Rect temp_canvas = music_list[i].outer_canvas;
+        end_canvas.y += end_canvas.h + 3;
+    }
+    bool decrease_y = false;
+    if(maud->scroll && maud_rect_hover(maud, songs_box)) {
+        switch(maud->scroll_type) {
+            case MAUDSCROLL_DOWN:
+                if(end_renderpos < music_count) {
+                    maud->music_renderpos++;
+                }
+                break;
+            case MAUDSCROLL_UP:
+                if(maud->music_renderpos) {
+                    maud->music_renderpos--;
+                }
+                break;
+        }
+        maud->scroll = false;
+    }
+    if(end_renderpos == music_count &&
+        end_canvas.y + end_canvas.h > songs_box.y + songs_box.h) {
+                decrease_y = true;    
+    }
+    SDL_Rect clip_area = songs_box;
+    clip_area.h--;
+    SDL_RenderSetClipRect(maud->renderer, &clip_area);
+    for(size_t i=maud->music_renderpos;i<music_count;i++) {
+        outer_canvas.w = maud->win_width - scrollbar.w - 5;
+        outer_canvas.h = music_list[i].text_info.text_canvas.h + 22;
         if(maud_selectionmenu_togglesong_checkbox(maud, music_list, i)) {
             continue;
         }
-        if(def_outerheight < 22 && music_list[i].text_info.text_canvas.h + def_outerheight < temp_canvas.h) {
-            music_list[i].outer_canvas.h = music_list[i].text_info.text_canvas.h + def_outerheight;
+        if(decrease_y) {
+            outer_canvas.y -= (end_canvas.y + end_canvas.h) - (songs_box.y + songs_box.h - 1);
+            decrease_y = false;
         }
-        /*if(maud->musicsearchbar_data && !music_list[i].search_render && maud->music_searchresult) { continue; }
-        else*/
-        if(!music_list[i].render /*&& !maud->musicsearchbar_data*/) { continue; }
-        // set the calculated x, y position and other related info for the music text and outer canvas
-        music_list[i].outer_canvas.x = prev_canvas.x,
-        music_list[i].outer_canvas.y = prev_canvas.y;
-        music_list[i].outer_canvas.w = maud->win_width - scrollbar.w - 5;
-        music_list[i].text_info.text_canvas.y = outer_canvas.y +
-            ((music_list[i].outer_canvas.h -
-            utext.text_canvas.h) / 2);
-
-        outer_canvas = music_list[i].outer_canvas;
-        utext = music_list[i].text_info;
-        if(music_rendercount <= max_rendercount) {
-            music_renderlist[music_rendercount] = i;
-            // Handling scroll events
-            if(!music_addplaylistbtn.clicked && !maud->music_selectionmenu_addtobtn_clicked && maud->scroll
-                && maud_rect_hover(maud, songs_box) /*&& (maud->music_searchresult ||
-                    !maud->musicsearchbar_data)*/) {
-                size_t index = music_renderlist[music_rendercount];
-                bool *music_renderstatus = /*(maud->music_searchresult) ? &music_list[i].search_render :*/
-                                        &music_list[i].render;
-                switch(maud->scroll_type) {
-                    case MAUDSCROLL_DOWN:
-                        int musicendpos_y = (music_list[max_renderpos].outer_canvas.y +
-                        music_list[max_renderpos].text_info.text_canvas.h + def_outerheight);
-                        if(max_renderpos - index >= max_textures && index < max_renderpos) {
-                            music_list[index].outer_canvas.h -= 8;
-                            if(music_list[index].outer_canvas.h <= (def_outerheight/2)) {
-                                music_list[index].outer_canvas.h = 0;
-                                *music_renderstatus = false;
-                                (*music_renderpos)++;
-                            }
-                        } else if(max_renderpos - index >= max_textures && music_list[index].render
-                            && music_list[index].outer_canvas.h <= (def_outerheight/2) && index < max_renderpos) {
-                            // if the scroll up event occured before and the height of the outercanvas is zero
-                            // then we set that particular music render status to be false
-                            *music_renderstatus = false;
-                            (*music_renderpos)++;
-                        } else if(max_renderpos - index < max_textures && music_count >= max_textures
-                            && musicendpos_y >= songs_box.y + songs_box.h && index < max_renderpos) {
-                            // whenever we are close to the last texture in which the max_renderpos - index is less
-                            // than the maximum amount of textures then we decrement the height of the texture at the
-                            // top until it is less than or equal to zero
-                            //printf("Decrementation 2\n");
-                            music_list[index].outer_canvas.h -= 8;
-                            if(music_list[index].outer_canvas.h <= (def_outerheight/2)) {
-                                music_list[index].outer_canvas.h = 0;
-                                *music_renderstatus = false;
-                                (*music_renderpos)++;
-                            }
-                        }
-                        break;
-                    case MAUDSCROLL_UP:
-                        if(index >= 0) {
-                            music_list[index].outer_canvas.h += 8;
-                            if(music_list[index].outer_canvas.h >= def_outerheight) {
-                                music_list[index].outer_canvas.h = default_h + def_outerheight;
-                                if(index > 0) {
-                                    index--; (*music_renderpos)--;
-                                    music_renderstatus = /*(maud->music_searchresult) ? &music_list[index].search_render :*/
-                                        &music_list[index].render;
-                                }
-                            }
-                            *music_renderstatus = true;
-                        }
-                        break;
-                }
-                maud->scroll = false;
+        music_list[i].outer_canvas = outer_canvas;
+        music_list[i].text_info.text_canvas.x = outer_canvas.x + 50;
+        music_list[i].text_info.text_canvas.y = outer_canvas.y + (outer_canvas.h -
+            music_list[i].text_info.text_canvas.h) / 2;
+        music_name = music_list[i].text_info;
+        maud_songsmanager_rendersong_canvas(maud, music_list, i);
+        SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
+                  fill_color = {0};
+        checkbox_size.x = outer_canvas.x + 5;
+        checkbox_size.h = outer_canvas.h - 10;
+        checkbox_size.y = outer_canvas.y + (outer_canvas.h - checkbox_size.h) / 2;
+        if(!maud->tick_count) {
+            music_listplaybtn.btn_canvas.w = 30, music_listplaybtn.btn_canvas.h = outer_canvas.h - 10;
+            music_listplaybtn.btn_canvas.x = (checkbox_size.x + checkbox_size.w) + 20;
+            music_listplaybtn.btn_canvas.y = checkbox_size.y;
+        }
+        maud_songsmanager_handlesong_playbutton_hover(maud, outer_canvas);
+        maud_songsmanager_handleprevbutton(maud);
+        maud_songsmanager_handleskipbutton(maud);
+        maud_songsmanager_handlesongselection(maud, music_list, i, &music_list[i].text_info);
+        if(maud->tick_count) {
+            // whenever any checkbox is ticked and the current music we are current music we are rendering is not ticked
+            // we ensure that we set the checkbox fill state to false before drawing its checkbox
+            if(!music_list[i].checkbox_ticked && !maud_music_hover(maud, i)) {
+                music_list[i].fill = false;
             }
-            size_t next_index = (i < max_renderpos - 1) ? i+1 : i;
-            SDL_Rect next_outercanvas = music_list[next_index].outer_canvas;
-            SDL_Rect next_textcanvas = music_list[next_index].text_info.text_canvas;
-            int musicendpos_y = (outer_canvas.y + utext.text_canvas.h + def_outerheight),
-                nextendpos_y = next_outercanvas.y + next_textcanvas.h + def_outerheight;
-            // calculate the amount we should decrease the original height of the outercanvas by to let it fit within
-            // the songs box extra_h
-            int extra_h = musicendpos_y - songs_box.y - songs_box.h + 5;
-            // Whenever the current music position i is less than the maximum render position and the last music position
-            // at the end is greater than the height of the songs box then we adjust the height to let it fit directly
-            // within the songs box
-            if(i <= max_renderpos && musicendpos_y > songs_box.y + songs_box.h) {
-                if(music_rendercount == max_rendercount) {
-                    extra_h -= 4;
-                }
-                if(i > 0) {
-                    music_list[i].outer_canvas.h = utext.text_canvas.h + def_outerheight - extra_h;
-                }
-                music_list[i].fit = false;
-                //music_list[i].fit = false;
-            } else if(!music_list[i].fit && musicendpos_y < songs_box.y + songs_box.h &&
-                def_outerheight == 22) {
-                if(music_list[i].outer_canvas.y + utext.text_canvas.h + 22 < songs_box.y + songs_box.h) {
-                        music_list[i].outer_canvas.h = utext.text_canvas.h + def_outerheight;
-                }
-                music_list[i].fit = true;
-            }
-            maud_songsmanager_rendersong_canvas(maud, music_list, music_renderlist[music_rendercount]);
-            SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
-            fill_color = {0}/*{0xFF, 0xA5, 0x00, 0xff}*/;
-            checkbox_size.x = outer_canvas.x+5;
-            checkbox_size.h = outer_canvas.h-10;
-            checkbox_size.y = outer_canvas.y + ((outer_canvas.h - checkbox_size.h)/2);
-            // Do not modify the x, y, width, and height of the music list play btn canvas whenever we selected music
-            if(!maud->tick_count) {
-                music_listplaybtn.btn_canvas.w = 30, music_listplaybtn.btn_canvas.h = outer_canvas.h - 10;
-                music_listplaybtn.btn_canvas.x = (checkbox_size.x + checkbox_size.w) + 20,
-                music_listplaybtn.btn_canvas.y = checkbox_size.y;
-            }
-            int mouse_x = maud->mouse_x, mouse_y = maud->mouse_y;
-            maud_songsmanager_handlesong_playbutton_hover(maud, outer_canvas);
-            maud_songsmanager_handleprevbutton(maud);
-            maud_songsmanager_handleskipbutton(maud);
-            maud_songsmanager_handlesongselection(maud, music_list, i, &utext);
-            if(maud->tick_count) {
-                // whenever any checkbox is ticked and the current music we are current music we are rendering is not ticked
-                // we ensure that we set the checkbox fill state to false before drawing its checkbox
-                if(!music_list[i].checkbox_ticked && !maud_music_hover(maud, i)) {
-                    music_list[i].fill = false;
-                }
+            maud_drawmusic_checkbox(maud, box_color, fill_color, music_list[i].fill, tick_color,
+                music_list[i].checkbox_ticked);
+        } else if(maud_music_hover(maud, i)) {
+            // whenever no checkbox is ticked and we hover over the music we display the check box
+            // so that the user can click it or select it
+            if(maud_checkbox_hovered(maud)) {
                 maud_drawmusic_checkbox(maud, box_color, fill_color, music_list[i].fill, tick_color,
                     music_list[i].checkbox_ticked);
-            } else if(maud_music_hover(maud, i)) {
-                // whenever no checkbox is ticked and we hover over the music we display the check box
-                // so that the user can click it or select it
-                if(maud_checkbox_hovered(maud)) {
-                    maud_drawmusic_checkbox(maud, box_color, fill_color, music_list[i].fill, tick_color,
-                        music_list[i].checkbox_ticked);
-                } else if(!maud_checkbox_hovered(maud)) {
-                    maud_drawmusic_checkbox(maud, box_color, fill_color, false, tick_color, false);
-                }
+            } else if(!maud_checkbox_hovered(maud)) {
+                maud_drawmusic_checkbox(maud, box_color, fill_color, false, tick_color, false);
             }
-            SDL_RenderCopy(maud->renderer, music_list[music_renderlist[music_rendercount]].text_texture, NULL,
-                &utext.text_canvas);
-            music_rendercount++;
-        } else {
+        }
+        SDL_RenderCopy(maud->renderer, music_list[i].text_texture, NULL,
+            &music_list[i].text_info.text_canvas);
+        if(outer_canvas.y + outer_canvas.h >= songs_box.y + songs_box.h) {
             break;
         }
-        // calculate the y position for the next musics outercanvas
-        prev_canvas.y += music_list[i].outer_canvas.h + 3;
+        outer_canvas.y += outer_canvas.h + 3;
     }
-    /* Determine the index, and Calculate the end y position of the last texture that was rendered to the screen */
-    size_t index = (music_rendercount < 1) ? 0 : music_renderlist[music_rendercount-1];
-    int endpos_y = music_list[index].outer_canvas.y + music_list[index].text_info.text_canvas.h + def_outerheight;
-    /* Calculate the end y position for the songs_box and Initialize songs_renderheight_total to store the total height
-       of the textures that are currently being rendered to the screen */
-    int songsbox_endpos_y = songs_box.y + songs_box.h, songs_renderheight_total = 0;
-
-    /* The data and calculations above are used whenever the window is resized and textures cannot fit on the screen.
-       These conditions are evaluated:
-       1. the index of the last music that was rendered to the screen is equal to the maximum render position
-       2. The end y position of the songs box - the end y position for the last music that is being rendered is greater
-       than the height of the text for the last texture
-       As long as the conditions above are true then we adjust the height of the previous textures that are not being
-       rendered to the screen so that they fit entirely within the songs_box
-    */
-    if(maud->window_resized && index == max_renderpos && songsbox_endpos_y - endpos_y > music_list[index].text_info.text_canvas.h) {
-        /* Determine the total height of each texture that is currently being rendered to the screen */
-        for(size_t i=0;i<music_rendercount;i++) {
-            songs_renderheight_total += music_list[music_renderlist[i]].outer_canvas.h;
-        }
-        /* Using the total height of each texture being rendered. We determine the amount of textures that are
-           not being rendered to the screen by finding the difference in the height of the songs box and the
-           total height of the textures being rendered to the screen
-        */
-        int amount_notbeing_rendered = (int)roundf((float)(songs_box.h - songs_renderheight_total) /
-        (float)(music_list[0].text_info.text_canvas.h + def_outerheight));
-        int amount_being_rendered = (max_textures-1) - amount_notbeing_rendered;
-        
-        /* Whenever the first render position is greater than the amount of textures not being rendered then
-           we adjust the height of previous render positions and the first_render position
-           so that it fits within the screen.
-        */
-        size_t first_renderpos = music_renderlist[0];
-        if(first_renderpos > amount_notbeing_rendered) {
-            for(size_t i=first_renderpos-amount_notbeing_rendered;i<=first_renderpos;i++) {
-                bool* render_status = /*(maud->music_searchresult) ? &music_list[i].search_render :*/
-                                        &music_list[i].render;
-                music_list[i].outer_canvas.h = music_list[i].text_info.text_canvas.h + def_outerheight;
-                //music_list[i].render = true;
-                maud->music_renderpos--;
-                *render_status = true;
-            }
-        }
-    }
+    SDL_RenderSetClipRect(maud->renderer, NULL);
     // scroll bar related information
     maud_scrollbar_t songsbox_scrollbar = {
         .rect = scrollbar,
         .displacement = 0.0,
         .orientation = 0,
-        .start_pos = *music_renderpos,
+        .start_pos = maud->music_renderpos,
         .final_pos = music_count,
         .padding_x = -2,
         .padding_y = -(2 + (int)((double)scrollbar.h / 2.0)),
         .scroll_area = songs_box
     };
     maud->scroll = false;
-    maud_renderscroll_bar(maud, &songsbox_scrollbar, max_textures);
-    maud->window_resized = false;
-    free(music_renderlist); music_renderlist = NULL;
+    maud_renderscroll_bar(maud, &songsbox_scrollbar, end_renderpos - maud->music_renderpos);
 }
 
 void maud_songsmanager_rendersong_canvas(maud_t* maud, music_t* music_list, size_t music_id) {
