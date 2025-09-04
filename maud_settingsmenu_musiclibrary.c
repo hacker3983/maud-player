@@ -141,7 +141,10 @@ void maud_settingmenu_rendermusiclibrary_locations(maud_t* maud,
             "images/removelocation.png");
         SDL_RenderCopy(maud->renderer, removebtn_texture, NULL, &removebtn_canvas);
         SDL_DestroyTexture(removebtn_texture);
-    
+        if(maud_rect_hover(maud, removebtn_canvas) && maud->mouse_clicked) {
+            maud_filemanager_delmusic_locationindex(maud, i);
+            maud->mouse_clicked = false;
+        }
         #ifdef _WIN32
         free(music_location.utext);
         #endif
