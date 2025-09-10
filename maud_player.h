@@ -212,6 +212,7 @@ TTF_Font* maud_openfont(const char* file, int size);
 void maud_run(maud_t* mplayer);
 void maud_defaultmenu(maud_t* mplayer);
 void maud_setcursor(maud_t* mplayer, int cursor_type);
+void maud_set_window_icon(maud_t* maud, const char* path)
 void maud_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color);
 void maud_set_window_title(maud_t* mplayer, const char* title);
 void maud_getwindow_size(maud_t* maud);

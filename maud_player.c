@@ -51,6 +51,16 @@ SDL_Window* maud_createwindow(const char* title, int width, int height) {
     return window;
 }
 
+void maud_set_window_icon(maud_t* maud, const char* path) {
+    SDL_Surface* icon_surface = IMG_Load(path);
+    if(!icon_surface) {
+        fprintf(stderr, "Failed to load icon: %s\n", path);
+        return;
+    }
+    SDL_SetWindowIcon(maud->window, icon_surface);
+    SDL_FreeSurface(icon_surface);
+}
+
 SDL_Renderer* maud_createrenderer(SDL_Window* window) {
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     return renderer;
@@ -65,6 +75,7 @@ void maud_createapp(maud_t* maud) {
     // create music player's graphical utilities
     maud->menu_opt = MAUD_DEFAULT_MENU;
     maud->window = maud_createwindow(WINDOW_TITLE, WIDTH, HEIGHT);
+    maud_set_window_icon(maud, "images/icon/maud.png");
     maud->renderer = maud_createrenderer(maud->window);
     maud->font = maud_openfont(FONT_FILE, FONT_SIZE);
     maud->music_font = maud_openfont(MUSIC_FONTFILE, MUSIC_FONTSIZE);

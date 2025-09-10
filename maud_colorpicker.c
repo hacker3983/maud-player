@@ -94,13 +94,15 @@ void maud_colorpicker_setsliders_props(maud_colorpicker_t* color_picker,
     maud_colorpicker_setcolorfromhandle(color_picker);
 }
 
-void maud_colorpicker_setslider_trackposition(maud_colorpicker_t* color_picker, int slider_type, int track_x, int track_y) {
+void maud_colorpicker_setslider_trackposition(maud_colorpicker_t* color_picker, int slider_type,
+    int track_x, int track_y) {
     int track_height = color_picker->sliders[slider_type].track.h,
         track_namespacing = color_picker->sliders[slider_type].track_namespacing;
     text_info_t* track_nameinfo = &color_picker->sliders[slider_type].track_nameinfo;
     track_nameinfo->text_canvas.x = track_x;
     track_nameinfo->text_canvas.y = track_y + (track_height - track_nameinfo->text_canvas.h) / 2;
-    color_picker->sliders[slider_type].inputbox.canvas.x = track_x + track_namespacing + color_picker->max_trackname_width;
+    color_picker->sliders[slider_type].inputbox.canvas.x = track_x + track_namespacing
+        + color_picker->max_trackname_width;
     color_picker->sliders[slider_type].inputbox.canvas.y = track_y;
 
     color_picker->sliders[slider_type].track.x = color_picker->sliders[slider_type].inputbox.canvas.x +

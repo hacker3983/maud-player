@@ -61,14 +61,22 @@ void maud_settingmenu_displayabout_tab(maud_t* maud) {
     }
     int remaining_space = maud->win_width - navbar->canvas.w - 10;
     SDL_Rect full_canvas = {
+        .x = navbar->canvas.x + navbar->canvas.w + (maud->win_width - max_width - navbar->canvas.w) / 2,
+        .y = (maud->win_height - total_height) / 2,
         .w = max_width,
         .h = total_height,
-        .y = (maud->win_height - total_height) / 2
     };
     start_y = full_canvas.y;
     for(size_t i=0;i<maud_infocount;i++) {
-        maud_info[i].text_canvas.x = navbar->canvas.x + navbar->canvas.w + 10 +
-            (remaining_space - maud_info[i].text_canvas.w) / 2,
+        int center_x = full_canvas.x, navbar_endx = navbar->canvas.x + navbar->canvas.w;
+        if(center_x < navbar->canvas.x + navbar->canvas.w) {
+            full_canvas.x = navbar->canvas.x + navbar->canvas.w + 1;
+        }
+        center_x = full_canvas.x + (full_canvas.w - maud_info[i].text_canvas.w) / 2;
+        if(center_x < navbar_endx) {
+            center_x = full_canvas.x;
+        }
+        maud_info[i].text_canvas.x = center_x,
         maud_info[i].text_canvas.y = start_y;
         SDL_Texture* info_texture = maud_textmanager_rendertext(maud, maud->font,
             &maud_info[i]);
