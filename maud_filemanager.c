@@ -772,72 +772,58 @@ void maud_filemanager_browsefolder(maud_t* maud) {
     #endif
 }
 
+const char* maud_filemanager_getextension_name(Mix_Music* music) {
+    int music_type = Mix_GetMusicType(music);
+    #ifdef _WIN32
+    const wchar_t* pextension_name = NULL;
+    #else
+    const char* pextension_name = NULL;
+    #endif
+    static char extension_name[5] = {0};
+    switch(music_type) {
+        case MUS_MP3:  pextension_name = FILE_EXTENSIONS[MAUD_MP3EXT];  break;
+        case MUS_FLAC: pextension_name = FILE_EXTENSIONS[MAUD_FLACEXT]; break;
+        case MUS_OGG:  pextension_name = FILE_EXTENSIONS[MAUD_OGGEXT];  break;
+        case MUS_OPUS: pextension_name = FILE_EXTENSIONS[MAUD_OPUSEXT]; break;
+        case MUS_WAV:  pextension_name = FILE_EXTENSIONS[MAUD_WAVEXT];  break;
+        default:       pextension_name = FILE_EXTENSIONS[MAUD_M4AEXT];
+    }
+    #ifdef _WIN32
+    char* temp = maud_widetoutf8(pextension_name);
+    strcpy(extension_name, temp);
+    free(temp);
+    #else
+    strcpy(extension_name, pextension_name);
+    #endif
+    return extension_name;
+}
+
 char* maud_filemanager_getmusic_namefrompath(Mix_Music* music, void* path) {
-    // If the music file path is NULL we just return NULL
     if(path == NULL) {
         return NULL;
     }
-    char* music_name = NULL;
-    size_t name_len = 0, ext_index = 0, byte_size = sizeof(char);
+    const char* extension_name = maud_filemanager_getextension_name(music);
+    char *music_name = NULL, *filename = NULL;
     #ifdef _WIN32
-    wchar_t *wmusic_name = NULL, *filename = NULL, *filename_cp = NULL;
-    wchar_t ext[6] = {0};
-    wcscpy(ext, L".");
-    wchar_t *(*string_concat)(wchar_t* dest, const wchar_t* src) = &wcscat; 
-    filename = wcsrchr((wchar_t*)path, L'\\');
-    byte_size = sizeof(wchar_t);
+    filename = maud_widetoutf8(wcsrchr((wchar_t*)path, L'\\'));
     #else
-    char *filename = NULL, *filename_cp = NULL;
-    char ext[6] = {0};
-    strcpy(ext, ".");
-    char *(*string_concat)(char* dest, const char* src) = &strcat;
     filename = strrchr((char*)path, '/');
     #endif
-    // Whenever the last occurence of the character '\' in the file path is not found then filename will be equal to NULL
-    // whenever if because NULL we exit the function by returning NULL
-    if(!filename) {
-        return NULL;
-    }
-    // SKip the character '\' assuming the filename will come after the '\' character
+    // Skip forward slash or backslash
     filename++;
+    // Calculate music name length by subtracting extension length
+    size_t extension_len = strlen(extension_name) + 1,
+           filename_len = strlen(filename),
+           music_namelen = filename_len - extension_len;
+    if(!music_namelen) {
+        music_namelen = filename_len;
+    }
+    // Allocate memory and copy the music name into the allocated pointer
+    music_name = calloc(music_namelen + 1, sizeof(char*));
+    strncpy(music_name, filename, music_namelen);
     #ifdef _WIN32
-    name_len = wcslen(filename);
-    #else
-    name_len = strlen(filename);
-    #endif
-    int music_type = Mix_GetMusicType(music);
-    switch(music_type) {
-        case MUS_MP3:  string_concat(ext, FILE_EXTENSIONS[MAUD_MP3EXT]);  break;
-        case MUS_FLAC: string_concat(ext, FILE_EXTENSIONS[MAUD_FLACEXT]); break;
-        case MUS_OGG:  string_concat(ext, FILE_EXTENSIONS[MAUD_OGGEXT]);  break;
-        case MUS_OPUS: string_concat(ext, FILE_EXTENSIONS[MAUD_OPUSEXT]); break;
-        case MUS_WAV:  string_concat(ext, FILE_EXTENSIONS[MAUD_WAVEXT]);  break;
-        default:       string_concat(ext, FILE_EXTENSIONS[MAUD_M4AEXT]);
-    }
-    for(size_t i=0;i<name_len;i++) {
-        filename++;
-        #ifdef _WIN32
-        if(wcscmp(filename, ext) == 0) { ext_index = i; break; }
-        #else
-        if(strcmp(filename, ext) == 0) { ext_index = i; break; }
-        #endif
-    }
-    if(ext_index == 0) {
-        filename -= name_len, filename_cp = calloc(name_len+1, byte_size);
-    } else {
-        name_len = ext_index+1, filename -= name_len,
-        filename_cp = calloc(name_len+1, byte_size);
-    }
-    for(size_t i=0;i<name_len;i++) {
-        filename_cp[i] = filename[i];
-    }
-    /*
-        On windows we need to convert wchar_t into a multibyte string in utf8 encoding
-    */
-    #ifdef _WIN32
-    music_name = maud_widetoutf8(filename_cp);
-    #else
-    music_name = filename_cp;
+    filename--;
+    free(filename);
     #endif
     return music_name;
 }
