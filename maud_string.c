@@ -44,7 +44,7 @@ wchar_t* maud_stringtowide(const char* string) {
     return wstring;
 }
 
-char* maud_widetoutf8(wchar_t* wstring) {
+char* maud_widetoutf8(const wchar_t* wstring) {
     size_t len_wstr = 0;
     char* string = NULL;
     #ifdef _WIN32

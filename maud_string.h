@@ -14,7 +14,7 @@
 char* maud_stringtolower(char** string, size_t wlen);
 wchar_t* maud_widetolower(wchar_t** wstring, size_t len);
 wchar_t* maud_stringtowide(const char* string);
-char* maud_widetoutf8(wchar_t* wstring);
+char* maud_widetoutf8(const wchar_t* wstring);
 char* maud_strcasestr(char* haystack, char* needle);
 char* maud_dupstr(const char* string, size_t len);
 char* maud_getutf8_char(const char* utf8_string, size_t* index, size_t utf8_stringlen);
