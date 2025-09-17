@@ -4,6 +4,12 @@
 #include "maud_tooltipsdef.h"
 #include "maud_colorpickerdef.h"
 
+enum customize_id {
+    CUSTOMIZE_MUSICTILE_BACKGROUNDCOLOR,
+    CUSTOMIZE_MUSICTILE_TEXTCOLOR
+};
+
+
 typedef struct maud_customizetab_button {
     SDL_Rect canvas;
     SDL_Color color;
@@ -22,9 +28,12 @@ typedef struct maud_customizetab {
     SDL_Rect canvas;
     SDL_Color canvas_color;
     SDL_Rect icon_canvas;
+    SDL_Rect backbtn;
     text_info_t header_text;
     maud_musictile_modifier_t musictile_modifier;
     maud_colorpicker_t color_picker;
+    int customize_id;
+    bool show_colorpicker;
 } maud_customizetab_t;
 
 typedef struct maud_addlocationbtn {
