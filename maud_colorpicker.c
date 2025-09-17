@@ -12,30 +12,25 @@ char* maud_colorpicker_getslidername(int slider_type) {
     return slider_name;
 }
 
-void maud_colorpicker_setslider_trackprop(maud_colorpicker_t* color_picker, int slider_type,
-    TTF_Font* track_font, const char* track_name, int track_fontsize, SDL_Color track_namecolor,
-    int track_namespacing, int track_segmentwidth, int track_height) {
-    color_picker->sliders[slider_type].track_font = track_font;
-    text_info_t* track_nameinfo = &color_picker->sliders[slider_type].track_nameinfo;
-    if(track_name) {
-        color_picker->sliders[slider_type].track_name = maud_dupstr(track_name, strlen(track_name));
-    } else {
-        color_picker->sliders[slider_type].track_name = maud_colorpicker_getslidername(slider_type);
+void maud_colorpicker_setslider_trackprop(maud_colorpicker_t* color_picker, int slider_type) {
+    color_slider_t* slider = &color_picker->sliders[slider_type];
+    color_sliderprops_t* slider_props = &color_picker->props.slider_props;
+    text_info_t* track_nameinfo = &slider->track_nameinfo;
+    int* max_trackname_width = &slider_props->max_trackname_width;
+    slider->track_font = slider_props->track_font;
+    slider->track_name = slider_props->track_names[slider_type];
+    track_nameinfo->font_size = slider_props->track_fontsize;
+    track_nameinfo->text = slider->track_name;
+    track_nameinfo->text_color = slider_props->track_namecolor;
+    maud_textmanager_sizetext(slider_props->track_font, track_nameinfo);
+    if(track_nameinfo->text_canvas.w > (*max_trackname_width)) {
+        *max_trackname_width = track_nameinfo->text_canvas.w;
     }
-    color_picker->sliders[slider_type].track_namespacing = track_namespacing;
-    track_nameinfo->text_color = track_namecolor;
-    track_nameinfo->font_size = track_fontsize;
-    track_nameinfo->text = color_picker->sliders[slider_type].track_name;
-    maud_textmanager_sizetext(track_font, track_nameinfo);
-    if(track_nameinfo->text_canvas.w > color_picker->max_trackname_width) {
-        color_picker->max_trackname_width = track_nameinfo->text_canvas.w;
-    }
-    color_picker->sliders[slider_type].track.w = 256 * track_segmentwidth,
-    color_picker->sliders[slider_type].track.h = track_height;
-    color_picker->sliders[slider_type].track_segmentwidth = track_segmentwidth;
-    color_picker->sliders[slider_type].inputbox = maud_inputbox_create(
-        track_font,
-        track_fontsize,
+    slider->track.w = 256 * slider_props->track_segmentwidth;
+    slider->track.h = slider_props->track_height;
+    slider->inputbox = maud_inputbox_create(
+        slider_props->track_font,
+        slider_props->track_fontsize,
         (SDL_Color){0x12, 0x12, 0x12, 0xff},
         NULL,
         (SDL_Color){0},
@@ -48,16 +43,165 @@ void maud_colorpicker_setslider_trackprop(maud_colorpicker_t* color_picker, int 
         2,
         25
     );
-    color_picker->sliders[slider_type].inputbox.show_cursor = false;
+    slider_props->inputbox_width = slider->inputbox.canvas.w,
+    slider_props->inputbox_height = slider->inputbox.canvas.h;
+    slider->inputbox.show_cursor = false;
 }
 
-void maud_colorpicker_setslider_handleprop(maud_colorpicker_t* color_picker, int slider_type,
-    int handle_width, int handle_height, SDL_Color handle_color, SDL_Color handle_bordercolor) {
-    color_picker->sliders[slider_type].handle.w = handle_width,
-    color_picker->sliders[slider_type].handle.h = handle_height,
-    color_picker->sliders[slider_type].handle_pos = 255;
-    color_picker->sliders[slider_type].handle_color = handle_color;
-    color_picker->sliders[slider_type].handle_bordercolor = handle_bordercolor;
+void maud_colorpicker_setslider_handleprop(maud_colorpicker_t* color_picker, int slider_type) {
+    color_slider_t* slider = &color_picker->sliders[slider_type];
+    color_sliderprops_t* slider_props = &color_picker->props.slider_props;
+    slider->handle.w = slider_props->handle_width;
+    slider->handle.h = slider_props->handle_height;
+    slider->handle_pos = slider_props->handle_pos;
+    slider->handle_color = slider_props->handle_color;
+    slider->handle_bordercolor = slider_props->handle_bordercolor;
+}
+
+void maud_colorpicker_setsliders_trackprop(maud_colorpicker_t* color_picker) {
+    for(size_t i=0;i<4;i++) {
+        maud_colorpicker_setslider_trackprop(color_picker, i);
+        maud_colorpicker_setslider_handleprop(color_picker, i);
+    }
+    maud_colorpicker_setcolorfromhandle(color_picker);
+}
+
+void maud_colorpicker_setpreview_props(maud_colorpicker_t* color_picker) {
+    color_pickerprops_t* picker_props = &color_picker->props;
+    color_picker->preview_canvas.w = picker_props->preview_width,
+    color_picker->preview_canvas.h = picker_props->preview_height;
+
+    color_picker->hex_inputbox = maud_inputbox_create(
+        picker_props->preview_font,
+        picker_props->preview_fontsize,
+        (SDL_Color){0x12, 0x12, 0x12, 0xff},
+        NULL,
+        (SDL_Color){0},
+        white,
+        (SDL_Color){0x00, 0xff, 0x00, 0xff},
+        0, 0,
+        200,
+        50,
+        2,
+        25
+    );
+}
+
+void maud_colorpicker_setpreview_position(maud_colorpicker_t* color_picker) {
+    color_pickerprops_t* picker_props = &color_picker->props;
+    SDL_Rect* canvas = &color_picker->canvas, *preview_canvas = &color_picker->preview_canvas;
+    preview_canvas->x = canvas->x,
+    preview_canvas->y = canvas->y;
+
+    maud_inputbox_t* hex_inputbox = &color_picker->hex_inputbox;
+    hex_inputbox->canvas.x = preview_canvas->x + preview_canvas->w + picker_props->preview_spacing;
+    hex_inputbox->canvas.y = preview_canvas->y + (preview_canvas->h - hex_inputbox->canvas.h) / 2;
+}
+
+void maud_colorpicker_setslider_trackposition(maud_colorpicker_t* color_picker, int slider_type,
+    int track_x, int track_y) {
+    color_slider_t* slider = &color_picker->sliders[slider_type];
+    color_sliderprops_t* slider_props = &color_picker->props.slider_props;
+    int track_height = slider->track.h,
+        track_namespacing = slider_props->track_namespacing;
+    text_info_t* track_nameinfo = &slider->track_nameinfo;
+    track_nameinfo->text_canvas.x = track_x;
+    track_nameinfo->text_canvas.y = track_y + (track_height - track_nameinfo->text_canvas.h) / 2;
+    slider->inputbox.canvas.x = track_x + track_namespacing
+        + slider_props->max_trackname_width;
+    slider->inputbox.canvas.y = track_y;
+
+    slider->track.x = slider->inputbox.canvas.x +
+            slider->inputbox.canvas.w + track_namespacing,
+    slider->track.y = track_y;
+}
+
+void maud_colorpicker_setsliders_trackposition(maud_colorpicker_t* color_picker) {
+    color_pickerprops_t* picker_props = &color_picker->props;
+    color_sliderprops_t* slider_props = &picker_props->slider_props;
+    SDL_Rect *canvas = &color_picker->canvas,
+             *preview_canvas = &color_picker->preview_canvas;
+
+    int track_x = canvas->x,
+        track_y = preview_canvas->y + preview_canvas->h + 10,
+        track_verticalspacing = slider_props->track_verticalspacing;
+    for(int i=0;i<4;i++) {
+        maud_colorpicker_setslider_trackposition(color_picker, i, track_x, track_y);
+        track_y += color_picker->sliders[i].track.h + track_verticalspacing;
+    }
+}
+
+void maud_colorpicker_setslider_props(maud_colorpicker_t* color_picker, color_sliderprops_t* props) {
+    color_sliderprops_t* slider_props = &color_picker->props.slider_props;
+    slider_props->track_font = props->track_font;
+    slider_props->track_fontsize = props->track_fontsize;
+    slider_props->track_segmentwidth = props->track_segmentwidth;
+    slider_props->track_height = props->track_height;
+    slider_props->track_namecolor = props->track_namecolor;
+    slider_props->track_verticalspacing = props->track_verticalspacing;
+    slider_props->track_namespacing = props->track_namespacing;
+    slider_props->handle_pos = props->handle_pos;
+    slider_props->handle_color = props->handle_color;
+    slider_props->handle_bordercolor = props->handle_bordercolor;
+    slider_props->handle_width = props->handle_width;
+    slider_props->handle_height = props->handle_height;
+    for(size_t i=0;i<4;i++) {
+        char* track_name = props->track_names[i];
+        if(track_name) {
+            slider_props->track_names[i] = maud_dupstr(track_name, strlen(track_name));
+        } else {
+            slider_props->track_names[i] = maud_colorpicker_getslidername(i);
+        }
+    }
+    maud_colorpicker_setsliders_trackprop(color_picker);
+}
+
+void maud_colorpicker_setprops(maud_colorpicker_t* color_picker, color_pickerprops_t* props) {
+    color_pickerprops_t* picker_props = &color_picker->props;
+    picker_props->preview_font = props->preview_font;
+    picker_props->preview_fontsize = props->preview_fontsize;
+    picker_props->preview_width = props->preview_width;
+    picker_props->preview_height = props->preview_height;
+    picker_props->preview_spacing = props->preview_spacing;
+    maud_colorpicker_setpreview_props(color_picker);
+    maud_colorpicker_setslider_props(color_picker, &props->slider_props);
+    maud_colorpicker_getsize(color_picker);
+}
+
+void maud_colorpicker_getsize(maud_colorpicker_t* color_picker) {
+    color_slider_t* sliders = color_picker->sliders;
+    color_sliderprops_t* slider_props = &color_picker->props.slider_props;
+    SDL_Rect* canvas = &color_picker->canvas;
+    int track_w = 256 * slider_props->track_segmentwidth;
+    SDL_Rect slider_canvas = {
+        .w =
+        (
+            slider_props->max_trackname_width + track_w
+            + (slider_props->track_namespacing * 2)
+        ),
+        .h = slider_props->track_height
+    }, canvas_list[] = {
+        color_picker->preview_canvas,
+        slider_canvas,
+        slider_canvas,
+        slider_canvas,
+        slider_canvas
+    };
+    size_t canvas_count = sizeof(canvas_list) / sizeof(SDL_Rect);
+    int max_width = 0, total_height = slider_props->track_verticalspacing * 3;
+    for(size_t i=0;i<canvas_count;i++) {
+        SDL_Rect canvas = canvas_list[i];
+        if(canvas.w > max_width) {
+            max_width = canvas.w;
+        }
+        total_height += canvas.h;
+    }
+}
+
+void maud_colorpicker_setposition(maud_colorpicker_t* color_picker, int x, int y) {
+    color_picker->canvas.x = x, color_picker->canvas.y = y;
+    maud_colorpicker_setpreview_position(color_picker);
+    maud_colorpicker_setsliders_trackposition(color_picker);
 }
 
 void maud_colorpicker_setslider_handlepos(maud_colorpicker_t* color_picker, int slider_type,
@@ -79,73 +223,6 @@ void maud_colorpicker_setslider_handlepos(maud_colorpicker_t* color_picker, int 
             break;
     }
 }
-
-void maud_colorpicker_setsliders_props(maud_colorpicker_t* color_picker,
-    color_tracknameattrib_t track_nameattribs[4], int track_segmentwidth,
-    int track_height, int handle_width, int handle_height,
-    SDL_Color handle_color, SDL_Color handle_bordercolor) {
-    for(size_t i=0;i<4;i++) {
-        maud_colorpicker_setslider_trackprop(color_picker, i, track_nameattribs[i].track_font,
-            track_nameattribs[i].track_name, track_nameattribs[i].track_fontsize,
-            track_nameattribs[i].track_namecolor, track_nameattribs[i].track_namespacing,
-            track_segmentwidth, track_height);
-        maud_colorpicker_setslider_handleprop(color_picker, i, handle_width, handle_height, handle_color, handle_bordercolor);
-    }
-    maud_colorpicker_setcolorfromhandle(color_picker);
-}
-
-void maud_colorpicker_setslider_trackposition(maud_colorpicker_t* color_picker, int slider_type,
-    int track_x, int track_y) {
-    int track_height = color_picker->sliders[slider_type].track.h,
-        track_namespacing = color_picker->sliders[slider_type].track_namespacing;
-    text_info_t* track_nameinfo = &color_picker->sliders[slider_type].track_nameinfo;
-    track_nameinfo->text_canvas.x = track_x;
-    track_nameinfo->text_canvas.y = track_y + (track_height - track_nameinfo->text_canvas.h) / 2;
-    color_picker->sliders[slider_type].inputbox.canvas.x = track_x + track_namespacing
-        + color_picker->max_trackname_width;
-    color_picker->sliders[slider_type].inputbox.canvas.y = track_y;
-
-    color_picker->sliders[slider_type].track.x = color_picker->sliders[slider_type].inputbox.canvas.x +
-        color_picker->sliders[slider_type].inputbox.canvas.w + track_namespacing,
-    color_picker->sliders[slider_type].track.y = track_y;
-}
-
-void maud_colorpicker_setsliders_trackposition(maud_colorpicker_t* color_picker, int track_x, int track_y,
-    int track_spacing) {
-    for(int i=0;i<4;i++) {
-        maud_colorpicker_setslider_trackposition(color_picker, i, track_x, track_y);
-        track_y += color_picker->sliders[i].track.h + track_spacing;
-    }   
-}
-
-void maud_colorpicker_setpreview_position(maud_colorpicker_t* color_picker, int x, int y) {
-    color_picker->preview_canvas.x = x,
-    color_picker->preview_canvas.y = y;
-
-    color_picker->hex_inputbox.canvas.x = x + color_picker->preview_canvas.w + 10;
-    color_picker->hex_inputbox.canvas.y = y + (color_picker->preview_canvas.h -
-        color_picker->hex_inputbox.canvas.h) / 2;
-}
-
-void maud_colorpicker_setpreview_props(maud_colorpicker_t* color_picker, TTF_Font* font,
-    int font_size, int width, int height) {
-    color_picker->preview_canvas.w = width,
-    color_picker->preview_canvas.h = height;
-
-    color_picker->hex_inputbox = maud_inputbox_create(font, font_size,
-        (SDL_Color){0x12, 0x12, 0x12, 0xff},
-        NULL,
-        (SDL_Color){0},
-        white,
-        (SDL_Color){0x00, 0xff, 0x00, 0xff},
-        0, 0,
-        200,
-        50,
-        2,
-        25
-    );
-}
-
 void maud_colorpicker_setcolor(maud_colorpicker_t* color_picker, int r, int g, int b, int a) {
     color_picker->color.r = r, color_picker->color.g = g,
     color_picker->color.b = b, color_picker->color.a = a;
@@ -181,39 +258,48 @@ void maud_colorpicker_setcolorfromhandle(maud_colorpicker_t* color_picker) {
     color_slider_t* sliders = color_picker->sliders;
     maud_inputbox_t* hex_inputbox = &color_picker->hex_inputbox;
     inputdata_t* hex_input = &hex_inputbox->input;
-    maud_colorpicker_setcolor(
-        color_picker,
-        sliders[COLOR_SLIDER_R].handle_pos,
-        sliders[COLOR_SLIDER_G].handle_pos,
-        sliders[COLOR_SLIDER_B].handle_pos,
-        sliders[COLOR_SLIDER_A].handle_pos
-    );
-    char color_value[4] = {0}, hex_colorvalue[10] = {0};
-    bool init_hexinput = false;
-    if(!hex_input->data) {
-        maud_inputbox_addinputdata(hex_inputbox, "#");
-        init_hexinput = true;
-    }
-    for(int i=0;i<4;i++) {
-        if(init_hexinput) {
-            sprintf(hex_colorvalue, "%02X", sliders[i].handle_pos);
-            maud_inputbox_addinputdata(hex_inputbox, hex_colorvalue);
-        }
+    int *r = &sliders[COLOR_SLIDER_R].handle_pos,
+        *g = &sliders[COLOR_SLIDER_G].handle_pos,
+        *b = &sliders[COLOR_SLIDER_B].handle_pos,
+        *a = &sliders[COLOR_SLIDER_A].handle_pos;
+    maud_colorpicker_setcolor(color_picker, *r, *g, *b, *a);
+    maud_colorpicker_sethex_values(color_picker);
+    maud_colorpicker_setrgba_values(color_picker);
+}
+
+void maud_colorpicker_setrgba_values(maud_colorpicker_t* color_picker) {
+    color_slider_t* sliders = color_picker->sliders;
+    char color_value[4] = {0};
+    for(size_t i=0;i<4;i++) {
         sprintf(color_value, "%d", sliders[i].handle_pos);
         maud_inputbox_clear(&sliders[i].inputbox);
         maud_inputbox_addinputdata(&sliders[i].inputbox, color_value);
-        memset(color_value, 0, 4);
+        memset(color_value, 0, 3);
     }
+}
+
+void maud_colorpicker_sethex_values(maud_colorpicker_t* color_picker) {
+    color_slider_t* sliders = color_picker->sliders;
+    char hex_colorvalues[10] = {0};
+    maud_inputbox_t* hex_inputbox = &color_picker->hex_inputbox;
+    int *r = &sliders[COLOR_SLIDER_R].handle_pos,
+        *g = &sliders[COLOR_SLIDER_G].handle_pos,
+        *b = &sliders[COLOR_SLIDER_B].handle_pos,
+        *a = &sliders[COLOR_SLIDER_A].handle_pos;
+    sprintf(hex_colorvalues, "#%02X%02X%02X%02X", *r, *g, *b, *a);
+    maud_inputbox_clear(hex_inputbox);
+    maud_inputbox_addinputdata(hex_inputbox, hex_colorvalues);
 }
 
 void maud_colorpicker_renderslider(maud_t* mplayer, maud_colorpicker_t* color_picker,
     int slider_type) {
     color_slider_t* slider = &color_picker->sliders[slider_type];
+    color_sliderprops_t* slider_props = &color_picker->props.slider_props;
     SDL_Color color_segmentcolor = {0};
     SDL_Rect color_segment = {
         .x = slider->track.x,
         .y = slider->track.y,
-        .w = slider->track_segmentwidth,
+        .w = slider_props->track_segmentwidth,
         .h = slider->track.h
     };
     SDL_Texture* slidername_texture = maud_textmanager_rendertext(mplayer,
@@ -237,7 +323,7 @@ void maud_colorpicker_renderslider(maud_t* mplayer, maud_colorpicker_t* color_pi
     }
 
     slider->handle.x = slider->track.x + (slider->handle_pos *
-        slider->track_segmentwidth);
+        slider_props->track_segmentwidth);
     slider->handle.y = slider->track.y;
     int handle_insidewidth = slider->handle.w - 4,
         handle_insideheight = slider->handle.h - 4;
@@ -290,6 +376,7 @@ bool maud_colorpicker_inputboxclicked(maud_t* mplayer, maud_colorpicker_t* color
 
 void maud_colorpicker_display(maud_t* mplayer, maud_colorpicker_t* color_picker) {
     SDL_SetRenderDrawBlendMode(mplayer->renderer, SDL_BLENDMODE_BLEND);
+    maud_colorpicker_setpreview_position(color_picker);
     SDL_SetRenderDrawColor(mplayer->renderer, color_toparam(color_picker->color));
     SDL_RenderDrawRect(mplayer->renderer, &color_picker->preview_canvas);
     SDL_RenderFillRect(mplayer->renderer, &color_picker->preview_canvas);
@@ -302,10 +389,15 @@ void maud_colorpicker_display(maud_t* mplayer, maud_colorpicker_t* color_picker)
 
 void maud_colorpicker_handleslider_inputbox_event(maud_t* mplayer,
     maud_colorpicker_t* color_picker, int slider_type) {
-    maud_inputbox_t* inputbox = &color_picker->sliders[slider_type].inputbox;
+    color_slider_t* sliders = color_picker->sliders;
+    maud_inputbox_t* inputbox = &sliders[slider_type].inputbox;
     inputdata_t* input = &inputbox->input;
     int color_value = 0;
     bool update_color = false;
+    int *r = &sliders[COLOR_SLIDER_R].handle_pos,
+        *g = &sliders[COLOR_SLIDER_G].handle_pos,
+        *b = &sliders[COLOR_SLIDER_B].handle_pos,
+        *a = &sliders[COLOR_SLIDER_A].handle_pos;
     switch(mplayer->e.type) {
         case SDL_KEYDOWN:
             int key = mplayer->e.key.keysym.sym;
@@ -345,7 +437,8 @@ void maud_colorpicker_handleslider_inputbox_event(maud_t* mplayer,
             break;
     }
     if(update_color) {
-        maud_colorpicker_setcolorfromhandle(color_picker);
+        maud_colorpicker_setcolor(color_picker, *r, *g, *b, *a);
+        maud_colorpicker_sethex_values(color_picker);
     }
 }
 
@@ -440,7 +533,8 @@ void maud_colorpicker_handlehex_inputbox_event(maud_t* mplayer,
             break;
     }
     if(update_color) {
-        maud_colorpicker_setcolorfromhandle(color_picker);
+        maud_colorpicker_setcolor(color_picker, *r, *g, *b, *a);
+        maud_colorpicker_setrgba_values(color_picker);
     }
 }
 
@@ -459,9 +553,10 @@ void maud_colorpicker_handleinputbox_events(maud_t* mplayer,
 }
 
 void maud_colorpicker_destroy(maud_colorpicker_t* color_picker) {
+    color_sliderprops_t* slider_props = &color_picker->props.slider_props;
     maud_inputbox_destroy(&color_picker->hex_inputbox);
     for(size_t i=0;i<4;i++) {
-        free(color_picker->sliders[i].track_name); color_picker->sliders[i].track_name = NULL;
+        free(slider_props->track_names[i]);
         maud_inputbox_destroy(&color_picker->sliders[i].inputbox);
     }
 }
