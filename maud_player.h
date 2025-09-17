@@ -77,6 +77,7 @@ typedef struct music {
     size_t location_index;
 } music_t;
 
+
 typedef struct music_location {
     #ifdef _WIN32
     wchar_t* path;
@@ -212,7 +213,7 @@ TTF_Font* maud_openfont(const char* file, int size);
 void maud_run(maud_t* mplayer);
 void maud_defaultmenu(maud_t* mplayer);
 void maud_setcursor(maud_t* mplayer, int cursor_type);
-void maud_set_window_icon(maud_t* maud, const char* path)
+void maud_set_window_icon(maud_t* maud, const char* path);
 void maud_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color);
 void maud_set_window_title(maud_t* mplayer, const char* title);
 void maud_getwindow_size(maud_t* maud);
@@ -225,7 +226,7 @@ bool maud_progressbar_hover(maud_t* mplayer);
 bool maud_musiclist_playbutton_hover(maud_t* mplayer);
 #ifdef _WIN32
 wchar_t* maud_stringtowide(const char* string);
-char* maud_widetoutf8(wchar_t* wstring);
+char* maud_widetoutf8(const wchar_t* wstring);
 #else
 Uint16* maud_stringtouint16(char* string);
 #endif

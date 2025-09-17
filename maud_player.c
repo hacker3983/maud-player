@@ -113,45 +113,35 @@ void maud_createapp(maud_t* maud) {
     maud_queue_init(&maud->selection_queue);
 
     // Initialize color picker system
-    color_tracknameattrib_t color_attribs[4] = {
-        {
+    color_pickerprops_t picker_props = {
+        .preview_font = maud->font,
+        .preview_fontsize = 20,
+        .preview_width = 400,
+        .preview_height = 150,
+        .preview_spacing = 10,
+        .slider_props = {
             .track_font = maud->font,
             .track_fontsize = 20,
-            .track_name = "Red",
+            .track_names = {
+                "Red:",
+                "Green:",
+                "Blue:",
+                "Alpha:"
+            },
             .track_namecolor = white,
-            .track_namespacing = 10
-        },
-        {
-            .track_font = maud->font,
-            .track_fontsize = 20,
-            .track_name = "Green:",
-            .track_namecolor = white,
-            .track_namespacing = 10
-        },
-        {
-            .track_font = maud->font,
-            .track_fontsize = 20,
-            .track_name = "Blue:",
-            .track_namecolor = white,
-            .track_namespacing = 10
-        },
-        {
-            .track_font = maud->font,
-            .track_fontsize = 20,
-            .track_name = "Alpha:",
-            .track_namecolor = white,
-            .track_namespacing = 10
+            .track_namespacing = 10,
+            .track_segmentwidth = 2,
+            .track_height = 50,
+            .track_verticalspacing = 20,
+            .handle_pos = 255,
+            .handle_width = 20,
+            .handle_height = 50,
+            .handle_color = white,
+            .handle_bordercolor = {0x00, 0x00, 0x00, 0xff}
         }
     };
     maud_colorpicker_t* color_picker = &maud->setting_navbar.customize_tab.color_picker;
-    maud_colorpicker_setpreview_props(color_picker, maud->font, 20,
-        400, 150);
-    maud_colorpicker_setsliders_props(color_picker,
-        color_attribs,
-        2, 50, 20, 50,
-        white,
-        (SDL_Color){0x00, 0x00, 0x00, 0xff}
-    );
+    maud_colorpicker_setprops(color_picker, &picker_props);
 
     // create music information
     #if _WIN32 && MAUD_RELEASE
@@ -949,20 +939,20 @@ void maud_defaultmenu(maud_t* maud) {
                 maud_inputbox_handle_events(maud, &maud->playlist_inputbox);
                 continue;
             } else if(maud->playlist_manager.button_bar.new_playlistbtn.clicked) {
-                maud_inputbox_handle_events(maud, &maud->playlist_manager.playlist_inputbox);
-            } else if(maud->playlist_manager.rename_clicked) {
+                maud_inputbox_handle_events(maud, &maud->playlist_manager.new_playlistinput.inputbox);
+            }/* else if(maud->playlist_manager.rename_clicked) {
                 maud_inputbox_handle_events(maud, &maud->playlist_manager.rename_inputbox);
-            } else if(maud->search_inputbox.clicked) {
+            }*/ else if(maud->search_inputbox.clicked) {
                 maud_inputbox_handle_events(maud, &maud->search_inputbox);
             }
         } else if(maud->e.type == SDL_KEYDOWN) {
             if(music_addplaylistbtn.clicked) {
                 maud_inputbox_handle_events(maud, &maud->playlist_inputbox);
             } else if(maud->playlist_manager.button_bar.new_playlistbtn.clicked) {
-                maud_inputbox_handle_events(maud, &maud->playlist_manager.playlist_inputbox);
-            } else if(maud->playlist_manager.rename_clicked) {
+                maud_inputbox_handle_events(maud, &maud->playlist_manager.new_playlistinput.inputbox);
+            } /*else if(maud->playlist_manager.rename_clicked) {
                 maud_inputbox_handle_events(maud, &maud->playlist_manager.rename_inputbox);
-            } else if(maud->search_inputbox.clicked) {
+            }*/ else if(maud->search_inputbox.clicked) {
                 maud_inputbox_handle_events(maud, &maud->search_inputbox);
             }
         } else if(maud->e.type == SDL_MOUSEMOTION) {
@@ -989,7 +979,8 @@ void maud_defaultmenu(maud_t* maud) {
             maud->scroll = true;
         } else if(Mix_PlayingMusic() && maud->e.type == SDL_KEYUP) {
             if(maud->e.key.keysym.sym == SDLK_SPACE && !maud->playlist_manager.button_bar.new_playlistbtn.clicked
-                && !music_addplaylistbtn.clicked && !maud->search_inputbox.clicked && !maud->playlist_manager.rename_clicked) {
+                && !music_addplaylistbtn.clicked && !maud->search_inputbox.clicked /*&&
+                !maud->playlist_manager.rename_clicked*/) {
                 if(Mix_PausedMusic()) {
                     Mix_ResumeMusic();
                 } else {
@@ -1009,18 +1000,19 @@ void maud_defaultmenu(maud_t* maud) {
             if(maud_tabs_hover(maud, tab_info, &tab_hoverid, tab_info_size) && TAB_INIT) {
                 tab_info[prev_tab].active = false;
                 maud_selectionmenu_clearmusic_selection(maud);
-                maud_scrollcontainer_destroy(&maud->queue_scrollcontainer);
+                /*maud_scrollcontainer_destroy(&maud->queue_scrollcontainer);
                 maud_scrollcontainer_destroy(&maud->playlist_manager.playlist_itemcontainer);
                 maud_scrollcontainer_destroy(&maud->playlist_manager.playlist_container);
                 maud->playlist_manager.playlistmenu_collapsex = 0;
                 maud->playlist_manager.playlistmenu_collapsey = 0;
                 maud->playlist_manager.playlistmenu_collapse = false;
                 maud->playlist_manager.playlistmenu_scrolled = false;
+                */
                 maud->playlist_manager.button_bar.new_playlistbtn.clicked = false;
-                maud->playlist_manager.rename_clicked = false;
+                // maud->playlist_manager.rename_clicked = false;
                 maud_inputbox_clear(&maud->search_inputbox);
                 maud_inputbox_clear(&maud->playlist_inputbox);
-                maud_inputbox_clear(&maud->playlist_manager.playlist_inputbox);
+                maud_inputbox_clear(&maud->playlist_manager.new_playlistinput.inputbox);
                 maud->search_inputbox.clicked = false;
                 tab_info[tab_hoverid].underline_color = underline_color;
                 tab_info[tab_hoverid].active = true;
@@ -1159,10 +1151,11 @@ void maud_defaultmenu(maud_t* maud) {
     }
     /* Create music bar */
     maud_createmusicbar(maud);
+    /*
     if(active_tab != PLAYLISTS_TAB && maud->playlist_manager.playlist_selected) {
         maud->playlist_manager.playlist_selected = false;
         maud->playlist_manager.rename_clicked = false;
-    }
+    }*/
 
     if(active_tab == SONGS_TAB) {
         /* Create the search bar for searching for music */
