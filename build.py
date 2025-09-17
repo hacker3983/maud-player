@@ -31,6 +31,11 @@ C_FILES = [
     "maud_playerbutton_manager.c",
     "maud_playlists.c",
     "maud_playlistmanager.c",
+    "maud_playlistmanager_layout.c",
+    "maud_playlistmanager_buttonbar.c",
+    "maud_playlistmanager_newplaylist_input.c",
+    "maud_playlistmanager_layoutdropdown_menu.c",
+    "maud_playlistmanager_gridrenderer.c",
     "maud_playlistmanager_datareader.c",
     "maud_playlistmanager_datawriter.c",
     "maud_songsmanager.c"
