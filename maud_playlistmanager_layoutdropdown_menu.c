@@ -104,6 +104,7 @@ void maud_playlistmanager_layoutdropdown_menu_display(maud_t* maud) {
             SDL_RenderFillRect(maud->renderer, &layout_btn->canvas);
         } else if(hovering) {
             if(maud->mouse_clicked) {
+                playlist_manager->playlist_props.init = false;
                 playlist_manager->layout_type = i;
                 maud->mouse_clicked = false;
             }

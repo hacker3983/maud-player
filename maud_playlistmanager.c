@@ -121,12 +121,8 @@ void maud_playlistmanager_displayplaylists(maud_t* maud) {
     maud_playlistprops_t* playlist_props = &playlist_manager->playlist_props;
     switch(playlist_manager->layout_type) {
         case PLAYLIST_GRIDVIEW: maud_playlistmanager_gridrenderer_displayplaylists(maud); break;
-        case PLAYLIST_LISTVIEW: fprintf(stderr, "List view has not been implemented yet!\n"); break;
+        case PLAYLIST_LISTVIEW: maud_playlistmanager_listrenderer_displayplaylists(maud); break;
     }
-    if(playlist_props->show_tooltip) {
-        maud_tooltip_renderhover(maud, &playlist_props->tooltip);
-    }
-    playlist_props->show_tooltip = false;
 }
 
 void maud_playlistmanager_destroy(maud_t* maud) {

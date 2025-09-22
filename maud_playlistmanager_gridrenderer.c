@@ -29,6 +29,7 @@ void maud_playlistmanager_gridrenderer_init_playlistprops(maud_t* maud, maud_pla
             .content_count = 0
         }
     };
+    *new_props.start_renderpos = 0;
     new_props.init = true;
     *playlist_props = new_props;
 }
@@ -50,7 +51,7 @@ void maud_playlistmanager_gridrenderer_init_grid(maud_t* maud,
             },
             .color = {0x12, 0x12, 0x12, 0xff},
             .icon_canvas = {
-                .w = 30, .h = 50
+                .w = 30, .h = 30
             }
         },
         .name = {
@@ -123,6 +124,7 @@ void maud_playlistmanager_gridrenderer_init_grids(maud_t* maud, maud_playlist_t*
             start_y += grid_canvas->h + 5;
         }
     }
+    maud_playlistmanager_gridrenderer_fillplaylistgap(maud, playlist_props);
 }
 
 void maud_playlistmanager_gridrenderer_init(maud_t* maud) {
@@ -162,6 +164,9 @@ void maud_playlistmanager_gridrenderer_displayplaylists(maud_t* maud) {
     maud_playlistmanager_t* playlist_manager = &maud->playlist_manager;
     maud_playlist_t* playlists = playlist_manager->playlists;
     maud_playlistprops_t* playlist_props = &playlist_manager->playlist_props;
+    if(!playlists) {
+        return;
+    }
     maud_playlistmanager_gridrenderer_init(maud);
     SDL_RenderSetClipRect(maud->renderer, &playlist_props->scroll_area);
     size_t start_renderpos = playlist_manager->playlist_renderpos,
@@ -170,6 +175,10 @@ void maud_playlistmanager_gridrenderer_displayplaylists(maud_t* maud) {
         maud_playlistmanager_gridrenderer_renderplaylist(maud, playlists, i);
     }
     SDL_RenderSetClipRect(maud->renderer, NULL);
+    if(playlist_props->show_tooltip) {
+        maud_tooltip_renderhover(maud, &playlist_props->tooltip);
+    }
+    playlist_props->show_tooltip = false;
 }
 
 void maud_playlistmanager_gridrenderer_handleplaylist_scrollevent(maud_t* maud,
@@ -205,7 +214,7 @@ void maud_playlistmanager_gridrenderer_handleplaylist_scrollevent(maud_t* maud,
                     playlist_props->scroll_y = scroll_area->y;
                 }
         } else if(start_renderpos) {
-            if(first_grid->canvas.y < scroll_area->y) {
+            if(first_grid->canvas.y <= scroll_area->y) {
                 playlist_props->scroll_y += 10;
                 if(playlist_props->scroll_y >= scroll_area->y) {
                     maud_playlistmanager_gridrenderer_getprevrender_pos(maud, playlist_props);
@@ -271,5 +280,24 @@ void maud_playlistmanager_gridrenderer_getnextrender_pos(maud_t* maud,
             playlist_props->next_renderpos = i + 1;
             break;
         }
+    }
+}
+
+void maud_playlistmanager_gridrenderer_fillplaylistgap(maud_t* maud,
+    maud_playlistprops_t* playlist_props) {
+    maud_playlistmanager_t* playlist_manager = &maud->playlist_manager;
+    maud_playlist_t* playlists = playlist_manager->playlists;
+    SDL_Rect* scroll_area = &playlist_props->scroll_area;
+    size_t start_renderpos = *playlist_props->start_renderpos,
+           *prev_renderpos = &playlist_props->prev_renderpos,
+           end_renderpos = playlist_props->end_renderpos,
+           playlist_count = playlist_manager->playlist_count;
+    maud_playlistgrid_t *last_grid = &playlists[end_renderpos].grid;
+    int last_y = last_grid->canvas.y + last_grid->canvas.h + 5,
+        end_rendery = scroll_area->y + scroll_area->h - 5;
+    if(end_renderpos == playlist_count-1 && last_y < end_rendery) {
+        maud_playlistmanager_gridrenderer_getprevrender_pos(maud, playlist_props);
+        (*playlist_props->start_renderpos) = *prev_renderpos;
+        playlist_props->scroll_y = scroll_area->y;
     }
 }

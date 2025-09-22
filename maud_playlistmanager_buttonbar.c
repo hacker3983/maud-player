@@ -3,11 +3,10 @@
 
 void maud_playlistmanager_buttonbar_initialize(maud_t* maud) {
     maud_buttonbar_t* button_bar = &maud->playlist_manager.button_bar;
-    if(button_bar->init) {
-        return;
+    if(!button_bar->init) {
+        maud_playlistmanager_buttonbar_initialize_newplaylistbutton(maud, button_bar);
+        maud_playlistmanager_buttonbar_intialize_playlistlayout_text(maud, button_bar);
     }
-    maud_playlistmanager_buttonbar_initialize_newplaylistbutton(maud, button_bar);
-    maud_playlistmanager_buttonbar_intialize_playlistlayout_text(maud, button_bar);
     maud_playlistmanager_buttonbar_initialize_playlistlayout_toggleswitch(maud, button_bar);
     SDL_Rect *canvas_ptrlist[] = {
         &button_bar->new_playlistbtn.canvas,
@@ -27,6 +26,7 @@ void maud_playlistmanager_buttonbar_initialize(maud_t* maud) {
     for(size_t i=0;i<canvas_count;i++) {
         canvas_ptrlist[i]->y = button_bar->canvas.y + (button_bar->canvas.h - canvas_ptrlist[i]->h) / 2;
     }
+    button_bar->init = true;
 }
 
 void maud_playlistmanager_buttonbar_initialize_newplaylistbutton(maud_t* maud,
@@ -55,7 +55,6 @@ void maud_playlistmanager_buttonbar_initialize_newplaylistbutton(maud_t* maud,
     canvas->w = icon_canvas->w + text_canvas->w + new_playlistbtn.content_spacing + 10;
     canvas->h = max_height + 20;
     button_bar->new_playlistbtn = new_playlistbtn;
-    button_bar->init = true;
 }
 
 void maud_playlistmanager_buttonbar_intialize_playlistlayout_text(maud_t* maud,
@@ -71,6 +70,7 @@ void maud_playlistmanager_buttonbar_intialize_playlistlayout_text(maud_t* maud,
 
 void maud_playlistmanager_buttonbar_initialize_playlistlayout_toggleswitch(maud_t* maud,
     maud_buttonbar_t* button_bar) {
+    bool clicked_status = button_bar->layout_switch.clicked;
     maud_playlistlayout_switch_t layout_switch = {
         .view_text = {
             .font_size = 20,
@@ -83,7 +83,8 @@ void maud_playlistmanager_buttonbar_initialize_playlistlayout_toggleswitch(maud_
         .dropdown_iconcanvas = {
             .w = 30, .h = 30,
         },
-        .content_spacing = 5
+        .content_spacing = 5,
+        .clicked = clicked_status
     };
     maud_textmanager_sizetext(maud->font, &layout_switch.view_text);
     SDL_Rect canvases[] = {

@@ -10,6 +10,8 @@
 #include <locale.h>
 #include <errno.h>
 #include <wctype.h>
+#include "maud_checkboxdef.h"
+#include "maud_selectionmenudef.h"
 #include "maud_inputboxesdef.h"
 #include "maud_queuedef.h"
 #include "maud_notificationdef.h"
@@ -183,6 +185,8 @@ typedef struct mplayer {
          music_selected, songsbox_resized, checkall_btntoggled;
     
     SDL_Color music_selectionmenu_addto_dropdown_color;
+    maud_checkbox_t music_checkbox;
+    maud_selectionmenu_t selection_menu;
     SDL_Rect progress_bar, progress_count, music_searchbar,
         music_selectionmenu, music_selectionmenu_addtocanvas,
         music_selectionmenu_addto_dropdown, addtoplaylist_modalcanvases[3];

@@ -96,7 +96,7 @@ SDL_Rect img_canvas = {20, 0, 50, 50}, img_bgcanvas = {10, 0, 80, 70},
 SDL_Rect scrollbar = {0, 0, 20, 50}, music_status = {0, 0, 0, 0},
          songs_box = {0, 0, 0, 0};
 SDL_Rect checkbox_size = {0, 0, 30, 50},
-         music_selectionmenu_checkbox_size = {0, 0, 30, 40};
+         music_selectionmenu_checkbox_size = {0, 0, 30, 50};
 
 const size_t text_info_size = sizeof(text_info) / sizeof(text_info_t), tab_info_size = sizeof(tab_info) / sizeof(tabinfo_t),
              setting_textinfo_size = sizeof(setting_textinfo) / sizeof(text_info_t), MUSICBTN_COUNT = sizeof(music_btns) / sizeof(ibtn_t),

@@ -73,6 +73,33 @@ typedef struct maud_rename_input {
     maud_inputbox_t inputbox;
 } maud_renameplaylist_input_t;
 
+typedef struct maud_playlistmenu_button {
+    SDL_Rect canvas;
+    SDL_Color color;
+    SDL_Rect icon_canvas;
+    text_info_t text;
+    SDL_Texture* icon_texture;
+    char* icon_path;
+} maud_playlistmenubtn_t;
+
+typedef struct maud_playlistcard {
+    SDL_Rect canvas;
+    SDL_Color color;
+    SDL_Rect icon_canvas;
+    int collapse_x, collapse_y;
+} maud_playlistcard_t;
+
+typedef struct maud_playlistmenu {
+    SDL_Rect canvas;
+    SDL_Color color;
+    maud_playlistcard_t playlist_card;
+    text_info_t playlist_name;
+    text_info_t item_count;
+    maud_playlistmenubtn_t playallbtn,
+        addtobtn, renamebtn, deletebtn;
+    bool collapse;
+} maud_playlistmenu_t;
+
 typedef struct maud_playlistprops {
     int start_x, start_y,
         scroll_y;
@@ -92,6 +119,7 @@ typedef struct maud_playlistmanager {
     maud_playlist_t* playlists;
     size_t playlist_renderpos, playlist_count;
     maud_playlistprops_t playlist_props;
+    maud_playlistmenu_t playlist_menu;
     maud_newplaylist_input_t new_playlistinput;
     maud_renameplaylist_input_t renameplaylist_input;
     int layout_type;

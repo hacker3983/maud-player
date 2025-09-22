@@ -42,6 +42,21 @@ void maud_playlistmanager_addmusicselection_toplaylist(maud_t* maud, const char*
 bool maud_playlistmanager_removeplaylist(maud_t* maud, const char* playlist_name);
 void maud_playlistmanager_renderplaylist_listlayout(maud_t* maud, size_t playlist_index,
     SDL_Rect* playlist_background);
+void maud_playlistmanager_listrenderer_init(maud_t* maud);
+void maud_playlistmanager_listrenderer_init_playlistprops(maud_t* maud,
+    maud_playlistprops_t* playlist_props);
+void maud_playlistmanager_listrenderer_init_list(maud_t* maud,
+    maud_playlist_t* playlists, size_t index, int start_x, int start_y);
+void maud_playlistmanager_listrenderer_init_lists(maud_t* maud, maud_playlist_t* playlists,
+    size_t playlist_count);
+void maud_playlistmanager_listrenderer_fillplaylistgap(maud_t* maud,
+    maud_playlistprops_t* playlist_props);
+void maud_playlistmanager_listrenderer_renderplaylist(maud_t* maud, maud_playlist_t* playlists, size_t index);
+void maud_playlistmanager_listrenderer_handleplaylist_event(maud_t* maud,
+    maud_playlist_t* playlists, size_t playlist_index);
+void maud_playlistmanager_listrenderer_handleplaylist_scrollevent(maud_t* maud,
+    maud_playlistprops_t* playlist_props);
+void maud_playlistmanager_listrenderer_displayplaylists(maud_t* maud);
 void maud_playlistmanager_gridrenderer_init(maud_t* maud);
 void maud_playlistmanager_gridrenderer_init_playlistprops(maud_t* maud,
     maud_playlistprops_t* playlist_props);
@@ -49,6 +64,8 @@ void maud_playlistmanager_gridrenderer_init_grid(maud_t* maud,
     maud_playlist_t* playlists, size_t index, int start_x, int start_y);
 void maud_playlistmanager_gridrenderer_init_grids(maud_t* maud, maud_playlist_t* playlists,
     size_t playlist_count);
+void maud_playlistmanager_gridrenderer_fillplaylistgap(maud_t* maud,
+    maud_playlistprops_t* playlist_props);
 void maud_playlistmanager_gridrenderer_renderplaylist(maud_t* maud, maud_playlist_t* playlists, size_t index);
 void maud_playlistmanager_gridrenderer_handleplaylist_event(maud_t* maud,
     maud_playlist_t* playlists, size_t playlist_index);
