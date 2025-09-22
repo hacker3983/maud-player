@@ -5,3 +5,6 @@
 *.zip
 *.info
 .vscode
+*old.c
+*old.h
+temp.c
