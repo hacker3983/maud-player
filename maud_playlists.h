@@ -6,6 +6,13 @@
 #include "maud_queuedef.h"
 #include "maud_textinfodef.h"
 
+typedef struct maud_playlistlist {
+    SDL_Rect canvas;
+    SDL_Color color;
+    SDL_Rect icon_canvas;
+    text_info_t name;
+} maud_playlistlist_t;
+
 typedef struct maud_playlistgrid_card {
     SDL_Rect canvas;
     SDL_Color color;
@@ -24,6 +31,7 @@ typedef struct maud_playlistgrid {
 typedef struct maud_playlist {
     char* name; // The name of the playlist
     maud_playlistgrid_t grid;
+    maud_playlistlist_t list;
     maud_queue_t queue; // A queue of song indices from either the temporary or main music list
 } maud_playlist_t;
 

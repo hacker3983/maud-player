@@ -2,7 +2,7 @@
 #define _MAUD_SONGSMANAGER_H
 #include "maud_queue.h"
 #include "maud_player.h"
-#include "maud_checkboxes.h"
+#include "maud_checkbox.h"
 #include "maud_selectionmenu.h"
 
 int maud_songsmanager_playmusic(maud_t* maud);

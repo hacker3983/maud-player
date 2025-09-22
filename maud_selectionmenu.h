@@ -1,7 +1,7 @@
 #ifndef _MAUD_SELECTIONMENU_H
 #define _MAUD_SELECTIONMENU_H
 #include "maud_player.h"
-#include "maud_checkboxes.h"
+#include "maud_checkbox.h"
 #include "maud_inputboxes.h"
 #include "maud_textmanager.h"
 #include "maud_queue.h"
@@ -14,6 +14,7 @@ enum addtoplaylist_modalcanvases {
 };
 
 void maud_selectionmenu_create(maud_t* maud);
+void maud_selectionmenu_display(maud_t* maud);
 void maud_selectionmenu_clearmusic_selection(maud_t* maud);
 void maud_selectionmenu_display_addbtn(maud_t* maud, SDL_Rect playnext_btnbackground);
 void maud_selectionmenu_display_addtoplaylist_modal(maud_t* maud);

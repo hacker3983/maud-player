@@ -19,6 +19,17 @@ bool maud_queue_addmusicfrom_queue(maud_queue_t* destination_queue, maud_queue_t
 void maud_queue_removemusicby_uid(maud_queue_t* queue, size_t uid);
 void maud_queue_removemusicby_playid(maud_queue_t* queue, size_t playid);
 void maud_queue_removemusicby_musiclistidx_id(maud_queue_t* queue, size_t music_listindex, size_t musicid);
+void maud_queue_renderer_init_queueprops_scrolly_playlistmenu(maud_t* maud, maud_queueprops_t* queue_props);
+void maud_queue_renderer_init_queueprops(maud_t* maud, maud_queue_t* queue);
+void maud_queue_renderer_init_item(maud_t* maud, maud_queue_t* queue,
+    size_t item_index, int start_x, int start_y);
+void maud_queue_renderer_init_items(maud_t* maud, maud_queue_t* queue);
+void maud_queue_renderer_init(maud_t* maud, maud_queue_t* queue);
+void maud_queue_renderer_renderitem(maud_t* maud, maud_queue_t* queue, size_t item_index);
+void maud_queue_renderer_renderitem_checkbox(maud_t* maud, maud_queue_t* queue, size_t item_index);
+void maud_queue_renderer_handleitem_event(maud_t* maud, maud_queue_t* queue, size_t item_index);
+void maud_queue_renderer_handlequeue_scrollevent(maud_t* maud, maud_queue_t* queue);
+void maud_queue_renderer_display(maud_t* maud, maud_queue_t* queue);
 void maud_queue_display(maud_t* maud, maud_queue_t* queue);
 void maud_queue_print(maud_t* maud, maud_queue_t queue);
 void maud_queue_destroy(maud_queue_t* queue);
