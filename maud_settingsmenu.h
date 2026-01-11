@@ -2,7 +2,7 @@
 #define _MUSIC_SETTINGSMENU_H
 #include "maud_player.h"
 #include "maud_tooltips.h"
-#include "maud_checkboxes.h"
+#include "maud_checkbox.h"
 #include "maud_textmanager.h"
 #include "maud_filemanager.h"
 #include "maud_menumanager.h"

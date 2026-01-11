@@ -2,6 +2,7 @@
 #define _MAUD_CHECKBOXES_H
 #include "maud_player.h"
 
+bool maud_checkbox_hovered(maud_t* maud);
 void maud_checkbox_drawtick_shortline(maud_t* maud, maud_checkbox_t* checkbox);
 void maud_checkbox_drawtick_longline(maud_t* maud, maud_checkbox_t* checkbox);
 void maud_checkbox_drawtick(maud_t* maud, maud_checkbox_t* checkbox);

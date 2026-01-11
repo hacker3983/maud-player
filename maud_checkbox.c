@@ -1,5 +1,12 @@
 #include "maud_checkbox.h"
 
+bool maud_checkbox_hovered(maud_t* maud) {
+    if(maud_rect_hover(maud, maud->music_checkbox.canvas)) {
+            return true;
+    }
+    return false;
+}
+
 void maud_checkbox_drawtick_shortline(maud_t* maud, maud_checkbox_t* checkbox) {
     maud_checkbox_tick_t* tick = &checkbox->tick_line;
     int percentage_x1 = checkbox->canvas.w * 10 / 100,
@@ -58,4 +65,14 @@ void maud_checkbox_draw(maud_t* maud, maud_checkbox_t* checkbox) {
         SDL_RenderFillRect(maud->renderer, &checkbox->canvas);
     }
     maud_checkbox_drawtick(maud, checkbox);
+}
+
+void maud_checkbox_drawmusic_checkbox(maud_t* maud, SDL_Color box_color, SDL_Color fill_color,
+    bool fill, SDL_Color tick_color, bool check) {
+    maud_checkbox_t* checkbox = &maud->music_checkbox;
+    checkbox->color = box_color;
+    checkbox->fill_color = fill_color;
+    checkbox->tick_color = tick_color;
+    checkbox->tick = check;
+    checkbox->fill = fill;
 }

@@ -241,6 +241,7 @@ void maud_playlistmanager_gridrenderer_handleplaylist_event(maud_t* maud,
         if(maud->mouse_clicked) {
             playlist_props->selection_index = playlist_index;
             playlist_props->selected = true;
+            printf("You clicked the playlist\n");
             maud->mouse_clicked = false;
         }
     }

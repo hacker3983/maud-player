@@ -46,9 +46,9 @@ void maud_songsmanager_songstab_rendersongs(maud_t* maud) {
     for(size_t i=maud->music_renderpos;i<music_count;i++) {
         outer_canvas.w = maud->win_width - scrollbar.w - 5;
         outer_canvas.h = music_list[i].text_info.text_canvas.h + 22;
-        if(maud_selectionmenu_togglesong_checkbox(maud, music_list, i)) {
+        /*if(maud_selectionmenu_togglesong_checkbox(maud, music_list, i)) {
             continue;
-        }
+        }*/
         if(decrease_y) {
             outer_canvas.y -= (end_canvas.y + end_canvas.h) - (songs_box.y + songs_box.h - 1);
             decrease_y = false;
@@ -61,13 +61,16 @@ void maud_songsmanager_songstab_rendersongs(maud_t* maud) {
         maud_songsmanager_rendersong_canvas(maud, music_list, i);
         SDL_Color box_color = {0xff, 0xff, 0xff, 0xff}, tick_color = {0x00, 0xff, 0x00, 0xff},
                   fill_color = {0};
-        checkbox_size.x = outer_canvas.x + 5;
-        checkbox_size.h = outer_canvas.h - 10;
-        checkbox_size.y = outer_canvas.y + (outer_canvas.h - checkbox_size.h) / 2;
+        maud_checkbox_t* checkbox = &maud->music_checkbox;
+        checkbox->canvas.x = outer_canvas.x + 5;
+        checkbox->canvas.w = checkbox_size.w;
+        checkbox->canvas.h = outer_canvas.h - 10;
+        checkbox->canvas.y = outer_canvas.y + (outer_canvas.h -
+            checkbox->canvas.h) / 2;
         if(!maud->tick_count) {
             music_listplaybtn.btn_canvas.w = 30, music_listplaybtn.btn_canvas.h = outer_canvas.h - 10;
-            music_listplaybtn.btn_canvas.x = (checkbox_size.x + checkbox_size.w) + 20;
-            music_listplaybtn.btn_canvas.y = checkbox_size.y;
+            music_listplaybtn.btn_canvas.x = (checkbox->canvas.x + checkbox->canvas.w) + 20;
+            music_listplaybtn.btn_canvas.y = checkbox->canvas.y;
         }
         maud_songsmanager_handlesong_playbutton_hover(maud, outer_canvas);
         maud_songsmanager_handleprevbutton(maud);
@@ -79,16 +82,16 @@ void maud_songsmanager_songstab_rendersongs(maud_t* maud) {
             if(!music_list[i].checkbox_ticked && !maud_music_hover(maud, i)) {
                 music_list[i].fill = false;
             }
-            maud_drawmusic_checkbox(maud, box_color, fill_color, music_list[i].fill, tick_color,
+            maud_checkbox_drawmusic_checkbox(maud, box_color, fill_color, music_list[i].fill, tick_color,
                 music_list[i].checkbox_ticked);
         } else if(maud_music_hover(maud, i)) {
             // whenever no checkbox is ticked and we hover over the music we display the check box
             // so that the user can click it or select it
             if(maud_checkbox_hovered(maud)) {
-                maud_drawmusic_checkbox(maud, box_color, fill_color, music_list[i].fill, tick_color,
+                maud_checkbox_drawmusic_checkbox(maud, box_color, fill_color, music_list[i].fill, tick_color,
                     music_list[i].checkbox_ticked);
             } else if(!maud_checkbox_hovered(maud)) {
-                maud_drawmusic_checkbox(maud, box_color, fill_color, false, tick_color, false);
+                maud_checkbox_drawmusic_checkbox(maud, box_color, fill_color, false, tick_color, false);
             }
         }
         SDL_RenderCopy(maud->renderer, music_list[i].text_texture, NULL,

@@ -1,6 +1,6 @@
 #include "maud_queue.h"
 #include "maud_scrollcontainer.h"
-#include "maud_checkboxes.h"
+#include "maud_checkbox.h"
 #include "maud_songsmanager.h"
 
 void maud_queue_init(maud_queue_t* queue) {
@@ -175,19 +175,20 @@ void maud_queue_handleitem_selection(maud_t* maud, maud_queue_t* queue, size_t i
 }
 
 void maud_queue_handlecheckbox_itemselection(maud_t* maud, maud_queue_t* queue, size_t item_index) {
+    maud_queueitem_t *item = &queue->items[item_index];
     size_t music_listindex = queue->items[item_index].music_listindex,
            music_id = queue->items[item_index].music_id;
     // check if the mouse is hovered over the music
     if(maud_checkbox_hovered(maud)) {
         if(maud->mouse_clicked) {
             // if we are in the position of the checkbox and we clicked it
-            switch(queue->items[item_index].checkbox_ticked) {
+            switch(item->checkbox_ticked) {
                 case false:
                     /* whenever the checkbox isn't already ticked then we set checkbox as ticked
                        and the fill color for it as true
                     */
-                    queue->items[item_index].fill = true;
-                    queue->items[item_index].checkbox_ticked = true;
+                    item->fill = true;
+                    item->checkbox_ticked = true;
                     maud_queue_addmusic(&maud->selection_queue, item_index, music_listindex,
                         music_id);
                     if(!maud->tick_count) {
@@ -199,8 +200,8 @@ void maud_queue_handlecheckbox_itemselection(maud_t* maud, maud_queue_t* queue, 
                     /* whenever the checkbox is already ticked then we set the checkbox as not ticked
                        and the fill equal to false
                     */
-                    queue->items[item_index].fill = false;
-                    queue->items[item_index].checkbox_ticked = false;
+                    item->fill = false;
+                    item->checkbox_ticked = false;
                     maud_queue_removemusicby_uid(&maud->selection_queue, item_index);
                     maud->tick_count--;
                     if(!maud->tick_count && maud->music_selectionmenu_checkbox_tickall) {
@@ -217,14 +218,14 @@ void maud_queue_handlecheckbox_itemselection(maud_t* maud, maud_queue_t* queue, 
             /* if we just hover over the checkbox without clicking it then we set that checkbox
                 fill equal to true
             */
-            queue->items[item_index].fill = true;
+            item->fill = true;
         }
         maud_setcursor(maud, MAUD_CURSOR_POINTER);
     } else if(maud->tick_count && maud->mouse_clicked && !music_addplaylistbtn.clicked &&
         !maud->music_selectionmenu_addtobtn_clicked) {
         // whenever we click the music without clicking any of its elements
         // we set clicked equal to false to prevent it from performing any action that we do not want
-        if(queue->items[item_index].checkbox_ticked) {
+        if(item->checkbox_ticked) {
             maud->music_selected = true;
             maud->tick_count--;
             if(!maud->tick_count) {
@@ -234,14 +235,14 @@ void maud_queue_handlecheckbox_itemselection(maud_t* maud, maud_queue_t* queue, 
                 maud->music_selectionmenu_checkbox_tickall = false;
             }
             maud_queue_removemusicby_uid(&maud->selection_queue, item_index);
-            queue->items[item_index].fill = false;
-            queue->items[item_index].checkbox_ticked = false;
+            item->fill = false;
+            item->checkbox_ticked = false;
         } else if(maud->tick_count) {
             maud->music_selected = true;
             maud_queue_addmusic(&maud->selection_queue, item_index, music_listindex, music_id);
             maud->tick_count++;
-            queue->items[item_index].fill = true;
-            queue->items[item_index].checkbox_ticked = true;
+            item->fill = true;
+            item->checkbox_ticked = true;
         }
         maud->mouse_clicked = false;
     }

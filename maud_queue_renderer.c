@@ -1,5 +1,5 @@
 #include "maud_queue.h"
-#include "maud_checkboxes.h"
+#include "maud_checkbox.h"
 #include "maud_songsmanager.h"
 
 void maud_queue_renderer_init_queueprops_scrolly_playlistmenu(maud_t* maud, maud_queueprops_t* queue_props) {
@@ -139,7 +139,7 @@ void maud_queue_renderer_handleremovebtn(maud_t* maud, maud_queue_t* queue) {
             Mix_PlayMusic(maud->music_lists[music_listindex][music_id].music, 1);
         }
     }
-    maud_selectionmenu_clearmusic_selection(maud);
+    maud_selectionmenu_clearmusic_selection(maud, &maud->selection_menu);
     maud->remove_btnclicked = false;
 }
 
@@ -190,7 +190,7 @@ void maud_queue_renderer_renderitem_checkbox(maud_t* maud, maud_queue_t* queue, 
         render_checkbox = true;
     }
     if(render_checkbox) {
-        maud_drawmusic_checkbox(maud, item->checkbox_color,
+        maud_checkbox_drawmusic_checkbox(maud, item->checkbox_color,
             item->checkbox_fillcolor, fill_status, item->checkbox_tickcolor, tick_status);
     }
 }
@@ -208,24 +208,37 @@ void maud_queue_renderer_handleitem_event(maud_t* maud, maud_queue_t* queue, siz
     }
 }
 
+void maud_queue_renderer_init_itemcheckbox(maud_t* maud, maud_queue_t* queue, size_t item_index) {
+    SDL_Rect *canvas = &queue->items[item_index].canvas;
+    maud_checkbox_t* checkbox = &maud->music_checkbox;
+    checkbox->canvas.x = canvas->x + 5;
+    checkbox->canvas.w = checkbox_size.w;
+    checkbox->canvas.h = canvas->h - 10;
+    checkbox->canvas.y = canvas->y + (canvas->h -
+        checkbox->canvas.h) / 2;
+}
+
+void maud_queue_renderer_init_itemplaybtn(maud_t* maud, maud_queue_t* queue, size_t item_index) {
+    maud_queueitem_t* item = &queue->items[item_index];
+    SDL_Rect* canvas = &item->canvas;
+    maud_checkbox_t* checkbox = &maud->music_checkbox;
+    if(!maud->tick_count) {
+        music_listplaybtn.btn_canvas.w = 30, music_listplaybtn.btn_canvas.h = canvas->h - 10;
+        music_listplaybtn.btn_canvas.x = (checkbox->canvas.x + checkbox->canvas.w) + 20,
+        music_listplaybtn.btn_canvas.y = checkbox->canvas.y;
+    }
+}
+
 void maud_queue_renderer_renderitem(maud_t* maud, maud_queue_t* queue, size_t item_index) {
     maud_queueitem_t *item = &queue->items[item_index];
     SDL_Rect* canvas = &item->canvas;
-    maud_selectionmenu_toggleitem_checkboxmusic_queue(maud, queue, item_index);
+    //maud_selectionmenu_toggleitem_checkboxmusic_queue(maud, queue, item_index);
     SDL_SetRenderDrawColor(maud->renderer, color_toparam(item->color));
     SDL_RenderDrawRect(maud->renderer, canvas);
     SDL_RenderFillRect(maud->renderer, canvas);
 
-    checkbox_size.x = canvas->x + 5;
-    checkbox_size.h = canvas->h - 10;
-    checkbox_size.y = canvas->y + (canvas->h -
-        checkbox_size.h) / 2;
-    
-    if(!maud->tick_count) {
-        music_listplaybtn.btn_canvas.w = 30, music_listplaybtn.btn_canvas.h = canvas->h - 10;
-        music_listplaybtn.btn_canvas.x = (checkbox_size.x + checkbox_size.w) + 20,
-        music_listplaybtn.btn_canvas.y = checkbox_size.y;
-    }
+    maud_queue_renderer_init_itemcheckbox(maud, queue, item_index);
+    maud_queue_renderer_init_itemplaybtn(maud, queue, item_index);
     maud_queue_renderer_handleitem_event(maud, queue, item_index);
     maud_queue_renderer_renderitem_checkbox(maud, queue, item_index);
 

@@ -1,5 +1,5 @@
 #include "maud_player.h"
-#include "maud_checkboxes.h"
+#include "maud_checkbox.h"
 #include "maud_inputboxes.h"
 #include "maud_textmanager.h"
 #include "maud_filemanager.h"
@@ -999,7 +999,7 @@ void maud_defaultmenu(maud_t* maud) {
             }
             if(maud_tabs_hover(maud, tab_info, &tab_hoverid, tab_info_size) && TAB_INIT) {
                 tab_info[prev_tab].active = false;
-                maud_selectionmenu_clearmusic_selection(maud);
+                maud_selectionmenu_clearmusic_selection(maud, &maud->selection_menu);
                 /*maud_scrollcontainer_destroy(&maud->queue_scrollcontainer);
                 maud_scrollcontainer_destroy(&maud->playlist_manager.playlist_itemcontainer);
                 maud_scrollcontainer_destroy(&maud->playlist_manager.playlist_container);
@@ -1172,11 +1172,11 @@ void maud_defaultmenu(maud_t* maud) {
             maud_songsmanager_handleskipbutton(maud);
             maud_queue_display(maud, &maud->searchresults_queue);
         } else {
-            maud_songsmanager_songstab_rendersongs(maud);
+            //maud_songsmanager_songstab_rendersongs(maud);
         }
-        maud_selectionmenu_display_addtoplaylist_modal(maud);
-        maud_selectionmenu_handle_addtoplaylist_modalevents(maud);
-        maud_selectionmenu_handle_addtobtn(maud);
+        //maud_selectionmenu_display_addtoplaylist_modal(maud);
+        //maud_selectionmenu_handle_addtoplaylist_modalevents(maud);
+        //maud_selectionmenu_handle_addtobtn(maud);
         if(maud->selection_queue.items && maud->music_selected) {
             //printf("The music selection queue looks like this:\n");
             //maud_queue_print(maud, maud->selection_queue);
@@ -1184,7 +1184,7 @@ void maud_defaultmenu(maud_t* maud) {
         }
         if(music_playqueuebtn.clicked) {
             maud_queue_addmusicfrom_queue(&maud->play_queue, &maud->selection_queue);
-            maud_selectionmenu_clearmusic_selection(maud);
+            maud_selectionmenu_clearmusic_selection(maud, &maud->selection_menu);
             music_playqueuebtn.clicked = false;
         }
         maud->mouse_clicked = false;
@@ -1199,9 +1199,9 @@ void maud_defaultmenu(maud_t* maud) {
         maud_songsmanager_handleprevbutton(maud);
         maud_songsmanager_handleskipbutton(maud);
         maud_queue_display(maud, &maud->play_queue);
-        maud_selectionmenu_display_addtoplaylist_modal(maud);
-        maud_selectionmenu_handle_addtoplaylist_modalevents(maud);
-        maud_selectionmenu_handle_addtobtn(maud);
+        //maud_selectionmenu_display_addtoplaylist_modal(maud);
+        //maud_selectionmenu_handle_addtoplaylist_modalevents(maud);
+        //maud_selectionmenu_handle_addtobtn(maud);
         if(maud->selection_queue.items && maud->music_selected) {
             //printf("The music selection queue looks like this:\n");
             //maud_queue_print(maud, maud->selection_queue);
@@ -1209,7 +1209,7 @@ void maud_defaultmenu(maud_t* maud) {
         }
         if(music_playqueuebtn.clicked) {
             maud_queue_addmusicfrom_queue(&maud->play_queue, &maud->selection_queue);
-            maud_selectionmenu_clearmusic_selection(maud);
+            maud_selectionmenu_clearmusic_selection(maud, &maud->selection_menu);
             music_playqueuebtn.clicked = false;
         }
         //maud_queue_print(maud, maud->play_queue);
