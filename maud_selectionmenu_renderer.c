@@ -243,10 +243,7 @@ void maud_selectionmenu_renderer_init_btns_position(maud_t* maud, maud_selection
     SDL_Rect *canvas = &selection_menu->canvas;
     maud_selectionmenu_renderer_init_selectallbtn_position(maud, selection_menu);
     int start_x = select_allbtn->canvas.x + select_allbtn->canvas.w + 5;
-    printf("Trying to set button position\n");
-    printf("Button count is %zu\n", button_count);
     for(size_t i=0;i<button_count;i++) {
-        printf("Setting position for button %zu\n", i);
         SDL_Rect *button_canvas = &buttons[i]->canvas,
                  *icon_canvas = &buttons[i]->icon_canvas,
                  *text_canvas = &buttons[i]->text.text_canvas;
@@ -290,14 +287,10 @@ void maud_selectionmenu_renderer_renderbtns(maud_t* maud, maud_selectionmenu_t* 
     };
     size_t button_count = sizeof(buttons) / sizeof(maud_selectionmenubtn_t*);
     maud_selectionmenu_renderer_renderselectallbtn(maud, selection_menu);
-    printf("button_count %zu\n", button_count);
     for(size_t i=0;i<button_count;i++) {
-        printf("Rendering button %zu\n", i);
         SDL_Rect *btn_canvas = &buttons[i]->canvas,
                  *text_canvas = &buttons[i]->text.text_canvas,
                  *icon_canvas = &buttons[i]->icon_canvas;
-        printf("buttons[%zu].x = %d, buttons[%zu].y = %d\n", i, btn_canvas->x,
-            i, btn_canvas->y);
         SDL_SetRenderDrawColor(maud->renderer, color_toparam(buttons[i]->color));
         SDL_RenderDrawRect(maud->renderer, btn_canvas);
         SDL_RenderFillRect(maud->renderer, btn_canvas);
