@@ -2,7 +2,13 @@
 
 void maud_selectionmenu_create(maud_t* maud) {
     maud_selectionmenu_t* selection_menu = &maud->selection_menu;
+    if(!maud->tick_count) {
+        return;
+    }
     maud_selectionmenu_renderer_display(maud);
+    maud_selectionmenu_handle_selectallbtn_toggleoption(maud, selection_menu);
+    maud_selectionmenu_handle_playbtn(maud, selection_menu);
+    maud_selectionmenu_handle_playnextbtn(maud, selection_menu);
 }
 
 void maud_selectionmenu_handle_selectallbtn_toggleoption(maud_t* maud, maud_selectionmenu_t* selection_menu) {
@@ -34,6 +40,34 @@ void maud_selectionmenu_handle_selectallbtn_toggleoption(maud_t* maud, maud_sele
         *fill = false, *tick = false;
         select_allbtn->clicked = false;
     }
+}
+
+bool maud_selectionmenu_togglesong_checkbox(maud_t* maud, music_t* music_list, size_t music_checkbox_index) {
+    maud_selectionmenu_t* selection_menu = &maud->selection_menu;
+    maud_selectionmenu_selectallbtn_t* select_all = &selection_menu->select_allbtn;
+    size_t i = music_checkbox_index;
+    if(select_all->checkbox.tick && !music_list[i].checkbox_ticked) {
+        music_list[i].fill = true;
+        music_list[i].checkbox_ticked = true;
+        maud_queue_addmusic(&maud->selection_queue, 0, 0, i);
+        maud->music_selected = true;
+        if(maud->tick_count < maud->music_count) {
+            maud->tick_count++;
+        }
+        return true;
+    } else if(select_all->clicked &&
+        !select_all->checkbox.tick && music_list[i].checkbox_ticked) {
+        music_list[i].fill = false;
+        music_list[i].checkbox_ticked = false;
+        maud_queue_removemusicby_musiclistidx_id(&maud->selection_queue, 0, i);
+        maud->music_selected = true;
+        maud->tick_count--;
+        if(!maud->tick_count) {
+            select_all->clicked = false;
+        }
+        return true;
+    }
+    return false;
 }
 
 void maud_selectionmenu_handle_playbtn(maud_t* maud, maud_selectionmenu_t* selection_menu) {
