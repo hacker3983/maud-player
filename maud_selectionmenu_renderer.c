@@ -20,7 +20,7 @@ void maud_selectionmenu_renderer_init_menu(maud_t* maud, maud_selectionmenu_t* s
                 },
                 .color = white,
                 .tick_color = {0x00, 0xff, 0x00, 0xff},
-                .fill_color = {0xFF, 0xA5, 0x00, 0xff},
+                .fill_color = {0x00, 0x00, 0x00, 0xff},
                 .fill = selection_menu->select_allbtn.checkbox.fill,
                 .tick = selection_menu->select_allbtn.checkbox.tick
             },
