@@ -46,9 +46,9 @@ void maud_songsmanager_songstab_rendersongs(maud_t* maud) {
     for(size_t i=maud->music_renderpos;i<music_count;i++) {
         outer_canvas.w = maud->win_width - scrollbar.w - 5;
         outer_canvas.h = music_list[i].text_info.text_canvas.h + 22;
-        /*if(maud_selectionmenu_togglesong_checkbox(maud, music_list, i)) {
+        if(maud_selectionmenu_togglesong_checkbox(maud, music_list, i)) {
             continue;
-        }*/
+        }
         if(decrease_y) {
             outer_canvas.y -= (end_canvas.y + end_canvas.h) - (songs_box.y + songs_box.h - 1);
             decrease_y = false;
