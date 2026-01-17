@@ -75,4 +75,5 @@ void maud_checkbox_drawmusic_checkbox(maud_t* maud, SDL_Color box_color, SDL_Col
     checkbox->tick_color = tick_color;
     checkbox->tick = check;
     checkbox->fill = fill;
+    maud_checkbox_draw(maud, checkbox);
 }
