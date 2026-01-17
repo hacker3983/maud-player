@@ -33,6 +33,10 @@ void maud_selectionmenu_display_movebtn(maud_t* maud, int type, SDL_Rect prevbtn
 void maud_selectionmenu_handle_moveup(maud_t* maud, SDL_Rect movebtn);
 void maud_selectionmenu_handle_movedown(maud_t* maud, SDL_Rect movebtn);
 
+
+void maud_selectionmenu_handle_selectallbtn_toggleoption(maud_t* maud, maud_selectionmenu_t* selection_menu);
+
+
 void maud_selectionmenu_renderer_init_menu(maud_t* maud, maud_selectionmenu_t* selection_menu);
 void maud_selectionmenu_renderer_init_selectioninfo(maud_t* maud, maud_selectionmenu_t* selection_menu);
 void maud_selectionmenu_renderer_init_selectallbtn(maud_t* maud, maud_selectionmenu_t* selection_menu);
