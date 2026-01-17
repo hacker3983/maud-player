@@ -537,9 +537,10 @@ char* maud_size_t_tostring(size_t number, int* digit_count) {
 }
 
 void maud_createsongs_box(maud_t* maud) {
+    maud_selectionmenu_t* selection_menu = &maud->selection_menu;
     songs_box.y = maud->music_searchbar.y + maud->music_searchbar.h + 5/*tab_info[0].text_canvas.y + tab_info[0].text_canvas.h + (UNDERLINE_THICKNESS + 5)*/;
     if(maud->tick_count) {
-        songs_box.y = maud->music_selectionmenu.y + maud->music_selectionmenu.h;
+        songs_box.y = selection_menu->canvas.y + selection_menu->canvas.h;
     }
     songs_box.w = maud->win_width, songs_box.h = maud->win_height - music_status.h - songs_box.y;
     SDL_SetRenderDrawColor(maud->renderer, color_toparam(songs_boxcolor));
@@ -1172,7 +1173,7 @@ void maud_defaultmenu(maud_t* maud) {
             maud_songsmanager_handleskipbutton(maud);
             maud_queue_display(maud, &maud->searchresults_queue);
         } else {
-            //maud_songsmanager_songstab_rendersongs(maud);
+            maud_songsmanager_songstab_rendersongs(maud);
         }
         //maud_selectionmenu_display_addtoplaylist_modal(maud);
         //maud_selectionmenu_handle_addtoplaylist_modalevents(maud);
