@@ -1,4 +1,5 @@
 #include "maud_selectionmenu.h"
+#include "maud_dropdown_menu.h"
 
 void maud_selectionmenu_create(maud_t* maud) {
     maud_selectionmenu_t* selection_menu = &maud->selection_menu;
@@ -128,6 +129,59 @@ void maud_selectionmenu_handle_playnextbtn(maud_t* maud, maud_selectionmenu_t* s
             select_allbtn->toggled = true;
         }
     }
+}
+
+void maud_selectionmenu_handle_addtobtn(maud_t* maud) {
+    maud_dropdown_menu_t* dropdown = &maud->dropdown;
+    maud_selectionmenu_t* selection_menu = &maud->selection_menu;
+    maud_selectionmenubtn_t* addtobtn = &selection_menu->addtobtn;
+    if(maud_rect_hover(maud, addtobtn->canvas)) {
+        maud_setcursor(maud, MAUD_CURSOR_POINTER);
+        if(maud->mouse_clicked) {
+            addtobtn->clicked = !addtobtn->clicked;
+            maud->mouse_clicked = false;
+        }
+    }
+    if(!addtobtn->clicked) {
+        return;
+    }
+    maud_dropdown_menu_init(dropdown,
+        addtobtn->canvas.x - 5,
+        addtobtn->canvas.y + addtobtn->canvas.h + 5,
+        200,
+        100,
+        maud->music_selectionmenu_addto_dropdown_color,
+        5,
+        0,
+        10,
+        10,
+        30,
+        30
+    );
+    if(!dropdown->items) {
+        maud_dropdown_menu_add(dropdown,
+            maud->font,
+            "Play Queue",
+            20,
+            NULL,
+            maud->menu->textures[MAUD_BUTTON_TEXTURE]
+                    [music_playqueuebtn.texture_idx],
+            (SDL_Color){0xff, 0xff, 0xff, 0xff},
+            (SDL_Color){0}
+        );
+        
+        maud_dropdown_menu_add(dropdown,
+            maud->font,
+            "New playlist",
+            20,
+            NULL,
+            maud->menu->textures[MAUD_BUTTON_TEXTURE]
+                [music_addplaylistbtn.texture_idx],
+            (SDL_Color){0xff, 0xff, 0xff, 0xff},
+            (SDL_Color){0}
+        );
+    }
+    maud_dropdown_menu_render(maud, dropdown);
 }
 
 void maud_selectionmenu_clearmusic_selection(maud_t* maud, maud_selectionmenu_t* selection_menu) {

@@ -14,6 +14,7 @@
 #include "maud_songsmanager.h"
 #include "maud_playlistmanager.h"
 #include "maud_playerbutton_manager.h"
+#include "maud_dropdown_menu.h"
 
 SDL_Rect *playbtn_canvas = NULL, *playbtn_listcanvas = NULL,
         *prevbtn_canvas = NULL, *skipbtn_canvas = NULL,
@@ -1177,7 +1178,7 @@ void maud_defaultmenu(maud_t* maud) {
         }
         //maud_selectionmenu_display_addtoplaylist_modal(maud);
         //maud_selectionmenu_handle_addtoplaylist_modalevents(maud);
-        //maud_selectionmenu_handle_addtobtn(maud);
+        maud_selectionmenu_handle_addtobtn(maud);
         if(maud->selection_queue.items && maud->music_selected) {
             //printf("The music selection queue looks like this:\n");
             //maud_queue_print(maud, maud->selection_queue);
@@ -1255,6 +1256,8 @@ void maud_destroyapp(maud_t* maud) {
     maud_queue_destroy(&maud->play_queue);
     maud_queue_destroy(&maud->selection_queue);
     maud_queue_destroy(&maud->searchresults_queue);
+
+    maud_dropdown_menu_destroy(&maud->dropdown);
 
     // Destroy inputbox
     maud_inputbox_destroy(&maud->playlist_inputbox);

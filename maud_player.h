@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <wctype.h>
 #include "maud_checkboxdef.h"
+#include "maud_dropdown_menudef.h"
 #include "maud_selectionmenudef.h"
 #include "maud_inputboxesdef.h"
 #include "maud_queuedef.h"
@@ -146,6 +147,9 @@ typedef struct mplayer {
     SDL_Cursor* cursors[3];
     bool window_resized, cursor_active;
     Uint32 blink_timeout;
+
+    // dropdown menu test
+    maud_dropdown_menu_t dropdown;
 
     // Setting menu navbar
     maud_settingmenu_navbar_t setting_navbar;
