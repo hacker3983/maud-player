@@ -286,8 +286,9 @@ void maud_selectionmenu_renderer_renderbtns(maud_t* maud, maud_selectionmenu_t* 
         &selection_menu->movedown_btn
     };
     size_t button_count = sizeof(buttons) / sizeof(maud_selectionmenubtn_t*);
+    size_t end_renderpos = (active_tab == SONGS_TAB) ? 3 : button_count;
     maud_selectionmenu_renderer_renderselectallbtn(maud, selection_menu);
-    for(size_t i=0;i<button_count;i++) {
+    for(size_t i=0;i<end_renderpos;i++) {
         SDL_Rect *btn_canvas = &buttons[i]->canvas,
                  *text_canvas = &buttons[i]->text.text_canvas,
                  *icon_canvas = &buttons[i]->icon_canvas;

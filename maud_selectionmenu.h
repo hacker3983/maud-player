@@ -16,9 +16,10 @@ enum addtoplaylist_modalcanvases {
 void maud_selectionmenu_create(maud_t* maud);
 void maud_selectionmenu_display(maud_t* maud);
 void maud_selectionmenu_clearmusic_selection(maud_t* maud, maud_selectionmenu_t* selection_menu);
-void maud_selectionmenu_display_addbtn(maud_t* maud, SDL_Rect playnext_btnbackground);
 void maud_selectionmenu_display_addtoplaylist_modal(maud_t* maud);
+void maud_selectionmenu_init_addto_dropdown(maud_t* maud);
 void maud_selectionmenu_handle_addtoplaylist_modalevents(maud_t* maud);
+void maud_selectionmenu_display_addto_dropdown(maud_t* maud);
 void maud_selectionmenu_handle_addtobtn(maud_t* maud);
 void maud_selectionmenu_display_playbtn(maud_t* maud, text_info_t songs_selectioninfo,
     SDL_Rect* playbtn_backgroundref);

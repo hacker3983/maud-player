@@ -197,7 +197,15 @@ void maud_songsmanager_handleplaybutton(maud_t* maud, music_t* music_list, size_
 
 
 void maud_songsmanager_handlesongselection(maud_t* maud, music_t* music_list, size_t music_id, text_info_t* music_textinfo) {
-    if(!music_addplaylistbtn.clicked && !maud->music_selectionmenu_addtobtn_clicked
+    maud_selectionmenu_t* selection_menu = &maud->selection_menu;
+    maud_selectionmenubtn_t* addtobtn = &selection_menu->addtobtn;
+    maud_dropdown_menu_t* dropdown = &maud->dropdown;
+    maud_dropdown_item_t* items = dropdown->items;
+    bool addtoplaylist_clicked = false;
+    if(items) {
+        addtoplaylist_clicked = items[1].clicked;
+    }
+    if(!addtoplaylist_clicked && !addtobtn->clicked
         && maud_music_hover(maud, music_id)
             /*&& (maud->music_searchresult || !maud->musicsearchbar_data)*/) {
         maud_songsmanager_handlecheckbox_musicselection(maud, music_list, music_id);
