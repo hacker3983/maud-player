@@ -10,7 +10,6 @@
 typedef struct maud_dropdown_item {
     TTF_Font* font;
     SDL_Rect canvas;
-    SDL_Color color;
     char* icon_path;
     SDL_Texture* icon_texture;
     SDL_Rect icon_canvas;
@@ -21,10 +20,11 @@ typedef struct maud_dropdown_item {
 typedef struct maud_dropdown_menu {
     SDL_Rect canvas;
     SDL_Color color;
-    int textspace_x, textspace_y;
-    int iconspace_x, iconspace_y;
+    int itemspace_x, itemspace_y;
+    int textspace_x;
     int icon_width, icon_height;
     maud_dropdown_item_t* items;
-    size_t item_count;
+    size_t item_id, item_count;
+    bool item_clicked;
 } maud_dropdown_menu_t;
 #endif
