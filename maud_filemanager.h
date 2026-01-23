@@ -1,6 +1,7 @@
 #ifndef _MAUD_FILEMANAGER_H
 #define _MAUD_FILEMANAGER_H
 #include "maud_player.h"
+#include "maud_location.h"
 #include "maud_extensions.h"
 #include "maud_textmanager.h"
 
@@ -10,6 +11,8 @@ void maud_filemanager_getroot_path(char* root_path);
 mtime_t maud_filemanager_music_gettime(double seconds);
 void maud_filemanager_addmusic_location(maud_t* maud, void* locationv);
 void maud_filemanager_removemusics_pendingremoval(maud_t* maud);
+void maud_filemanager_markmusic_removalby_locationpath(maud_t* maud,
+    const char* location_path);
 void maud_filemanager_delmusic_locationindex(maud_t* maud, size_t loc_index);
 void maud_filemanager_browsefolder(maud_t* maud);
 bool maud_filemanager_musiclocation_exists(maud_t* maud, void* locationv);

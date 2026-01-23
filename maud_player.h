@@ -10,6 +10,7 @@
 #include <locale.h>
 #include <errno.h>
 #include <wctype.h>
+#include "maud_locationdef.h"
 #include "maud_checkboxdef.h"
 #include "maud_dropdown_menudef.h"
 #include "maud_selectionmenudef.h"
@@ -61,13 +62,7 @@ typedef struct maud_menu {
 
 // structure representing music
 typedef struct music {
-    char* music_name;
-    #ifdef _WIN32
-    char *music_alternatepath;
-    wchar_t *music_path;
-    #else
-    char *music_path;
-    #endif
+    char* music_name, *path;
     text_info_t text_info;
     SDL_Texture* text_texture;
     size_t searchmusic_id;
@@ -79,21 +74,6 @@ typedef struct music {
         remove;
     size_t location_index;
 } music_t;
-
-
-typedef struct music_location {
-    #ifdef _WIN32
-    wchar_t* path;
-    char* altpath;
-    #else
-    char* path;
-    #endif
-    size_t location_index;
-    size_t file_count;
-    SDL_Rect canvas;
-    bool render, init;
-    struct music_location* files;
-} musloc_t;
 
 typedef struct tab_info {
     int font_size;
@@ -155,8 +135,8 @@ typedef struct mplayer {
     maud_settingmenu_navbar_t setting_navbar;
 
     // Music Informations such music name, path, duration, etc
-    musloc_t* locations;
-    size_t location_count, total_filecount;
+    maud_locationlist_t locations;
+    size_t total_filecount;
 
     // Notification system
     maud_notification_t notification;

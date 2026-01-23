@@ -150,8 +150,8 @@ void maud_createapp(maud_t* maud) {
         CreateDirectory(MAUD_PROGRAMDATA, NULL);
     }
     #endif
-    maud_filemanager_getmusicpath_info(maud);
-    if(maud->locations == NULL) {
+    //maud_filemanager_getmusicpath_info(maud);
+    /*if(maud->locations == NULL) {
         #ifdef _WIN32
         wchar_t* location = NULL;
         char* username = getenv("USERNAME"), *location_str = NULL, root_path[4] = {0};
@@ -173,7 +173,7 @@ void maud_createapp(maud_t* maud) {
         maud_filemanager_addmusic_location(maud, location);
         free(location); location = NULL;
         #endif
-    }
+    }*/
 }
 
 void maud_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color) {
@@ -1157,13 +1157,13 @@ void maud_defaultmenu(maud_t* maud) {
         settings_button_tooltip.x = setting_iconbtn.btn_canvas.x - settings_button_tooltip.w;
         maud_tooltip_renderhover(maud, &settings_button_tooltip);
     }
-    if(!maud->music_list) {
+    /*if(!maud->music_list) {
         maud_filemanager_loadmusics(maud);
         printf("Successfully loaded all musics\n");
         if(!maud->playlist_manager.playlists) {
             maud_playlistmanager_read_datafile(maud);
         }
-    }
+    }*/
     /* Create music bar */
     maud_createmusicbar(maud);
     /*
@@ -1247,7 +1247,7 @@ void maud_defaultmenu(maud_t* maud) {
 
 void maud_destroyapp(maud_t* maud) {
     // Write playlist data to data file
-    maud_playlistmanager_write_data_tofile(maud);
+    //maud_playlistmanager_write_data_tofile(maud);
 
     // Close the Fonts used by the program to render text
     TTF_CloseFont(maud->font);
@@ -1259,8 +1259,8 @@ void maud_destroyapp(maud_t* maud) {
     }
 
     // Free music resources used by program
-    maud_filemanager_freemusic_list(maud);
-    maud_filemanager_freemusicpath_info(maud);
+    //maud_filemanager_freemusic_list(maud);
+    //maud_filemanager_freemusicpath_info(maud);
 
     // Destroy the notification system
     maud_notification_destroy(&maud->notification);

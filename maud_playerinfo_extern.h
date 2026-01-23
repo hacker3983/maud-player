@@ -8,11 +8,11 @@ extern const size_t text_info_size, tab_info_size, setting_textinfo_size, MUSICB
 extern const SDL_Color window_color, text_color, text2_color, underline_color, blue, white, black, dark_purple, music_statusbar_color,
 music_searchbar_color, songs_boxcolor, setting_wincolor, setting_textcolor, back_btnbg_color, setting_underlinecolor;
 
-#ifdef _WIN32
+/*#ifdef _WIN32
 extern const wchar_t* FILE_EXTENSIONS[];
-#else
+#else*/
 extern const char* FILE_EXTENSIONS[];
-#endif
+//#endif
 
 extern text_info_t text_info[], setting_textinfo[];
 extern tabinfo_t tab_info[];

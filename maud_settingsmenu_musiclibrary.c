@@ -142,7 +142,7 @@ void maud_settingmenu_rendermusiclibrary_locations(maud_t* maud,
         SDL_RenderCopy(maud->renderer, removebtn_texture, NULL, &removebtn_canvas);
         SDL_DestroyTexture(removebtn_texture);
         if(maud_rect_hover(maud, removebtn_canvas) && maud->mouse_clicked) {
-            maud_filemanager_delmusic_locationindex(maud, i);
+            //maud_filemanager_delmusic_locationindex(maud, i);
             maud->mouse_clicked = false;
         }
         #ifdef _WIN32
@@ -151,7 +151,6 @@ void maud_settingmenu_rendermusiclibrary_locations(maud_t* maud,
         outer_canvas.y += outer_canvas.h + 10;
     }
 }
-
 
 void maud_settingmenu_displaymusiclibrary_tab(maud_t* maud) {
     maud_settingmenu_navbar_t* navbar = &maud->setting_navbar;

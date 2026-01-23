@@ -253,13 +253,17 @@ void maud_queue_renderer_updateareas(maud_t* maud, maud_queue_t* queue) {
              *clip_area = &queue_props->clip_area;
     if(maud->tick_count) {
         clip_area->y = songs_box.y + 1,
+        clip_area->w = maud->win_width;
         clip_area->h = songs_box.h - 1,
         scroll_area->y = songs_box.y + 1,
+        scroll_area->w = maud->win_width;
         scroll_area->h = songs_box.h - 1;
     } else {
         clip_area->y = songs_box.y + 1,
+        clip_area->w = maud->win_width,
         clip_area->h = songs_box.h - 1,
         scroll_area->y = songs_box.y + 1,
+        scroll_area->w = maud->win_width;
         scroll_area->h = songs_box.h - 1;
     }
 }
