@@ -62,7 +62,8 @@ typedef struct maud_menu {
 
 // structure representing music
 typedef struct music {
-    char* music_name, *path;
+    char *music_name, *location_path,
+         *file_path;
     text_info_t text_info;
     SDL_Texture* text_texture;
     size_t searchmusic_id;
@@ -72,7 +73,6 @@ typedef struct music {
     SDL_Rect outer_canvas, checkbox_size;
     bool checkbox_ticked, fill, fit,
         remove;
-    size_t location_index;
 } music_t;
 
 typedef struct tab_info {

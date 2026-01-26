@@ -150,30 +150,23 @@ void maud_createapp(maud_t* maud) {
         CreateDirectory(MAUD_PROGRAMDATA, NULL);
     }
     #endif
-    //maud_filemanager_getmusicpath_info(maud);
-    /*if(maud->locations == NULL) {
+    maud_locationlist_t* locations = &maud->locations;
+    maud_filemanager_getmusic_locations(maud);
+    if(locations->locations == NULL) {
         #ifdef _WIN32
-        wchar_t* location = NULL;
-        char* username = getenv("USERNAME"), *location_str = NULL, root_path[4] = {0};
-        location_str = calloc(16+strlen(username), sizeof(char));
+        char *username = getenv("USERNAME"), root_path[4] = {0},
+             *location = calloc(16+strlen(username), sizeof(char));
         maud_filemanager_getroot_path(root_path);
-        strcpy(location_str, root_path);
-        strcat(location_str, "Users\\");
-        strcat(location_str, username);
-        strcat(location_str, "\\Music");
-        location = maud_stringtowide(location_str);
+        sprintf(location, "%sUsers\\%s\\Music", root_path, username);
         maud_filemanager_addmusic_location(maud, location);
-        free(location_str); location_str = NULL;
-        free(location); location = NULL;
         #else
-        char* home = getenv("HOME"), *location = NULL;
-        location = calloc(strlen(home) + 7, sizeof(char));
-        strcat(location, home);
-        strcat(location, "/Music");
+        char *home = getenv("HOME"),
+             *location = calloc(strlen(home) + 7, sizeof(char));
+        sprintf(location, "%s/Music", home);
         maud_filemanager_addmusic_location(maud, location);
-        free(location); location = NULL;
         #endif
-    }*/
+        free(location);
+    }
 }
 
 void maud_set_window_color(SDL_Renderer* renderer, SDL_Color bg_color) {
@@ -1157,13 +1150,13 @@ void maud_defaultmenu(maud_t* maud) {
         settings_button_tooltip.x = setting_iconbtn.btn_canvas.x - settings_button_tooltip.w;
         maud_tooltip_renderhover(maud, &settings_button_tooltip);
     }
-    /*if(!maud->music_list) {
+    if(!maud->music_list) {
         maud_filemanager_loadmusics(maud);
         printf("Successfully loaded all musics\n");
-        if(!maud->playlist_manager.playlists) {
+        /*if(!maud->playlist_manager.playlists) {
             maud_playlistmanager_read_datafile(maud);
-        }
-    }*/
+        }*/
+    }
     /* Create music bar */
     maud_createmusicbar(maud);
     /*

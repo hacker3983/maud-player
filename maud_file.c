@@ -31,7 +31,7 @@ bool maud_file_path_exists(const wchar_t* location_path) {
         size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
             | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
             (LPSTR)&messageBuffer, 0, NULL);
-        fprintf(stderr, "Error: The music location %ls: %ls", location_path, messageBuffer);
+        fprintf(stderr, "Error: The music location %ls: %s\n", location_path, messageBuffer);
         LocalFree(messageBuffer);
         return false;
     }
@@ -114,19 +114,21 @@ void maud_file_list_load_files(maud_filelist_t* list, const char* location_path)
     WIN32_FIND_DATAW fd = {0};
     HANDLE hfind = INVALID_HANDLE_VALUE;
     for(int i=0;FILE_EXTENSIONS[i] != NULL;i++) {
-        char* extension = maud_stringtowide(FILE_EXTENSIONS[i]);
+        wchar_t* extension = maud_stringtowide(FILE_EXTENSIONS[i]);
         wcscpy(path_pattern, path);
         wcscat(path_pattern, L"\\*.");
         wcscat(path_pattern, extension);
         hfind = FindFirstFileW(path_pattern, &fd);
         if(hfind == INVALID_HANDLE_VALUE) {
+            memset(path_pattern, 0, path_patlen);
+            free(extension);
             continue;
         }
         do {
             size_t length_str = wcslen(fd.cFileName),
                    length_altstr = wcslen(fd.cAlternateFileName),
                    altpath_len = location_len + length_altstr + 7,
-                   path_len = location_len = length_str + 7;
+                   path_len = location_len + length_str + 7;
 
             wchar_t* new_wpath = calloc(path_len+1, sizeof(wchar_t));
             wcscpy(new_wpath, path);
@@ -143,15 +145,16 @@ void maud_file_list_load_files(maud_filelist_t* list, const char* location_path)
 
             char *new_filealt_path = maud_widetoutf8(new_waltpath);
             free(new_waltpath);
-
             maud_file_list_addlocation(list, new_filepath, new_filealt_path);
             free(new_filepath);
             free(new_filealt_path);
         } while(FindNextFileW(hfind, &fd));
+        free(extension);
         FindClose(hfind);
         memset(path_pattern, 0, path_patlen);
     }
     free(path_pattern);
+    free(path);
     #else
     char* path = location_path;
     if(!maud_file_path_exists(path)) {

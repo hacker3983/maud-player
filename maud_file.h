@@ -12,7 +12,7 @@ void maud_file_destroy(maud_file_t* file);
 
 void maud_file_list_init(maud_filelist_t* list);
 void maud_file_list_load_files(maud_filelist_t* list, const char* location_path);
-void maud_file_list_addlocation(maud_filelist_t* list, const char* path);
+void maud_file_list_addlocation(maud_filelist_t* list, const char* path, const char* altpath);
 void maud_file_list_removelocation(maud_filelist_t* list, size_t location_index);
 void maud_file_list_destroy(maud_filelist_t* list);
 #endif

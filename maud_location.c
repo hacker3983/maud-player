@@ -10,6 +10,7 @@ bool maud_location_init(maud_location_t* location, const char* path) {
         }
     }
     location->path = path_dupstr;
+    maud_file_list_load_files(&location->files, path);
     return true;
 }
 void maud_location_destroy(maud_location_t* location) {
@@ -25,7 +26,7 @@ void maud_location_list_init(maud_locationlist_t* list) {
 
 bool maud_location_list_locationexists(maud_locationlist_t* list, const char* path) {
     if(!list->locations) {
-        maud_location_list_load_data(list);
+        return false;
     }
     for(size_t i=0;i<list->count;i++) {
         if(strcmp(list->locations[i].path, path) == 0) {
@@ -96,6 +97,7 @@ void maud_location_list_load_data(maud_locationlist_t* list) {
             free(location_path);
             location_path = NULL;
             location_len = 0;
+            continue;
         } else if(c == '\n' && location_len == 0) {
             continue;
         }

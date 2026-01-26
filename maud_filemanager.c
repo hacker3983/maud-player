@@ -23,24 +23,6 @@ void maud_filemanager_getmusic_locations(maud_t* maud) {
     maud_location_list_load_data(location_list);
 }
 
-void maud_filemanager_getmusic_filepaths(maud_t* maud) {
-    maud_locationlist_t* location_list = &maud->locations;
-    if(!location_list->locations) {
-        return;
-    }
-    maud->total_filecount = 0;
-    for(size_t i=0;i<location_list->count;i++) {
-        maud_location_t* location = &location_list->locations[i];
-        maud_file_list_load_files(&location->files, location->path);
-        maud->total_filecount += location->files.count;
-    }
-}
-
-void maud_filemanager_getmusicpath_info(maud_t* maud) {
-    maud_filemanager_getmusic_locations(maud);
-    maud_filemanager_getmusic_filepaths(maud);
-}
-
 void maud_filemanager_loadmusics(maud_t* maud) {
     maud_locationlist_t* location_list = &maud->locations;
     music_t* music_list = NULL;
@@ -49,17 +31,18 @@ void maud_filemanager_loadmusics(maud_t* maud) {
     text_info_t utext = {18, NULL, NULL, white, {songs_box.x + 2, songs_box.y + 1}};
     SDL_Rect outer_canvas = utext.text_canvas;
     double music_durationsecs = 0;
-    if(!maud->music_list) {
+    /*if(!maud->music_list) {
         music_list = calloc(maud->total_filecount, sizeof(music_t));
         // As long as the music count is greater than zero then we save the maud->music_list
         for(size_t i=0;i<maud->music_count;i++) {
             music_list[i] = maud->music_list[i];
         }
-    }
+    }*/
     for(size_t i=0;i<location_list->count;i++) {
         maud_filelist_t* files = &location_list->locations[i].files;
+        printf("location_list[%zu]: %s files:\n", i, location_list->locations[i].path);
         for(size_t j=0;j<files->count;j++) {
-        
+            printf("%s\n", location_list->locations[i].files.files[j].path);     
         }
     }
 }
@@ -70,7 +53,7 @@ void maud_filemanager_delmusic_locationindex(maud_t* maud, size_t loc_index) {
         return;
     }
     char* location_path = location_list->locations[loc_index].path;
-    maud_markmusic_removalbypath(maud, location_path);
+    maud_filemanager_markmusic_removalby_locationpath(maud, location_path);
     maud_location_list_removelocation(location_list, loc_index);
     maud_location_list_write_data(location_list);
 }
@@ -78,18 +61,11 @@ void maud_filemanager_delmusic_locationindex(maud_t* maud, size_t loc_index) {
 
 void maud_filemanager_markmusic_removalby_locationpath(maud_t* maud,
     const char* location_path) {
-    music_t* music_list = &maud->music_list;
+    music_t* music_list = maud->music_list;
     for(size_t i=0;i<maud->music_count;i++) {
-        if(strcmp(music_list[i].path, location_path) == 0) {
+        if(strcmp(music_list[i].location_path, location_path) == 0) {
             music_list[i].remove = true;
         }
-    }
-}
-
-void maud_filemanager_loadmusics(maud_t* maud) {
-    if(!maud->locations.locations) {
-        maud_filemanager_freemusic_list(maud);
-        return;
     }
 }
 
@@ -117,7 +93,7 @@ char* maud_filemanager_getmusic_namefrompath(Mix_Music* music, const char* path)
     char *music_name = NULL, *filename = NULL;
     #ifdef _WIN32
     //filename = maud_widetoutf8(wcsrchr((wchar_t*)path, L'\\'));
-    filename = strrchr(path, "\\");
+    filename = strrchr(path, '\\');
     #else
     filename = strrchr(path, '/');
     #endif
@@ -223,7 +199,8 @@ void maud_filemanager_freemusic(music_t* music_ref) {
     // allocaterd in memory
     SDL_DestroyTexture(music_ref->text_texture); music_ref->text_texture = NULL;
     free(music_ref->music_name); music_ref->music_name = NULL;
-    music_ref->path = NULL;
+    music_ref->file_path = NULL;
+    music_ref->location_path = NULL;
     Mix_FreeMusic(music_ref->music); music_ref->music = NULL;
 }
 

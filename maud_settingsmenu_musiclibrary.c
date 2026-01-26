@@ -114,13 +114,8 @@ void maud_settingmenu_rendermusiclibrary_locations(maud_t* maud,
     };
     SDL_Color outer_canvascolor = {0x7B, 0x08, 0x28, 0xFF}
     /*{0x03, 0x47, 0x48, 0xFF}{0x31, 0x85, 0xFC, 0xFF}{0xC4, 0x20, 0x21, 0xFF}{0x0B, 0x03, 0x2D, 0xFF}*/;
-    for(size_t i=0;i<maud->location_count;i++) {
-        char* current_location = NULL;
-        #ifdef _WIN32
-        music_location.utext = maud_widetoutf8(maud->locations[i].path);
-        #else
-        music_location.utext = maud->locations[i].path;
-        #endif
+    for(size_t i=0;i<maud->locations.count;i++) {
+        music_location.utext = maud->locations.locations[i].path;
         maud_textmanager_sizetext(maud->music_font, &music_location);
         outer_canvas.h = music_location.text_canvas.h + 20;
         SDL_SetRenderDrawColor(maud->renderer, color_toparam(outer_canvascolor));
@@ -141,13 +136,13 @@ void maud_settingmenu_rendermusiclibrary_locations(maud_t* maud,
             "images/removelocation.png");
         SDL_RenderCopy(maud->renderer, removebtn_texture, NULL, &removebtn_canvas);
         SDL_DestroyTexture(removebtn_texture);
-        if(maud_rect_hover(maud, removebtn_canvas) && maud->mouse_clicked) {
-            //maud_filemanager_delmusic_locationindex(maud, i);
-            maud->mouse_clicked = false;
+        if(maud_rect_hover(maud, removebtn_canvas)) {
+            maud_setcursor(maud, MAUD_CURSOR_POINTER);
+            if(maud->mouse_clicked) {
+                maud_filemanager_delmusic_locationindex(maud, i);
+                maud->mouse_clicked = false;
+            }
         }
-        #ifdef _WIN32
-        free(music_location.utext);
-        #endif
         outer_canvas.y += outer_canvas.h + 10;
     }
 }
