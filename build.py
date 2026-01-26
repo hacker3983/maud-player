@@ -18,6 +18,8 @@ C_FILES = [
     "maud_checkbox.c",
     "maud_inputboxes.c",
     "maud_menumanager.c",
+    "maud_file.c",
+    "maud_location.c",
     "maud_filemanager.c",
     "maud_textmanager.c",
     "maud_texturemanager.c",
