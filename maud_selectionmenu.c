@@ -10,7 +10,10 @@ void maud_selectionmenu_create(maud_t* maud) {
     maud_selectionmenu_handle_selectallbtn_toggleoption(maud, selection_menu);
     maud_selectionmenu_handle_playbtn(maud, selection_menu);
     maud_selectionmenu_handle_playnextbtn(maud, selection_menu);
-    maud_selectionmenu_handle_addtobtn(maud);
+    maud_selectionmenu_handle_addtobtn(maud, selection_menu);
+    maud_selectionmenu_handle_removebtn(maud, selection_menu);
+    maud_selectionmenu_handle_moveup(maud, selection_menu);
+    maud_selectionmenu_handle_movedown(maud, selection_menu);
     maud_selectionmenu_init_addto_dropdown(maud);
 }
 
@@ -52,7 +55,7 @@ bool maud_selectionmenu_togglesong_checkbox(maud_t* maud, music_t* music_list, s
     if(select_all->checkbox.tick && !music_list[i].checkbox_ticked) {
         music_list[i].fill = true;
         music_list[i].checkbox_ticked = true;
-        maud_queue_addmusic(&maud->selection_queue, 0, 0, i);
+        maud_queue_addmusic(maud, &maud->selection_queue, 0, 0, i);
         maud->music_selected = true;
         if(maud->tick_count < maud->music_count) {
             maud->tick_count++;
@@ -83,6 +86,7 @@ void maud_selectionmenu_handle_playbtn(maud_t* maud, maud_selectionmenu_t* selec
     size_t music_listindex = 0, music_id = 0, *playid = &play_queue->playid;
     maud_setcursor(maud, MAUD_CURSOR_POINTER);
     if(maud->mouse_clicked) {
+        play_queue->playing = true;
         printf("You clicked the play button now we are gonna modify the play queue\n");
         if(active_tab == QUEUES_TAB) {
             *playid = selection_queue->items[0].uid;
@@ -117,8 +121,10 @@ void maud_selectionmenu_handle_playbtn(maud_t* maud, maud_selectionmenu_t* selec
 void maud_selectionmenu_handle_playnextbtn(maud_t* maud, maud_selectionmenu_t* selection_menu) {
     maud_selectionmenubtn_t* playnextbtn = &selection_menu->playnextbtn;
     maud_selectionmenu_selectallbtn_t* select_allbtn = &selection_menu->select_allbtn;
+    maud_queue_t* play_queue = &maud->play_queue;
     if(maud_rect_hover(maud, playnextbtn->canvas)) {
         if(maud->mouse_clicked) {
+            play_queue->playing = true;
             bool playqueue_wasempty = !maud->play_queue.items;
             maud_queue_addmusicqueue_toplaynext(maud, &maud->play_queue, &maud->selection_queue);
             if(!Mix_PlayingMusic() && playqueue_wasempty) {
@@ -133,8 +139,8 @@ void maud_selectionmenu_handle_playnextbtn(maud_t* maud, maud_selectionmenu_t* s
     }
 }
 
-void maud_selectionmenu_handle_addtobtn(maud_t* maud) {
-    maud_selectionmenu_t* selection_menu = &maud->selection_menu;
+void maud_selectionmenu_handle_addtobtn(maud_t* maud,
+    maud_selectionmenu_t* selection_menu) {
     maud_selectionmenubtn_t* addtobtn = &selection_menu->addtobtn;
     if(maud_rect_hover(maud, addtobtn->canvas)) {
         maud_setcursor(maud, MAUD_CURSOR_POINTER);
@@ -144,6 +150,81 @@ void maud_selectionmenu_handle_addtobtn(maud_t* maud) {
         }
     }
 }
+
+void maud_selectionmenu_handle_removebtn(maud_t* maud,
+    maud_selectionmenu_t* selection_menu) {
+    maud_selectionmenubtn_t* removebtn = &selection_menu->removebtn;
+    maud_queue_t *play_queue = &maud->play_queue,
+                 *selection_queue = &maud->selection_queue;
+    if(maud_rect_hover(maud, removebtn->canvas)) {
+        maud_setcursor(maud, MAUD_CURSOR_POINTER);
+        if(maud->mouse_clicked) {
+            printf("You clicked the remove button\n");
+            if(active_tab == QUEUES_TAB) {
+                printf("play queue");
+                maud_queue_print(maud, *play_queue);
+                for(size_t i=0;i<selection_queue->item_count;i++) {
+                    printf("Trying to remove music %s with uid %zu\n",
+                        selection_queue->items[i].music_item->music_name,
+                        selection_queue->items[i].uid
+                    );
+                    maud_queue_removemusicby_music(play_queue,
+                        selection_queue->items[i].uid);
+                }
+            }
+            maud_selectionmenu_clearmusic_selection(maud, selection_menu);
+            // TODO: Implement this for playlists
+            maud->mouse_clicked = false;
+        }
+    }
+}
+
+void maud_selectionmenu_handle_moveup(maud_t* maud, maud_selectionmenu_t* selection_menu) {
+    maud_selectionmenubtn_t* movebtn = &selection_menu->moveup_btn;
+    maud_queue_t* play_queue = &maud->play_queue,
+    *selection_queue = &maud->selection_queue;
+    if(!maud_rect_hover(maud, movebtn->canvas)) {
+        return;
+    }
+    maud_setcursor(maud, MAUD_CURSOR_POINTER);
+    if(maud->mouse_clicked) {
+        size_t item_index = selection_queue->items[0].uid;
+        if(item_index) {
+            if(play_queue->playid == item_index) {
+                play_queue->playid = item_index-1;
+            } else if(play_queue->playid == item_index-1) {
+                play_queue->playid = item_index;
+            }
+            maud_queue_swapitem(&play_queue->items[item_index], &play_queue->items[item_index-1]);
+            maud_selectionmenu_clearmusic_selection(maud, selection_menu);
+        }
+        maud->mouse_clicked = false;
+    }
+}
+
+void maud_selectionmenu_handle_movedown(maud_t* maud, maud_selectionmenu_t* selection_menu) {
+    maud_selectionmenubtn_t* movebtn = &selection_menu->moveup_btn;
+    maud_queue_t *play_queue = &maud->play_queue,
+                 *selection_queue = &maud->selection_queue;
+    if(!maud_rect_hover(maud, movebtn->canvas)) {
+        return;
+    }
+    maud_setcursor(maud, MAUD_CURSOR_POINTER);
+    if(maud->mouse_clicked) {
+        size_t item_index = selection_queue->items[0].uid;
+        if(item_index < play_queue->item_count-1) {
+            if(play_queue->playid == item_index) {
+                play_queue->playid = item_index+1;
+            } else if(play_queue->playid == item_index+1) {
+                play_queue->playid = item_index;
+            }
+            maud_queue_swapitem(&play_queue->items[item_index], &play_queue->items[item_index+1]);
+            maud_selectionmenu_clearmusic_selection(maud, selection_menu);
+        }
+        maud->mouse_clicked = false;
+    }
+}
+
 
 void maud_selectionmenu_init_addto_dropdown(maud_t* maud) {
     maud_dropdown_menu_t* dropdown = &maud->dropdown;

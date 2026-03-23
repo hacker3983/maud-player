@@ -6,9 +6,11 @@
 
 enum customize_id {
     CUSTOMIZE_MUSICTILE_BACKGROUNDCOLOR,
-    CUSTOMIZE_MUSICTILE_TEXTCOLOR
+    CUSTOMIZE_MUSICTILE_TEXTCOLOR,
+    CUSTOMIZE_STATUSBAR_BACKGROUNDCOLOR,
+    CUSTOMIZE_STATUSBAR_PROGRESSBAR_COLOR,
+    CUSTOMIZE_STATUSBAR_PROGRESSLINE_COLOR
 };
-
 
 typedef struct maud_customizetab_button {
     SDL_Rect canvas;
@@ -24,6 +26,17 @@ typedef struct maud_musictile_modifier {
     maud_customizetab_btn_t textcolor_button;
 } maud_musictile_modifier_t;
 
+typedef struct maud_statusbar_modifier {
+    text_info_t bgcolor_content;
+    maud_customizetab_btn_t bgcolor_btn;
+
+    text_info_t progressbar_colorcontent;
+    maud_customizetab_btn_t progressbar_colorbtn;
+
+    text_info_t progressline_colorcontent;
+    maud_customizetab_btn_t progressline_colorbtn;
+} maud_statusbar_modifier_t;
+
 typedef struct maud_customizetab {
     SDL_Rect canvas;
     SDL_Color canvas_color;
@@ -31,7 +44,9 @@ typedef struct maud_customizetab {
     SDL_Rect backbtn;
     text_info_t header_text;
     maud_musictile_modifier_t musictile_modifier;
+    maud_statusbar_modifier_t statusbar_modifier;
     maud_colorpicker_t color_picker;
+    maud_customizetab_btn_t save_btn;
     int customize_id;
     bool show_colorpicker;
 } maud_customizetab_t;

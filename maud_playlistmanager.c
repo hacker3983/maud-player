@@ -4,6 +4,7 @@
 #include "maud_string.h"
 #include "maud_scrollcontainer.h"
 #include "maud_notification.h"
+#include "maud_queue.h"
 
 int maud_playlistmanager_findmaxheight(SDL_Rect* rects, size_t rect_count) {
     if(!rects) {
@@ -90,7 +91,7 @@ void maud_playlistmanager_addmusic_toplaylist(maud_t* maud, const char* playlist
         if(strcmp(playlist->name, playlist_name) != 0) {
             continue;
         }
-        if(maud_queue_addmusic(&playlist->queue, 0, music_listindex, music_id)) {
+        if(maud_queue_addmusic(maud, &playlist->queue, 0, music_listindex, music_id)) {
             maud_playlistmanager_write_data_tofile(maud);
         }
     }
@@ -110,6 +111,12 @@ void maud_playlistmanager_destroyplaylist(maud_playlist_t* playlist) {
 }
 
 void maud_playlistmanager_display(maud_t* maud) {
+    maud_playlistmanager_t* playlist_manager = &maud->playlist_manager;
+    maud_playlistprops_t* playlist_props = &playlist_manager->playlist_props;
+    if(playlist_props->selected) {
+        maud_playlistmanager_menurenderer_display(maud);
+        return;
+    }
     maud_playlistmanager_buttonbar_display(maud);
     maud_playlistmanager_displayplaylists(maud);
     maud_playlistmanager_layoutdropdown_menu_display(maud);
@@ -122,6 +129,27 @@ void maud_playlistmanager_displayplaylists(maud_t* maud) {
     switch(playlist_manager->layout_type) {
         case PLAYLIST_GRIDVIEW: maud_playlistmanager_gridrenderer_displayplaylists(maud); break;
         case PLAYLIST_LISTVIEW: maud_playlistmanager_listrenderer_displayplaylists(maud); break;
+    }
+}
+
+void maud_playlistmanager_removemusics_bypath(maud_t* maud, const char* path) {
+    maud_playlistmanager_t* playlist_manager = &maud->playlist_manager; 
+    maud_playlist_t* playlists = playlist_manager->playlists;
+    size_t playlist_count = playlist_manager->playlist_count;
+    for(size_t i=0;i<playlist_count;i++) {
+        printf("Removing path for playlist: %s\n", playlists[i].name);
+        printf("queue->item_count = %zu\n", playlists[i].queue.item_count);
+        maud_queue_removemusics_bypath(maud, &playlists[i].queue, path);
+    }
+    maud_playlistmanager_write_data_tofile(maud);
+}
+
+void maud_playlistmanager_syncwithmusics(maud_t* maud) {
+    maud_playlistmanager_t* playlist_manager = &maud->playlist_manager; 
+    maud_playlist_t* playlists = playlist_manager->playlists;
+    size_t playlist_count = playlist_manager->playlist_count;
+    for(size_t i=0;i<playlist_count;i++) {
+        maud_queue_sync_itemswithmusics(maud, &playlists[i].queue);
     }
 }
 

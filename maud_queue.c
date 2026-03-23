@@ -32,13 +32,18 @@ maud_queueitem_t* maud_queue_realloclist_by(maud_queue_t* queue, size_t amount) 
     return new_items;
 }
 
-bool maud_queue_addmusic(maud_queue_t* queue, size_t uid, size_t music_listindex, size_t music_id) {
+bool maud_queue_addmusic(maud_t* maud, maud_queue_t* queue,
+    size_t uid, size_t music_listindex, size_t music_id) {
     if(!maud_queue_realloclist_by(queue, 1)) {
         return false;
     }
-    queue->items[queue->item_count-1].uid = uid;
-    queue->items[queue->item_count-1].music_listindex = music_listindex,
-    queue->items[queue->item_count-1].music_id = music_id;
+    music_t *music_list = maud->music_lists[music_listindex],
+        *music_item = &music_list[music_id];
+    maud_queueitem_t* item = &queue->items[queue->item_count-1];
+    item->uid = uid;
+    item->music_item = music_item;
+    item->music_listindex = music_listindex;
+    item->music_id = music_id;
     return true;
 }
 
@@ -88,6 +93,79 @@ void maud_queue_removemusicby_musiclistidx_id(maud_queue_t* queue, size_t music_
     }
     queue->item_count--;
     queue->items = realloc(queue->items, queue->item_count * sizeof(maud_queueitem_t));
+}
+
+void maud_queue_shift_itemto_end(maud_queue_t* queue, size_t item_index) {
+    if(!queue->items || item_index >= queue->item_count) {
+        return; 
+    }
+    for(size_t i=item_index;i<queue->item_count-1;i++) {
+        maud_queueitem_t curr_item = queue->items[i];
+        // check if the queue is currently being played!
+        if(queue->playing) {
+            // check if current item to be shifted is equal to the playid
+            // then we update the playid to the next one so it remains valid
+            // otherwise if the current items position when updated will be equal to the play id
+            /// then we update it to the current position so it remains valid
+            if(i == queue->playid) {
+                queue->playid++;
+            } else if(i+1 == queue->playid) {
+                queue->playid = i;
+            }
+        }
+        queue->items[i] = queue->items[i+1],
+        queue->items[i+1] = curr_item;
+    }
+}
+
+void maud_queue_poplast(maud_queue_t* queue) {
+    if(!queue->items) {
+        return;
+    }
+    size_t new_count = queue->item_count-1;
+    if(!new_count) {
+        maud_queue_destroy(queue);
+        return;
+    }
+    queue->item_count = new_count;
+    queue->items = realloc(queue->items, new_count * sizeof(maud_queueitem_t));
+}
+
+bool maud_queue_findmusic_bypath(maud_queue_t* queue, const char* path, size_t* found_index) {
+    if(!queue->items) {
+        return false;
+    }
+    bool found = false;
+    for(size_t i=0;i<queue->item_count;i++) {
+        music_t* item = queue->items[i].music_item;
+        bool is_location = strcmp(item->location_path, path) == 0,
+             is_filepath = strcmp(item->file_path, path) == 0;
+        if(is_location || is_filepath) {
+            *found_index = i;
+            found = true;
+            break;
+        }
+    }
+    return found;
+}
+
+void maud_queue_removemusics_bypath(maud_t* maud, maud_queue_t* queue, const char* path) {
+    printf("maud_queue_removemusics_bypath(): %ld\n", __LINE__);    
+    bool found = false, stopped = false;
+    size_t found_index = 0;
+    if(!queue->items) {
+        return;
+    }
+    while((found = maud_queue_findmusic_bypath(queue, path, &found_index))) {
+        music_t* music_item = queue->items[found_index].music_item;
+        if(!music_item) {
+            printf("Invalid music item maybe a crash will happen!");
+        }
+        const char* music_name = music_item->music_name;
+        printf("Removing queue item %s by path %s\n", music_name, path);
+        maud_queue_shift_itemto_end(queue, found_index);
+        maud_queue_poplast(queue);
+    }
 }
 
 void maud_queue_removemusicby_uid(maud_queue_t* queue, size_t uid) {
@@ -159,7 +237,15 @@ size_t maud_queue_getmusic_count(maud_queue_t queue) {
 
 void maud_queue_handleitem_selection(maud_t* maud, maud_queue_t* queue, size_t item_index,
     SDL_Rect outer_canvas, text_info_t* item_textinfo) {
-    if(!music_addplaylistbtn.clicked && !maud->music_selectionmenu_addtobtn_clicked
+    maud_selectionmenu_t* selection_menu = &maud->selection_menu;
+    maud_selectionmenubtn_t* addtobtn = &selection_menu->addtobtn;
+    maud_dropdown_menu_t* dropdown = &maud->dropdown;
+    maud_dropdown_item_t* items = dropdown->items;
+    bool addtoplaylist_clicked = false;
+    if(items) {
+        addtoplaylist_clicked = items[1].clicked;
+    }
+    if(!addtoplaylist_clicked && !addtobtn->clicked
         && maud_rect_hover(maud, outer_canvas)) {
         maud_queue_handlecheckbox_itemselection(maud, queue, item_index);
         maud_queue_handleplaybutton(maud, queue, item_index);
@@ -189,7 +275,7 @@ void maud_queue_handlecheckbox_itemselection(maud_t* maud, maud_queue_t* queue, 
                     */
                     item->fill = true;
                     item->checkbox_ticked = true;
-                    maud_queue_addmusic(&maud->selection_queue, item_index, music_listindex,
+                    maud_queue_addmusic(maud, &maud->selection_queue, item_index, music_listindex,
                         music_id);
                     if(!maud->tick_count) {
                         maud->songsbox_resized = true;
@@ -239,7 +325,7 @@ void maud_queue_handlecheckbox_itemselection(maud_t* maud, maud_queue_t* queue, 
             item->checkbox_ticked = false;
         } else if(maud->tick_count) {
             maud->music_selected = true;
-            maud_queue_addmusic(&maud->selection_queue, item_index, music_listindex, music_id);
+            maud_queue_addmusic(maud, &maud->selection_queue, item_index, music_listindex, music_id);
             maud->tick_count++;
             item->fill = true;
             item->checkbox_ticked = true;
@@ -265,7 +351,7 @@ void maud_queue_handleplaybutton(maud_t* maud, maud_queue_t* queue, size_t item_
                 for(size_t i=0;i<queue->item_count;i++) {
                     int curr_musiclistindex = queue->items[i].music_listindex,
                         curr_musicid = queue->items[i].music_id;
-                    maud_queue_addmusic(play_queue, 0, curr_musiclistindex, curr_musicid);
+                    maud_queue_addmusic(maud, play_queue, 0, curr_musiclistindex, curr_musicid);
                 }
             }
 
@@ -294,6 +380,30 @@ void maud_queue_handleplaybutton(maud_t* maud, maud_queue_t* queue, size_t item_
     }
 }
 
+void maud_queue_sync_itemswithmusics(maud_t* maud, maud_queue_t* queue) {
+    for(size_t i=0;i<queue->item_count;i++) {
+        maud_queueitem_t* item = &queue->items[i];
+        music_t* music_list = maud->music_lists[item->music_listindex];
+        size_t music_count = maud->music_counts[item->music_listindex];
+        size_t old_musicid = item->music_id;
+        bool found = maud_music_list_findmusic_byid(music_list, music_count, old_musicid, &item->music_id);
+        if(!found) {
+            item->music_item = NULL;
+            continue;
+        }
+        music_t* music_item = &music_list[item->music_id];
+        item->music_item = music_item;
+    }
+    if(queue->item_count && queue->playid >= queue->item_count) {
+        queue->playid = 0;
+        printf("Setting play id\n");
+        if(queue->playing) {
+            Mix_HaltMusic();
+            maud_songsmanager_playmusic(maud);
+        }
+    }
+}
+
 void maud_queue_display(maud_t* maud, maud_queue_t* queue) {
     maud_queue_renderer_display(maud, queue);
 }
@@ -302,9 +412,10 @@ void maud_queue_print(maud_t* maud, maud_queue_t queue) {
     printf("[\n");
     size_t item_count = queue.item_count;
     for(size_t i=0;i<item_count;i++) {
-        size_t music_listindex = queue.items[i].music_listindex, music_id = queue.items[i].music_id;
+        size_t uid = queue.items[i].uid, music_listindex = queue.items[i].music_listindex,
+               music_id = queue.items[i].music_id;
         char* music_name = maud->music_lists[music_listindex][music_id].music_name;
-        printf("\t%zu:{music_listindex: %zu, music id:%zu, music_name: %s}", i+1, music_listindex,
+        printf("\t%zu:{uid: %zu, music_listindex: %zu, music id:%zu, music_name: %s}", i+1, uid, music_listindex,
             music_id, music_name);
         if(i != item_count-1) {
             printf(",\n");

@@ -7,18 +7,21 @@
 #if MAUD_RELEASE
 #define MAUD_PATHINFO_FILE MAUD_PROGRAMDATA "MUSICPATHS.info"
 #define MAUD_PLAYLISTSINFO_FILE MAUD_PROGRAMDATA "MUSICPLAYLISTS.info"
-#define MAUD_TEMPLISTINFO_FILE MAUD_PROGRAMDATA "C:\\ProgramData\\Maud Player\\MUSICTEMPLIST.info"
+#define MAUD_TEMPLISTINFO_FILE MAUD_PROGRAMDATA "MUSICTEMPLIST.info"
+#define MAUD_ITEMPROPSINFO_FILE MAUD_PROGRAMDATA "ITEMPROPS.info"
 #else
 #define MAUD_PATHINFO_FILE "MUSICPATHS.info"
 #define MAUD_PLAYLISTSINFO_FILE "MUSICPLAYLISTS.info"
 #define MAUD_TEMPLISTINFO_FILE "MUSICTEMPLIST.info"
+#define MAUD_ITEMPROPSINFO_FILE "ITEMPROPS.info"
 #endif
 
 const char *WINDOW_TITLE = "Maud Player (Music Audio Player)", *SETTING_TITLE = "Maud Player Settings",
            *FONT_FILE = "SF-Pro-Display-Black.otf", *MUSIC_FONTFILE = "Symbola.ttf",
            *MUSIC_PATHINFO_FILE = MAUD_PATHINFO_FILE,
            *MUSIC_PLAYLISTSINFO_FILE = MAUD_PLAYLISTSINFO_FILE,
-           *MUSIC_TEMPLISTINFO_FILE = MAUD_TEMPLISTINFO_FILE;
+           *MUSIC_TEMPLISTINFO_FILE = MAUD_TEMPLISTINFO_FILE,
+           *MUSIC_ITEMPROPSINFO_FILE = MAUD_ITEMPROPSINFO_FILE;
 
 const char *FILE_EXTENSIONS[] = {"mp3", "flac", "ogg", "opus", "wav", "m4a", NULL};
 
@@ -33,10 +36,14 @@ const SDL_Color window_color = {0, 0, 0, 0} /*{0x2c, 0x36, 0x5e, 0xff}/*{0x3C, 0
                 dark_purple = {0x16, 0x00, 0x1E, 0xFF},
                 music_searchbar_color = {0xFF, 0xFF, 0xFF, 0xFF},
                 music_statusbar_color = {0x7A, 0x65, 0x63, 0xFF},
+                progressbar_color = {0x00, 0x00, 0x00, 0x00},
+                progress_linecolor = {0x00, 0xFF, 0x00, 0xFF},
                 songs_boxcolor = green, back_btnbg_color = {0x46, 0xB1, 0xC9, 0xFF},
     /* Reference: https://coolors.co/023c40-c3979f-0ad3ff-78ffd6-e1faf9, https://coolors.co/010001-2b0504-874000-bc5f04-f4442e */
     setting_wincolor = {0x00, 0x00, 0x00, 0xFF}/*{0x25, 0x16, 0x05, 0xFF}{0x21, 0x01, 0x24, 0xFF} {0x0B, 0x31, 0x42, 0xFF}{0x54, 0x08, 0x04, 0xFF}{0x1B, 0x06, 0x5E, 0xFF}black{0x20, 0x81, 0xC3, 0xFF}{0x02, 0x3C, 0x40, 0xFF}*/,
-                setting_textcolor = {0xC3, 0x97, 0x9F, 0xFF};
+                setting_textcolor = {0xC3, 0x97, 0x9F, 0xFF},
+                MUSIC_TILECOLOR = {0, 42, 50, 0xFF /*0x3B, 0x35, 0x61, 0xFF*/},
+                MUSIC_TILETEXT_COLOR = white;
 int WIDTH = 900, HEIGHT = 600, TAB_INIT = 0, FONT_SIZE = 20, MUSIC_FONTSIZE = 14, TAB_SPACING = 20,
     SBOXDISTANCE_X = 50, SETTING_LINESPACING = 10, UNDERLINE_THICKNESS = 10, checkbox_init = 0;
 

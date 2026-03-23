@@ -7,6 +7,7 @@ bool maud_playlistmanager_read_datafile(maud_t* maud) {
     if(!playlist_datafile) {
         return false;
     }
+    printf("Reading playlist data\n");
     char c = '\0';
     while((c = fgetc(playlist_datafile)) != EOF) {
         if(c == '"' || c == '[') {
@@ -18,6 +19,9 @@ bool maud_playlistmanager_read_datafile(maud_t* maud) {
         }
     }
 
+    for(size_t i=0;i<string_list.count;i++) {
+        printf("%s\n", string_list.strings[i]);
+    }
     if(string_list.strings) {
         maud_playlistmanager_createplaylist_fromparsed_data(maud, &string_list);
         stringlist_destroy(&string_list);

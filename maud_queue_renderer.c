@@ -47,16 +47,18 @@ void maud_queue_renderer_init_queueprops(maud_t* maud, maud_queue_t* queue) {
 
 void maud_queue_renderer_init_item(maud_t* maud, maud_queue_t* queue,
     size_t item_index, int start_x, int start_y) {
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_tileinfo_t* tile_info = &item_info->tile_info;
     maud_queueitem_t* item = &queue->items[item_index];
-    size_t music_listindex = item->music_listindex,
-           music_id = item->music_id;
+    music_t* music_item = item->music_item;
     maud_queueitem_t new_item = {
         .canvas = {
             .x = start_x, .y = start_y,
             .w = maud->win_width - scrollbar.w - 5,
             .h = 20
         },
-        .color = {0, 42, 50, 0xFF},
+        .color = tile_info->background_color,
+        .uid = item->uid,
         .music_id = item->music_id,
         .music_listindex = item->music_listindex,
         .checkbox_ticked = item->checkbox_ticked,
@@ -64,17 +66,17 @@ void maud_queue_renderer_init_item(maud_t* maud, maud_queue_t* queue,
         .checkbox_color = white,
         .checkbox_fillcolor = {0},
         .checkbox_tickcolor = {0x00, 0xff, 0x00, 0xff},
-        .music_name = {
+        .text_info = {
             .font_size = 18,
-            .utext = maud->music_lists[music_listindex]
-                [music_id].music_name,
+            .utext = music_item->music_name,
             .text_canvas = {
                 .x = 50
             },
-            .text_color = white
-        }
+            .text_color = tile_info->foreground_color
+        },
+        .music_item = item->music_item
     };
-    text_info_t *music_name = &new_item.music_name;
+    text_info_t *music_name = &new_item.text_info;
     SDL_Rect *canvas = &new_item.canvas,
              *text_canvas = &music_name->text_canvas;
     maud_textmanager_sizetext(maud->font, music_name);
@@ -199,7 +201,8 @@ void maud_queue_renderer_handleitem_event(maud_t* maud, maud_queue_t* queue, siz
     maud_queueitem_t *item = &queue->items[item_index];
     if(maud_rect_hover(maud, item->canvas)) {
         maud_songsmanager_handlesong_playbutton_hover(maud, item->canvas);
-        maud_queue_handleitem_selection(maud, queue, item_index, item->canvas, &item->music_name);
+        maud_queue_handleitem_selection(maud, queue, item_index, item->canvas,
+            &item->text_info);
         if(maud_rect_hover(maud, music_listplaybtn.btn_canvas)) {
             maud_setcursor(maud, MAUD_CURSOR_POINTER);
         } else if(maud_checkbox_hovered(maud)) {
@@ -242,8 +245,8 @@ void maud_queue_renderer_renderitem(maud_t* maud, maud_queue_t* queue, size_t it
     maud_queue_renderer_handleitem_event(maud, queue, item_index);
     maud_queue_renderer_renderitem_checkbox(maud, queue, item_index);
 
-    SDL_Texture* music_nametexture = maud_textmanager_renderunicode(maud, maud->music_font, &item->music_name);
-    SDL_RenderCopy(maud->renderer, music_nametexture, NULL, &item->music_name.text_canvas);
+    SDL_Texture* music_nametexture = maud_textmanager_renderunicode(maud, maud->music_font, &item->text_info);
+    SDL_RenderCopy(maud->renderer, music_nametexture, NULL, &item->text_info.text_canvas);
     SDL_DestroyTexture(music_nametexture);
 }
 

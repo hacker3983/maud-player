@@ -4,6 +4,8 @@
 void maud_songsmanager_songstab_rendersongs(maud_t* maud) {
     music_t* music_list = maud->music_list;
     size_t music_count = maud->music_count;
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_tileinfo_t* tile_info = &item_info->tile_info;
     if(!music_count || !music_list) {
         return;
     }
@@ -11,6 +13,16 @@ void maud_songsmanager_songstab_rendersongs(maud_t* maud) {
              end_canvas = outer_canvas;
     text_info_t music_name = {0};
     size_t end_renderpos = 0;
+    if(tile_info->updated) {
+        for(size_t i=0;i<music_count;i++) {
+            music_list[i].text_info.text_color = tile_info->foreground_color;
+            SDL_DestroyTexture(music_list[i].text_texture);
+            SDL_Texture* newtext_texture = maud_textmanager_renderunicode(maud,
+                maud->music_font, &music_list[i].text_info);
+            music_list[i].text_texture = newtext_texture;
+        }
+        tile_info->updated = false;
+    }
     for(size_t i=maud->music_renderpos;i<music_count;i++) {
         end_canvas.w = maud->win_width - scrollbar.w - 5;
         end_canvas.h = music_list[i].text_info.text_canvas.h + 22;
@@ -118,7 +130,9 @@ void maud_songsmanager_songstab_rendersongs(maud_t* maud) {
 }
 
 void maud_songsmanager_rendersong_canvas(maud_t* maud, music_t* music_list, size_t music_id) {
-    SDL_SetRenderDrawColor(maud->renderer, 0, 42, 50, 0xFF /*0x3B, 0x35, 0x61, 0xFF*/);
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_tileinfo_t* tile_info = &item_info->tile_info;
+    SDL_SetRenderDrawColor(maud->renderer, color_toparam(tile_info->background_color));
     SDL_RenderDrawRect(maud->renderer, &music_list[music_id].outer_canvas);
     SDL_RenderFillRect(maud->renderer, &music_list[music_id].outer_canvas);
 }
@@ -166,11 +180,12 @@ void maud_songsmanager_handleplaybutton(maud_t* maud, music_t* music_list, size_
         if(maud->mouse_clicked) {
             // Whenever we click the play button for a particular music we play the current play queue and
             // add the new music ids
-
             maud_queue_destroy(play_queue);
+            play_queue->playing = true;
             play_queue->playid = music_id;
+            printf("setting playid = %zu, musicid = %zu\n", play_queue->playid, music_id);
             for(size_t i=0;i<maud->music_count;i++) {
-                    maud_queue_addmusic(play_queue, 0, 0, i);
+                    maud_queue_addmusic(maud, play_queue, i, 0, i);
             }
             /* whenever we hover over the playbutton on the music
                we determine if we should restart the current playing music or play a new music
@@ -233,7 +248,9 @@ void maud_songsmanager_handlecheckbox_musicselection(maud_t* maud, music_t* musi
                     */
                     music_list[music_id].fill = true;
                     music_list[music_id].checkbox_ticked = true;
-                    maud_queue_addmusic(&maud->selection_queue, 0, 0, music_id);
+                    maud_queue_addmusic(maud, &maud->selection_queue,
+                        maud->selection_queue.item_count,
+                        0, music_id);
                     maud->tick_count++;
                     break;
                 case true:
@@ -273,7 +290,7 @@ void maud_songsmanager_handlecheckbox_musicselection(maud_t* maud, music_t* musi
             music_list[music_id].checkbox_ticked = false;
         } else if(maud->tick_count) {
             maud->music_selected = true;
-            maud_queue_addmusic(&maud->selection_queue, 0, 0, music_id);
+            maud_queue_addmusic(maud, &maud->selection_queue, 0, 0, music_id);
             maud->tick_count++;
             music_list[music_id].fill = true;
             music_list[music_id].checkbox_ticked = true;
@@ -287,10 +304,7 @@ void maud_songsmanager_handleskipbutton(maud_t* maud) {
     if(!(music_btns[MAUD_SKIPBTN].clicked && play_queue->items)) {
         return;
     }
-    size_t *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*playid].music_listindex,
-           music_id = play_queue->items[*playid].music_id;
-    music_t **music_lists = maud->music_lists, *music_list = music_lists[music_listindex];
+    size_t *playid = &play_queue->playid;
     (*playid)++;
     (*playid) %= play_queue->item_count;
     maud_songsmanager_togglemusic_playback(maud);
@@ -303,12 +317,7 @@ void maud_songsmanager_handleprevbutton(maud_t* maud) {
         return;
     }
     // Select the play id
-    size_t *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*playid].music_listindex,
-           music_id = play_queue->items[*playid].music_id;
-    music_t **music_lists = maud->music_lists,
-            *music_list = music_lists[music_listindex];
-
+    size_t *playid = &play_queue->playid;
     if(*playid) {
         (*playid)--;
     }
@@ -323,18 +332,16 @@ int maud_songsmanager_playmusic(maud_t* maud) {
     if(!play_queue->items) {
         return -1;
     }
-    size_t *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*playid].music_listindex,
-           music_id = play_queue->items[*playid].music_id;
-    music_t **music_lists = maud->music_lists,
-            *music_list = music_lists[music_listindex];
-    if(!music_list[music_id].music) {
-        size_t msg_len = 120 + strlen(music_list[music_id].music_name);
+    play_queue->playing = true;
+    size_t *playid = &play_queue->playid;
+    music_t *music_item = play_queue->items[*playid].music_item;
+    if(!music_item->music) {
+        size_t msg_len = 120 + strlen(music_item->music_name);
         char msg_buff[msg_len+1];
         sprintf(msg_buff,
             "The selected music %s cannot be played this is because"
             "it is either corrupted, an unsupported file format or file extension.",
-            music_list[music_id].music_name
+            music_item->music_name
         );
         msg_buff[msg_len] = '\0';
         maud_notification_push(&maud->notification, maud->font, 20,
@@ -347,7 +354,7 @@ int maud_songsmanager_playmusic(maud_t* maud) {
             10
         );
     }
-    return Mix_PlayMusic(music_list[music_id].music, 1);
+    return Mix_PlayMusic(music_item->music, 1);
 }
 
 void maud_songsmanager_playmusic_pause(maud_t* maud) {
@@ -361,15 +368,12 @@ void maud_songsmanager_togglemusic_playback(maud_t* maud) {
     if(!play_queue->items) {
         return;
     }
-    size_t *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*playid].music_listindex,
-           music_id = play_queue->items[*playid].music_id;
-    music_t **music_lists = maud->music_lists,
-            *music_list = music_lists[music_listindex];
+    size_t playid = play_queue->playid;
+    music_t* music_item = play_queue->items[playid].music_item;
     Mix_HaltMusic();
     if(!Mix_PausedMusic()) {
         if(!maud_songsmanager_playmusic(maud)) {
-            printf("Playing music %s\n", music_list[music_id].music_name);
+            printf("Playing music %s\n", music_item->music_name);
         }
         return;
     }

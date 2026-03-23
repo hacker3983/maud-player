@@ -20,20 +20,18 @@ void maud_selectionmenu_display_addtoplaylist_modal(maud_t* maud);
 void maud_selectionmenu_init_addto_dropdown(maud_t* maud);
 void maud_selectionmenu_handle_addtoplaylist_modalevents(maud_t* maud);
 void maud_selectionmenu_display_addto_dropdown(maud_t* maud);
-void maud_selectionmenu_handle_addtobtn(maud_t* maud);
+void maud_selectionmenu_handle_addtobtn(maud_t* maud, maud_selectionmenu_t* selection_menu);
 void maud_selectionmenu_display_playbtn(maud_t* maud, text_info_t songs_selectioninfo,
     SDL_Rect* playbtn_backgroundref);
 void maud_selectionmenu_handle_playbtn(maud_t* maud, maud_selectionmenu_t* selection_menu);
 void maud_selectionmenu_display_playnextbtn(maud_t* maud, SDL_Rect playbtn_background,
     SDL_Rect* playnext_backgroundref);
 void maud_selectionmenu_handle_playnextbtn(maud_t* maud, maud_selectionmenu_t* selection_menu);
-void maud_selectionmenu_display_removebtn(maud_t* maud, SDL_Rect* removebtn_ref);
-void maud_selectionmenu_handle_removebtn(maud_t* maud, SDL_Rect removebtn);
+void maud_selectionmenu_handle_removebtn(maud_t* maud, maud_selectionmenu_t* selection_menu);
 void maud_selectionmenu_display_movebtn(maud_t* maud, int type, SDL_Rect prevbtn,
     SDL_Rect* move_btnref);
-void maud_selectionmenu_handle_moveup(maud_t* maud, SDL_Rect movebtn);
-void maud_selectionmenu_handle_movedown(maud_t* maud, SDL_Rect movebtn);
-
+void maud_selectionmenu_handle_moveup(maud_t* maud, maud_selectionmenu_t* selection_menu);
+void maud_selectionmenu_handle_movedown(maud_t* maud, maud_selectionmenu_t* selection_menu);
 
 void maud_selectionmenu_handle_selectallbtn_toggleoption(maud_t* maud, maud_selectionmenu_t* selection_menu);
 

@@ -15,6 +15,7 @@
 #include "maud_playlistmanager.h"
 #include "maud_playerbutton_manager.h"
 #include "maud_dropdown_menu.h"
+#include "maud_music.h"
 
 SDL_Rect *playbtn_canvas = NULL, *playbtn_listcanvas = NULL,
         *prevbtn_canvas = NULL, *skipbtn_canvas = NULL,
@@ -112,6 +113,23 @@ void maud_createapp(maud_t* maud) {
     // Initialize the play queue and music selection queue
     maud_queue_init(&maud->play_queue);
     maud_queue_init(&maud->selection_queue);
+
+
+    // Get maud item / element properties
+    maud_iteminfo_t* item_info = &maud->item_info;
+
+    // Initialize music status bar properties
+    maud_statusbarinfo_t* statusbar_info = &item_info->statusbar_info;
+    statusbar_info->color = music_statusbar_color,
+    statusbar_info->progressbar_color = progressbar_color,
+    statusbar_info->progressline_color = progress_linecolor;
+
+    // Initialize music tile properties
+    maud_tileinfo_t* tile_info = &item_info->tile_info;
+    tile_info->background_color = MUSIC_TILECOLOR,
+    tile_info->foreground_color = MUSIC_TILETEXT_COLOR;
+
+    maud_iteminfo_read_data(maud);
 
     // Initialize color picker system
     color_pickerprops_t picker_props = {
@@ -300,7 +318,7 @@ void maud_search_music(maud_t* maud) {
     size_t *search_index = &maud->search_index;
     if((*search_index) < maud->music_count) {
         if(maud_music_searchsubstr(maud, *search_index)) {
-            maud_queue_addmusic(&maud->searchresults_queue, 0, 0, *search_index); 
+            maud_queue_addmusic(maud, &maud->searchresults_queue, 0, 0, *search_index); 
         }
         (*search_index)++;
     } else if(!maud->searchresults_ready) {
@@ -331,6 +349,8 @@ void maud_renderactive_tab(maud_t* maud, tabinfo_t* tab_info) {
 }
 
 void maud_createmusicbar(maud_t* maud/*, SDL_Texture* musicbtn_textures[]*/) {
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_statusbarinfo_t* statusbar_info = &item_info->statusbar_info;
     text_info_t current_music = {
         .font_size = 18,
         .text = NULL,
@@ -343,6 +363,7 @@ void maud_createmusicbar(maud_t* maud/*, SDL_Texture* musicbtn_textures[]*/) {
     progress bar
     controls
     */
+
     maud_getcurrent_musicplaying_sizetext(maud, &current_music);
     maud_setprogressbar_size(maud);
     // create music bar
@@ -358,7 +379,7 @@ void maud_createmusicbar(maud_t* maud/*, SDL_Texture* musicbtn_textures[]*/) {
         maud->progress_bar.y = current_music.text_canvas.y + current_music.text_canvas.h + 20;
     };
     maud_setcontrolbtns_position(maud);
-    SDL_SetRenderDrawColor(maud->renderer, color_toparam(music_statusbar_color));
+    SDL_SetRenderDrawColor(maud->renderer, color_toparam(statusbar_info->color));
     SDL_RenderFillRect(maud->renderer, &music_status);
     SDL_RenderDrawRect(maud->renderer, &music_status);
     maud_displayprogression_control(maud);
@@ -541,19 +562,15 @@ void maud_createsongs_box(maud_t* maud) {
     SDL_RenderDrawRect(maud->renderer, &songs_box);
 }
 
-
 void maud_getcurrent_musicplaying_sizetext(maud_t* maud, text_info_t* current_music) {
     maud_queue_t* play_queue = &maud->play_queue;
     if(!play_queue->items) {
         return;
     }
-    size_t playid = play_queue->playid,
-           music_listindex = play_queue->items[playid].music_listindex,
-           music_id = play_queue->items[playid].music_id;
-    music_t **music_lists = maud->music_lists,
-            *music_list = music_lists[music_listindex];
-    if(Mix_PlayingMusic()) {
-        current_music->utext = music_lists[music_listindex][music_id].music_name;
+    size_t playid = play_queue->playid;
+    music_t *music_item = play_queue->items[playid].music_item;
+    if(music_item && Mix_PlayingMusic()) {
+        current_music->utext = music_item->music_name;
         maud_textmanager_sizetext(maud->music_font, current_music);
     }
 }
@@ -595,6 +612,8 @@ void maud_setprogressbar_size(maud_t* maud) {
 }
 
 void maud_displaymusic_status(maud_t* maud, mtime_t curr_duration, mtime_t full_duration) {
+    maud_queue_t* play_queue = &maud->play_queue;
+    size_t playid = play_queue->playid;
     text_info_t duration_texts[2] = {
         // The current duration of the music being played
         {
@@ -630,13 +649,12 @@ void maud_displaymusic_status(maud_t* maud, mtime_t curr_duration, mtime_t full_
     maud->progress_bar.y = music_status.y+20;
     duration_texts[1].text_canvas.x = maud->progress_bar.x + maud->progress_bar.w + 6;
     if(Mix_PlayingMusic()) {
-        maud_queue_t* play_queue = &maud->play_queue;
-        size_t playid = play_queue->playid,
-           music_listindex = play_queue->items[playid].music_listindex,
-           music_id = play_queue->items[playid].music_id;
-        music_t **music_lists = maud->music_lists;
+        music_t* music_item = play_queue->items[playid].music_item;
+        if(!music_item) {
+            return;
+        }
         text_info_t music_name = {18, NULL, NULL, white, {0, 0, 0, 0}};
-        music_name.utext = music_lists[music_listindex][music_id].music_name;
+        music_name.utext = music_item->music_name;
         maud_textmanager_sizetext(maud->music_font, &music_name);
         char* truncated_name = NULL;
         if(music_name.text_canvas.x + music_name.text_canvas.w > maud->win_width) {
@@ -692,6 +710,8 @@ void maud_displaymusic_status(maud_t* maud, mtime_t curr_duration, mtime_t full_
 
 void maud_renderprogress_bar(maud_t* maud, SDL_Color bar_color, SDL_Color line_color, 
     double curr_durationsecs, double full_durationsecs) {
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_statusbarinfo_t* statusbar_info = &item_info->statusbar_info;
     double percentage = round((double)(curr_durationsecs) / (double)(full_durationsecs) * (double)100);
     int percentageof = (int)round(((double)percentage / (double)100 * (double)maud->progress_bar.w));
 
@@ -719,8 +739,8 @@ void maud_renderprogress_bar(maud_t* maud, SDL_Color bar_color, SDL_Color line_c
             Mix_SetMusicPosition(curr_durationsecs);
             maud->progressbar_clicked = false; maud->progressbar_dragged = false;
         }
-        SDL_Color green = {0x00, 0xff, 0x00, 0xff};
-        SDL_SetRenderDrawColor(maud->renderer, color_toparam(green));
+        SDL_SetRenderDrawColor(maud->renderer,
+            color_toparam(statusbar_info->progressline_color));
         SDL_RenderDrawRect(maud->renderer, &maud->progress_count);
         SDL_RenderFillRect(maud->renderer, &maud->progress_count);
     }
@@ -732,24 +752,22 @@ void maud_controlmusic_progression(maud_t* maud) {
     int progress = 0;
     maud_queue_t* play_queue = &maud->play_queue;
     if(!play_queue->items) {
+        play_queue->playing = false;
         return;
     }
-    size_t *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*playid].music_listindex,
-           music_id = play_queue->items[*playid].music_id;
-    music_t **music_lists = maud->music_lists,
-            *music_list = music_lists[music_listindex];
+    size_t *playid = &play_queue->playid;
+    music_t *music_item = play_queue->items[(*playid)].music_item;
     maud_getcurrentmusic_progression(maud);
-    if(Mix_PlayingMusic() && !Mix_PausedMusic()) {
-        curr_duration = music_list[music_id].music_position,
-        full_duration = music_list[music_id].music_duration,
-        curr_durationsecs = music_list[music_id].music_positionsecs,
-        full_durationsecs = music_list[music_id].music_durationsecs;
-        if(Mix_PlayingMusic() && curr_durationsecs > 0.0) {
+    if(music_item && Mix_PlayingMusic() && !Mix_PausedMusic()) {
+        curr_duration = music_item->music_position,
+        full_duration = music_item->music_duration,
+        curr_durationsecs = music_item->music_positionsecs,
+        full_durationsecs = music_item->music_durationsecs;
+        if(Mix_PlayingMusic() && full_durationsecs > 0.0) {
             progress = (int)(curr_durationsecs / full_durationsecs * 100.0);
         }
         printf("Playing %s %02d:%02d:%02ds of %02d:%02d:%02ds %d%% completed\n",
-            music_list[music_id].music_name,
+            music_item->music_name,
             curr_duration.hrs, curr_duration.mins, curr_duration.secs,
             full_duration.hrs, full_duration.mins, full_duration.secs, progress);
     }
@@ -759,27 +777,26 @@ void maud_controlmusic_progression(maud_t* maud) {
                 // play the next music whwnever the current on is complete
                 (*playid)++;
                 (*playid) %= play_queue->item_count;
-                music_listindex = play_queue->items[*playid].music_listindex,
-                music_id = play_queue->items[*playid].music_id;
-                music_list = music_lists[music_listindex];
-                if(!Mix_PlayMusic(music_list[music_id].music, 1)) {
-                    printf("Playing music %s\n", music_list[music_id].music_name);
+                music_item = play_queue->items[(*playid)].music_item;
+                if(!Mix_PlayMusic(music_item->music, 1)) {
+                    printf("Playing music %s\n", music_item->music_name);
                 } else {
-                    maud_songsmanager_addplayback_error(maud, music_list[music_id].music_name);
+                    maud_songsmanager_addplayback_error(maud, music_item->music_name);
                 }
             }
             break;
         case MAUD_REPEATONEBTN:
             if(!Mix_PlayingMusic()) {
-                if(!Mix_PlayMusic(music_lists[music_listindex][music_id].music, 1)) {
-                    printf("Playing music %s\n", music_list[music_id].music_name);
+                if(!Mix_PlayMusic(music_item->music, 1)) {
+                    printf("Playing music %s\n", music_item->music_name);
                 } else {
                     // Whenever the current music object is equal to NULL then we skip to the next song that has
                     // a valid music object this can happen whenever we failed to load a music
-                    printf("Failed to play music %s\n", music_list[music_id].music_name);
-                    maud_songsmanager_addplayback_error(maud, music_list[music_id].music_name);
+                    printf("Failed to play music %s\n", music_item->music_name);
+                    maud_songsmanager_addplayback_error(maud, music_item->music_name);
                     (*playid)++;
                     (*playid) %= play_queue->item_count;
+                    music_item = play_queue->items[(*playid)].music_item;
                 }
             }
             break;
@@ -787,14 +804,12 @@ void maud_controlmusic_progression(maud_t* maud) {
             if(play_queue->playid < play_queue->item_count && !Mix_PlayingMusic()) {
                 (*playid)++;
                 (*playid) %= play_queue->item_count;
-                music_listindex = play_queue->items[*playid].music_listindex,
-                music_id = play_queue->items[*playid].music_id;
-                music_list = music_lists[music_listindex];
-                if(!Mix_PlayMusic(music_list[music_id].music, 1)) {
-                    printf("Playing music %s\n", music_list[music_id].music_name);
+                music_item = play_queue->items[(*playid)].music_item;
+                if(!Mix_PlayMusic(music_item->music, 1)) {
+                    printf("Playing music %s\n", music_item->music_name);
                 } else {
-                    maud_songsmanager_addplayback_error(maud, music_list[music_id].music_name);
-                    printf("Failed to play music %s\n", music_list[music_id].music_name);
+                    maud_songsmanager_addplayback_error(maud, music_item->music_name);
+                    printf("Failed to play music %s\n", music_item->music_name);
                 }
                 // Whenever we the play id gets reset to zero we Pause the music so that it doesn't repeat
                 // the songs in the music list all over again
@@ -811,30 +826,25 @@ void maud_getcurrentmusic_progression(maud_t* maud) {
     if(!play_queue->items) {
         return;
     }
-    size_t *playid = &play_queue->playid,
-           music_listindex = play_queue->items[*playid].music_listindex,
-           music_id = play_queue->items[*playid].music_id;
-    music_t **music_lists = maud->music_lists,
-            *music_list = music_lists[music_listindex];
-    if(Mix_PlayingMusic()) {
-        music_list[music_id].music_positionsecs = Mix_GetMusicPosition(music_list[music_id].music);
-        music_list[music_id].music_position = maud_filemanager_music_gettime(music_list[music_id].
-            music_positionsecs);
+    size_t *playid = &play_queue->playid;
+    music_t* music_item = play_queue->items[*playid].music_item;
+    if(music_item && Mix_PlayingMusic() && music_item->music) {
+        music_item->music_positionsecs = Mix_GetMusicPosition(music_item->music);
+        music_item->music_position = maud_music_gettime(music_item->music_positionsecs);
     }
 }
 
 void maud_getduration_progression(maud_t* maud, mtime_t* curr_duration,
     mtime_t* full_duration) {
     maud_queue_t* play_queue = &maud->play_queue;
-    size_t *playid = &play_queue->playid,
-            music_listindex = 0, music_id = 0;
-    music_t **music_lists = maud->music_lists, *music_list = NULL;
+    size_t playid = play_queue->playid;
     if(play_queue->items) {
-        music_listindex = play_queue->items[*playid].music_listindex,
-        music_id = play_queue->items[*playid].music_id,
-        music_list = music_lists[music_listindex];
-        *curr_duration = music_list[music_id].music_position,
-        *full_duration = music_list[music_id].music_duration;
+        music_t* music_item = play_queue->items[playid].music_item;
+        if(!music_item) {
+            return;
+        }
+        *curr_duration = music_item->music_position,
+        *full_duration = music_item->music_duration;
     }
 }
 
@@ -844,24 +854,101 @@ void maud_displayprogression_control(maud_t* maud) {
     double full_durationsecs = 0, curr_durationsecs = 0;
     int progress = 0;
 
-    size_t *playid = &play_queue->playid, music_listindex = 0, music_id = 0;
-    music_t **music_lists = maud->music_lists, *music_list = NULL;
-    if(play_queue->items) {
-        music_listindex = play_queue->items[*playid].music_listindex,
-        music_id = play_queue->items[*playid].music_id,
-        music_list = music_lists[music_listindex];
-    
-        curr_duration = music_list[music_id].music_position,
-        full_duration = music_list[music_id].music_duration,
-        curr_durationsecs = music_list[music_id].music_positionsecs,
-        full_durationsecs = music_list[music_id].music_durationsecs;
+    size_t playid = play_queue->playid;
+    if(play_queue->items) {    
+        music_t *music_item = play_queue->items[playid].music_item;
+        if(!music_item) {
+            return;
+        }
+        curr_duration = music_item->music_position,
+        full_duration = music_item->music_duration,
+        curr_durationsecs = music_item->music_positionsecs,
+        full_durationsecs = music_item->music_durationsecs;
     }
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_statusbarinfo_t* statusbar_info = &item_info->statusbar_info;
     if(maud->menu_opt == MAUD_DEFAULT_MENU) {
         maud_displaymusic_status(maud, curr_duration, full_duration);
-        SDL_Color progressbar_color = {0x00, 0x00, 0x00, 0x00}, progress_linecolor = {0xFF, 0xFF, 0x00, 0xFF};
-        maud_renderprogress_bar(maud, progressbar_color, progress_linecolor,
+        maud_renderprogress_bar(maud, statusbar_info->progressbar_color,
+            statusbar_info->progressline_color,
             curr_durationsecs, full_durationsecs);
     }
+}
+
+void maud_color_change(SDL_Color* destination, SDL_Color source) {
+    *destination = source;
+}
+
+void maud_iteminfo_read_data(maud_t* maud) {
+    FILE* f = fopen(MUSIC_ITEMPROPSINFO_FILE, "r");
+    if(!f) {
+        fprintf(stderr, "Error: FAILED TO OPEN ITEM PROPS INFO FILE:"
+            " No such file or directory: %s\n", MUSIC_ITEMPROPSINFO_FILE);
+        return;
+    }
+    fread(&maud->item_info, sizeof(maud->item_info), 1, f);
+    fclose(f);
+}
+
+void maud_iteminfo_write_data(maud_t* maud) {
+    FILE* f = fopen(MUSIC_ITEMPROPSINFO_FILE, "w");
+    fwrite(&maud->item_info, sizeof(maud->item_info), 1, f);
+    fclose(f);
+}
+
+void maud_iteminfo_push_notification(maud_t* maud, char* message) {
+    maud_notification_push(&maud->notification, maud->font,
+        20,
+        (SDL_Color){0x12, 0x12, 0x12, 0xff},
+        message,
+        (SDL_Color){0x00, 0xff, 0x00, 0xff},
+        1.5,
+        10,
+        10,
+        10
+    );
+}
+
+void maud_tileinfo_update_backgroundcolor(maud_t* maud, SDL_Color color) {
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_tileinfo_t* tile_info = &item_info->tile_info;
+    SDL_Color* bg_color = &tile_info->background_color;
+    maud_color_change(bg_color, color);
+    maud_iteminfo_push_notification(maud,
+        "Successfully updated music tile background color!");
+}
+
+void maud_tileinfo_update_foregroundcolor(maud_t* maud, SDL_Color color) {
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_tileinfo_t* tile_info = &item_info->tile_info;
+    SDL_Color* fg_color = &tile_info->foreground_color;
+    maud_color_change(fg_color, color);
+    maud_iteminfo_push_notification(maud,
+        "Successfully updated music tile foreground color!");
+}
+
+void maud_statusinfo_update_backgroundcolor(maud_t* maud, SDL_Color color) {
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_statusbarinfo_t* statusbar_info = &item_info->statusbar_info;
+    maud_color_change(&statusbar_info->color, color);
+    maud_iteminfo_push_notification(maud,
+        "Successfully updated music status background color!");
+}
+
+void maud_statusinfo_update_progressbar_color(maud_t* maud, SDL_Color color) {
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_statusbarinfo_t* statusbar_info = &item_info->statusbar_info;
+    maud_color_change(&statusbar_info->progressbar_color, color);
+    maud_iteminfo_push_notification(maud,
+        "Successfully updated music status progress bar color!");
+}
+
+void maud_statusinfo_update_progressline_color(maud_t* maud, SDL_Color color) {
+    maud_iteminfo_t* item_info = &maud->item_info;
+    maud_statusbarinfo_t* statusbar_info = &item_info->statusbar_info;
+    maud_color_change(&statusbar_info->progressline_color, color);
+    maud_iteminfo_push_notification(maud,
+        "Successfully updated music status progress line color!");
 }
 
 void maud_renderscroll_bar(maud_t* maud, maud_scrollbar_t* scrollbar, size_t max_textures) {
@@ -942,9 +1029,9 @@ void maud_defaultmenu(maud_t* maud) {
                 continue;
             } else if(maud->playlist_manager.button_bar.new_playlistbtn.clicked) {
                 maud_inputbox_handle_events(maud, &maud->playlist_manager.new_playlistinput.inputbox);
-            }/* else if(maud->playlist_manager.rename_clicked) {
-                maud_inputbox_handle_events(maud, &maud->playlist_manager.rename_inputbox);
-            }*/ else if(maud->search_inputbox.clicked) {
+            } else if(maud->playlist_manager.playlist_menu.renamebtn.clicked) {
+                maud_inputbox_handle_events(maud, &maud->playlist_manager.renameplaylist_input.inputbox);
+            } else if(maud->search_inputbox.clicked) {
                 maud_inputbox_handle_events(maud, &maud->search_inputbox);
             }
         } else if(maud->e.type == SDL_KEYDOWN) {
@@ -954,9 +1041,9 @@ void maud_defaultmenu(maud_t* maud) {
                 maud_inputbox_handle_events(maud, &maud->playlist_inputbox);
             } else if(maud->playlist_manager.button_bar.new_playlistbtn.clicked) {
                 maud_inputbox_handle_events(maud, &maud->playlist_manager.new_playlistinput.inputbox);
-            } /*else if(maud->playlist_manager.rename_clicked) {
-                maud_inputbox_handle_events(maud, &maud->playlist_manager.rename_inputbox);
-            }*/ else if(maud->search_inputbox.clicked) {
+            } else if(maud->playlist_manager.playlist_menu.renamebtn.clicked) {
+                maud_inputbox_handle_events(maud, &maud->playlist_manager.renameplaylist_input.inputbox);
+            } else if(maud->search_inputbox.clicked) {
                 maud_inputbox_handle_events(maud, &maud->search_inputbox);
             }
         } else if(maud->e.type == SDL_MOUSEMOTION) {
@@ -1153,9 +1240,9 @@ void maud_defaultmenu(maud_t* maud) {
     if(!maud->music_list) {
         maud_filemanager_loadmusics(maud);
         printf("Successfully loaded all musics\n");
-        /*if(!maud->playlist_manager.playlists) {
+        if(!maud->playlist_manager.playlists) {
             maud_playlistmanager_read_datafile(maud);
-        }*/
+        }
     }
     /* Create music bar */
     maud_createmusicbar(maud);
@@ -1192,6 +1279,9 @@ void maud_defaultmenu(maud_t* maud) {
         }
         if(items && items[0].clicked) {
             maud_queue_addmusicfrom_queue(&maud->play_queue, &maud->selection_queue);
+            if(!Mix_PlayingMusic()) {
+                maud_songsmanager_playmusic(maud);
+            }
             maud_selectionmenu_clearmusic_selection(maud, &maud->selection_menu);
             items[0].clicked = false;
         }
@@ -1208,6 +1298,7 @@ void maud_defaultmenu(maud_t* maud) {
         maud_songsmanager_handleskipbutton(maud);
         maud_queue_display(maud, &maud->play_queue);
         maud_selectionmenu_display_addtoplaylist_modal(maud);
+        maud_selectionmenu_display_addto_dropdown(maud);
         maud_selectionmenu_handle_addtoplaylist_modalevents(maud);
         //maud_selectionmenu_handle_addtobtn(maud);
         if(maud->selection_queue.items && maud->music_selected) {
@@ -1215,12 +1306,14 @@ void maud_defaultmenu(maud_t* maud) {
             //maud_queue_print(maud, maud->selection_queue);
             maud->music_selected = false;
         }
-        if(music_playqueuebtn.clicked) {
+        if(items && items[0].clicked) {
             maud_queue_addmusicfrom_queue(&maud->play_queue, &maud->selection_queue);
+            if(!Mix_PlayingMusic()) {
+                maud_songsmanager_playmusic(maud);
+            }
             maud_selectionmenu_clearmusic_selection(maud, &maud->selection_menu);
-            music_playqueuebtn.clicked = false;
+            items[0].clicked = false;
         }
-        //maud_queue_print(maud, maud->play_queue);
         maud->mouse_clicked = false;
     } else if(active_tab == PLAYLISTS_TAB) {
         maud_songsmanager_handleprevbutton(maud);
@@ -1252,8 +1345,8 @@ void maud_destroyapp(maud_t* maud) {
     }
 
     // Free music resources used by program
-    //maud_filemanager_freemusic_list(maud);
-    //maud_filemanager_freemusicpath_info(maud);
+    maud_filemanager_freemusic_list(maud);
+    maud_filemanager_freemusicpath_info(maud);
 
     // Destroy the notification system
     maud_notification_destroy(&maud->notification);

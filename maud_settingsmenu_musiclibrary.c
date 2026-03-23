@@ -70,6 +70,13 @@ void maud_settingmenu_rendermusiclibrary_addlocationbtn(maud_t* maud, maud_music
     SDL_Rect* icon_canvas = &addlocation_btn.icon_canvas;
     addlocation_btn.canvas.x = maud->win_width - addlocation_btn.canvas.w - 10;
     addlocation_btn.canvas.y = location_text.text_canvas.y;
+    if(maud_rect_hover(maud, addlocation_btn.canvas)) {
+        maud_setcursor(maud, MAUD_CURSOR_POINTER);
+        if(maud->mouse_clicked) {
+            maud_filemanager_browsefolder(maud);
+            maud->mouse_clicked = false;
+        }
+    }
     SDL_SetRenderDrawColor(maud->renderer, color_toparam(addlocation_btn.color));
     SDL_RenderDrawRect(maud->renderer, &addlocation_btn.canvas);
     SDL_RenderFillRect(maud->renderer, &addlocation_btn.canvas);

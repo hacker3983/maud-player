@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
+
 bool maud_file_init(maud_file_t* file, const char* path, const char* altpath) {
     char *path_dupstr = NULL, *altpath_dupstr = NULL;
     if(path) {
@@ -95,10 +96,10 @@ void maud_file_list_removelocation(maud_filelist_t* list, size_t location_index)
         list->files[i+1] = current_file;
     }
     list->count--;
-    maud_file_destroy(&list->files[list->count]);
     if(!list->count) {
-        maud_file_list_init(list);
+        maud_file_list_destroy(list);
     }
+    maud_file_destroy(&list->files[list->count]);
     list->files = realloc(list->files, list->count * sizeof(maud_file_t));
 }
 

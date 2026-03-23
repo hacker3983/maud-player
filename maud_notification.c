@@ -1,6 +1,7 @@
 #include "maud_notification.h"
 #include "maud_textmanager.h"
 #include "maud_string.h"
+#include "maud_menumanager.h"
 
 void maud_notification_push(maud_notification_t* notification, TTF_Font* font, int font_size, SDL_Color background_color,
     const char* message, SDL_Color message_color, double timeout_secs, int padding_x, int padding_y,
@@ -144,7 +145,11 @@ void maud_notification_display(maud_t* maud, maud_notification_t* notification) 
     SDL_Rect* canvas = &item->canvas;
     maud_notification_getsize(notification);
     canvas->x = maud->win_width - canvas->w - 10;
-    canvas->y = maud->win_height - music_status.h - canvas->h - 10;
+    if(maud->menu_opt == MAUD_DEFAULT_MENU) {
+        canvas->y = maud->win_height - music_status.h - canvas->h - 10;
+    } else {
+        canvas->y = maud->win_height - canvas->h - 10;
+    }
     SDL_SetRenderDrawColor(maud->renderer, color_toparam(item->background_color));
     SDL_RenderDrawRect(maud->renderer, canvas);
     SDL_RenderFillRect(maud->renderer, canvas);

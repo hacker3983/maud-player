@@ -1,4 +1,6 @@
 #include "maud_playlistmanager.h"
+#include "maud_notification.h"
+#include "maud_songsmanager.h"
 
 void maud_playlistmanager_menurenderer_init_playlistprops(maud_t* maud,
     maud_playlistprops_t* playlist_props) {
@@ -31,6 +33,7 @@ void maud_playlistmanager_menurenderer_init_textsizes(maud_t* maud,
     text_info_t *textinfo_list[] = {
         &playlist_menu->item_count,
         &playlist_menu->playlist_name,
+        &playlist_menu->playallbtn.text,
         &playlist_menu->addtobtn.text,
         &playlist_menu->renamebtn.text,
         &playlist_menu->deletebtn.text,
@@ -49,7 +52,8 @@ void maud_playlistmanager_menurenderer_init_btns(maud_t* maud,
         &playlist_menu->renamebtn,
         &playlist_menu->deletebtn
     };
-    size_t button_count = sizeof(buttons) / sizeof(maud_playlistmenubtn_t);
+    size_t button_count = sizeof(buttons) / sizeof(maud_playlistmenubtn_t*);
+    printf("start_x = %d, start_y = %d\n", start_x, start_y);
     for(size_t i=0;i<button_count;i++) {
         SDL_Rect *canvas = &buttons[i]->canvas,
                  *icon_canvas = &buttons[i]->icon_canvas,
@@ -69,7 +73,7 @@ void maud_playlistmanager_menurenderer_init_btns(maud_t* maud,
         icon_canvas->y = canvas->y + (canvas->h -
             icon_canvas->h) / 2;
         
-        text_canvas->x = icon_canvas->x + icon_canvas->w + 9;
+        text_canvas->x = icon_canvas->x + icon_canvas->w + 6;
         text_canvas->y = canvas->y + (canvas->h -
             text_canvas->h) / 2;
         start_x += canvas->w + 10;
@@ -162,7 +166,8 @@ void maud_playlistmanager_menurenderer_init_menu(maud_t* maud,
                 .text = "Rename",
                 .text_color = white
             },
-            .icon_path = "images/rename.png"
+            .icon_path = "images/rename.png",
+            .clicked = playlist_menu->renamebtn.clicked
         },
         .deletebtn = {
             .canvas = {
@@ -219,14 +224,15 @@ void maud_playlistmanager_menurenderer_init(maud_t* maud) {
     maud_playlistmanager_menurenderer_init_playlistprops(maud, playlist_props);
 }
 
-void maud_playlistmanager_menurenderer_renderbtns(maud_t* maud, maud_playlistmenu_t* playlist_menu) {
+void maud_playlistmanager_menurenderer_renderbtns(maud_t* maud,
+    maud_playlistmenu_t* playlist_menu) {
     maud_playlistmenubtn_t* buttons[] = {
         &playlist_menu->playallbtn,
         &playlist_menu->addtobtn,
         &playlist_menu->renamebtn,
         &playlist_menu->deletebtn
     };
-    size_t button_count = sizeof(buttons) / sizeof(maud_playlistmenubtn_t);
+    size_t button_count = sizeof(buttons) / sizeof(maud_playlistmenubtn_t*);
     for(size_t i=0;i<button_count;i++) {
         SDL_SetRenderDrawColor(maud->renderer, color_toparam(buttons[i]->color));
         SDL_RenderDrawRect(maud->renderer, &buttons[i]->canvas);
@@ -254,7 +260,7 @@ void maud_playlistmanager_menurenderer_renderplaylistmenu(maud_t* maud,
     SDL_RenderDrawRect(maud->renderer, canvas);
     SDL_RenderFillRect(maud->renderer, canvas);
 
-    SDL_Rect *card = &playlist_menu->playlist_card;
+    SDL_Rect *card = &playlist_menu->playlist_card.canvas;
     SDL_SetRenderDrawColor(maud->renderer, color_toparam(playlist_menu->color));
     SDL_RenderDrawRect(maud->renderer, card);
     SDL_RenderFillRect(maud->renderer, card);
@@ -266,9 +272,88 @@ void maud_playlistmanager_menurenderer_renderplaylistmenu(maud_t* maud,
     SDL_RenderCopy(maud->renderer, playlist_nametexture, NULL,
         &playlist_menu->playlist_name.text_canvas);
     SDL_DestroyTexture(playlist_nametexture);
+
+    SDL_Rect* itemcount_canvas = &playlist_menu->item_count.text_canvas;
+    SDL_Texture* itemcount_texture = maud_textmanager_rendertext(maud, maud->font,
+        &playlist_menu->item_count);
+    SDL_RenderCopy(maud->renderer, itemcount_texture, NULL, itemcount_canvas);
+    SDL_DestroyTexture(itemcount_texture);
     maud_playlistmanager_menurenderer_renderbtns(maud, playlist_menu);
 }
 
+void maud_playlistmanager_menurenderer_handlebtns(maud_t* maud) {
+    maud_playlistmanager_t* playlist_manager = &maud->playlist_manager;
+    maud_playlistmenu_t* playlist_menu = &playlist_manager->playlist_menu;
+    maud_playlistmenubtn_t* playall_btn = &playlist_menu->playallbtn,
+        *addto_btn = &playlist_menu->addtobtn,
+        *delete_btn = &playlist_menu->deletebtn,
+        *rename_btn = &playlist_menu->renamebtn;
+    maud_playlistprops_t* playlist_props = &playlist_manager->playlist_props;
+    maud_playlist_t* playlists = playlist_manager->playlists;
+    maud_renameplaylist_input_t* rename_input = &playlist_manager->renameplaylist_input;
+    size_t playlist_selectionindex = playlist_props->selection_index;
+    if(rename_btn->clicked) {
+        maud_playlistmanager_inputbox_display_rename_input(maud, rename_input);
+    } else if(maud_rect_hover(maud, playall_btn->canvas)) {
+        maud_setcursor(maud, MAUD_CURSOR_POINTER);
+        if(maud->mouse_clicked) {
+            maud_queue_t* play_queue = &maud->play_queue;
+            Mix_PauseMusic();
+            Mix_HaltMusic();
+            maud_queue_destroy(play_queue);
+            maud_queue_addmusicfrom_queue(play_queue,
+                &playlists[playlist_selectionindex].queue);
+            if(!playlists[playlist_selectionindex].queue.items) {
+                maud_notification_push(&maud->notification, maud->font, 20,
+                    (SDL_Color){0x12, 0x12, 0x12, 0xff},
+                    "There are no items in the selected playlist.",
+                    (SDL_Color){0x00, 0xff, 0x00, 0xff},
+                    1.5,
+                    20,
+                    20,
+                    10
+                );
+            }
+            maud_songsmanager_playmusic(maud);
+            printf("You clicked the play all button\n");
+            maud->mouse_clicked = false;
+        }
+    } else if(maud_rect_hover(maud, rename_btn->canvas)) {
+        maud_setcursor(maud, MAUD_CURSOR_POINTER);
+        if(maud->mouse_clicked) {
+            maud_playlistmanager_inputbox_init_rename_input(maud, rename_input,
+                playlists[playlist_selectionindex].name);
+            rename_btn->clicked = true;
+            printf("You clicked the rename button\n");
+            maud->mouse_clicked = false;
+        }
+    } else if(maud_rect_hover(maud, delete_btn->canvas)) {
+        maud_setcursor(maud, MAUD_CURSOR_POINTER);
+        if(maud->mouse_clicked) {
+            size_t msg_len = 20 + strlen(playlists[playlist_selectionindex].name);
+            char msg_buff[msg_len+1];
+            sprintf(msg_buff, "Playlist '%s' deleted.", playlists[playlist_selectionindex].name);
+            msg_buff[msg_len] = '\0';
+            maud_playlistmanager_removeplaylist(maud, playlists[playlist_selectionindex].name);
+            maud_notification_push(&maud->notification, maud->font, 20,
+                (SDL_Color){0x12, 0x12, 0x12, 0xff},
+                msg_buff,
+                (SDL_Color){0x00, 0xff, 0x00, 0xff},
+                0.9,
+                20,
+                20,
+                10
+            );
+            playlist_props->selected = false;
+            maud->mouse_clicked = false;
+        }
+    }
+}
+
 void maud_playlistmanager_menurenderer_display(maud_t* maud) {
+    maud_playlistmanager_t* playlist_manager = &maud->playlist_manager;
+    maud_playlistmenu_t* playlist_menu = &playlist_manager->playlist_menu;
     maud_playlistmanager_menurenderer_init(maud);
+    maud_playlistmanager_menurenderer_renderplaylistmenu(maud, playlist_menu);
+    maud_playlistmanager_menurenderer_handlebtns(maud);
 }

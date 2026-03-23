@@ -13,6 +13,7 @@ bool maud_location_init(maud_location_t* location, const char* path) {
     maud_file_list_load_files(&location->files, path);
     return true;
 }
+
 void maud_location_destroy(maud_location_t* location) {
     free(location->path);
     location->path = NULL;
@@ -72,11 +73,11 @@ void maud_location_list_removelocation(maud_locationlist_t* list, size_t locatio
         list->locations[i+1] = current;
     }
     list->count--;
-    maud_location_destroy(&list->locations[list->count]);
     if(!list->count) {
-        maud_location_list_init(list);
+        maud_location_list_destroy(list);
         return;
     }
+    maud_location_destroy(&list->locations[list->count]);
     list->locations = realloc(list->locations, list->count * sizeof(maud_location_t));
 }
 

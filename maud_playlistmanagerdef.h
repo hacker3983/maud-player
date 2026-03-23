@@ -80,6 +80,7 @@ typedef struct maud_playlistmenu_button {
     text_info_t text;
     SDL_Texture* icon_texture;
     char* icon_path;
+    bool clicked;
 } maud_playlistmenubtn_t;
 
 typedef struct maud_playlistcard {

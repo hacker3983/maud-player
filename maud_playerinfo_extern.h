@@ -1,12 +1,17 @@
 #ifndef _MUSIC_PLAYERINFO_EXTERN_H
 #define _MUSIC_PLAYERINFO_EXTERN_H
-extern const char* WINDOW_TITLE, *SETTING_TITLE, *FONT_FILE, *MUSIC_FONTFILE, *MUSIC_PATHINFO_FILE, *MUSIC_PLAYLISTSINFO_FILE;
+extern const char* WINDOW_TITLE, *SETTING_TITLE, *FONT_FILE, *MUSIC_FONTFILE, *MUSIC_PATHINFO_FILE, *MUSIC_PLAYLISTSINFO_FILE,
+*MUSIC_ITEMPROPSINFO_FILE;
 extern int WIDTH, HEIGHT, FONT_SIZE, MUSIC_FONTSIZE, TAB_INIT, active_tab, prev_tab, TAB_SPACING, SBOXDISTANCE_X,  SETTING_LINESPACING,
 UNDERLINE_THICKNESS, checkbox_init;
 extern SDL_Rect scrollbar, music_status, songs_box, checkbox_size, music_selectionmenu_checkbox_size;
 extern const size_t text_info_size, tab_info_size, setting_textinfo_size, MUSICBTN_COUNT, MTOTALBTN_COUNT, SETTINGSBTN_COUNT;
-extern const SDL_Color window_color, text_color, text2_color, underline_color, blue, white, black, dark_purple, music_statusbar_color,
-music_searchbar_color, songs_boxcolor, setting_wincolor, setting_textcolor, back_btnbg_color, setting_underlinecolor;
+extern const SDL_Color window_color, text_color, text2_color, underline_color, blue, white, black, dark_purple,
+music_statusbar_color,
+progressbar_color,
+progress_linecolor,
+music_searchbar_color, songs_boxcolor, setting_wincolor, setting_textcolor, back_btnbg_color, setting_underlinecolor,
+MUSIC_TILECOLOR, MUSIC_TILETEXT_COLOR;
 
 /*#ifdef _WIN32
 extern const wchar_t* FILE_EXTENSIONS[];

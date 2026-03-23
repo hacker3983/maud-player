@@ -24,6 +24,10 @@ void maud_settingmenu_rendercustomizetab_headertext(maud_t* maud,
     maud_customizetab_t* customize_tab);
 void maud_settingmenu_rendercustomizetab_colorpicker(maud_t* maud,
     maud_customizetab_t* customize_tab);
+void maud_settingmenu_rendercustomizetab_musictile_modifier(maud_t* maud,
+    maud_customizetab_t* customize_tab);
+void maud_settingmenu_rendercustomizetab_statusbar_modifier(maud_t* maud,
+    maud_customizetab_t* customize_tab);
 void maud_settingmenu_rendermusiclibrary_headertext(maud_t* maud,
     maud_musiclibrarytab_t* musiclibrary_tab);
 void maud_settingmenu_rendermusiclibrary_locationsection(maud_t* maud,

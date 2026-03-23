@@ -10,6 +10,7 @@
 #include <locale.h>
 #include <errno.h>
 #include <wctype.h>
+#include "maud_musicdef.h"
 #include "maud_locationdef.h"
 #include "maud_checkboxdef.h"
 #include "maud_dropdown_menudef.h"
@@ -46,11 +47,6 @@
 #define TEXTURE_TYPECOUNT 3
 #define CURSOR_COUNT 3
 
-// Music time
-typedef struct music_time {
-    int hrs, mins, secs;
-} mtime_t;
-
 typedef struct maud_menu {
     text_info_t* texts;
     SDL_Texture** textures[TEXTURE_TYPECOUNT];
@@ -59,21 +55,6 @@ typedef struct maud_menu {
     size_t texture_sizes[TEXTURE_TYPECOUNT],
            text_count, canvas_count;
 } maud_menu_t;
-
-// structure representing music
-typedef struct music {
-    char *music_name, *location_path,
-         *file_path;
-    text_info_t text_info;
-    SDL_Texture* text_texture;
-    size_t searchmusic_id;
-    Mix_Music* music;
-    mtime_t music_position, music_duration;
-    double music_positionsecs, music_durationsecs;
-    SDL_Rect outer_canvas, checkbox_size;
-    bool checkbox_ticked, fill, fit,
-        remove;
-} music_t;
 
 typedef struct tab_info {
     int font_size;
@@ -102,6 +83,23 @@ typedef struct maud_scrollbar {
     SDL_Rect scroll_area;
 } maud_scrollbar_t;
 
+typedef struct maud_tile_info {
+    SDL_Color background_color,
+        foreground_color;
+    bool updated;
+} maud_tileinfo_t;
+
+typedef struct maud_statusbar_info {
+    SDL_Color color,
+        progressbar_color,
+        progressline_color;
+} maud_statusbarinfo_t;
+
+typedef struct maud_item_info {
+    maud_tileinfo_t tile_info;
+    maud_statusbarinfo_t statusbar_info;
+} maud_iteminfo_t;
+
 enum cursor_types {
     MAUD_CURSOR_TYPEABLE,
     MAUD_CURSOR_POINTER,
@@ -127,6 +125,9 @@ typedef struct mplayer {
     SDL_Cursor* cursors[3];
     bool window_resized, cursor_active;
     Uint32 blink_timeout;
+
+    // Maud element / item properties such as color information etc
+    maud_iteminfo_t item_info;
 
     // dropdown menu test
     maud_dropdown_menu_t dropdown;
@@ -226,6 +227,15 @@ void maud_getcurrentmusic_progression(maud_t* mplayer);
 void maud_controlmusic_progression(maud_t* mplayer);
 void maud_setmusicname_position(maud_t* mplayer, text_info_t* current_music,
     text_info_t* next_musicname);
+void maud_iteminfo_read_data(maud_t* maud);
+void maud_iteminfo_write_data(maud_t* maud);
+void maud_iteminfo_push_notification(maud_t* maud, char* message);
+void maud_tileinfo_color_change(SDL_Color* destination, SDL_Color source);
+void maud_tileinfo_update_backgroundcolor(maud_t* maud, SDL_Color color);
+void maud_tileinfo_update_foregroundcolor(maud_t* maud, SDL_Color color);
+void maud_statusinfo_update_backgroundcolor(maud_t* maud, SDL_Color color);
+void maud_statusinfo_update_progressbar_color(maud_t* maud, SDL_Color color);
+void maud_statusinfo_update_progressline_color(maud_t* maud, SDL_Color color);
 void maud_displaymusic_status(maud_t* mplayer, mtime_t curr_duration, mtime_t full_duration);
 void maud_displayprogression_control(maud_t* mplayer);
 void maud_renderactive_tab(maud_t* mplayer, tabinfo_t* tab_info);

@@ -78,6 +78,19 @@ void maud_playlistmanager_gridrenderer_handleplaylist_scrollevent(maud_t* maud,
 void maud_playlistmanager_gridrenderer_displayplaylists(maud_t* maud);
 void maud_playlistmanager_renderplaylist_card(maud_t* maud, SDL_Rect* playlist_card);
 
+void maud_playlistmanager_menurenderer_init(maud_t* maud);
+void maud_playlistmanager_menurenderer_init_menu(maud_t* maud,
+    maud_playlistmenu_t* playlist_menu);
+void maud_playlistmanager_menurenderer_init_playlistprops(maud_t* maud,
+    maud_playlistprops_t* playlist_props);
+void maud_playlistmanager_menurenderer_init_btns(maud_t* maud,
+    maud_playlistmenu_t* playlist_menu, int start_x, int start_y);
+void maud_playlistmanager_menurenderer_renderplaylistmenu(maud_t* maud,
+    maud_playlistmenu_t* playlist_menu);
+void maud_playlistmanager_menurenderer_renderbtns(maud_t* maud, maud_playlistmenu_t* playlist_menu);
+void maud_playlistmanager_menurenderer_handlebtns(maud_t* maud);
+void maud_playlistmanager_menurenderer_display(maud_t* maud);
+
 // Find the maximum height from a giving list of rectangles
 int maud_playlistmanager_findmaxheight(SDL_Rect* rects, size_t rect_count);
 
@@ -108,6 +121,10 @@ void maud_playlistmanager_newplaylist_input_handlebtns(maud_t* maud,
 void maud_playlistmanager_newplaylist_input_displayall(maud_t* maud);
 void maud_playlistmanager_newplaylist_input_display(maud_t* maud,
     maud_newplaylist_input_t* new_playlistinput);
+void maud_playlistmanager_inputbox_init_rename_input(maud_t* maud,
+    maud_renameplaylist_input_t* rename_input, const char* input_data);
+void maud_playlistmanager_inputbox_display_rename_input(maud_t* maud,
+    maud_renameplaylist_input_t* rename_input);
 // Diplay input for renaming playlists
 void maud_playlistmanager_renameplaylist_input_display(maud_t* maud,
     maud_renameplaylist_input_t* rename_input);
@@ -130,6 +147,9 @@ void maud_playlistmanager_display(maud_t* maud);
 void maud_playlistmanager_layoutdropdown_menu_display(maud_t* maud);
 void maud_playlistmanager_buttonbar_handle_playlistlayout_toggleswitch(maud_t* maud,
     maud_buttonbar_t* button_bar);
+
+void maud_playlistmanager_removemusics_bypath(maud_t* maud, const char* path);
+void maud_playlistmanager_syncwithmusics(maud_t* maud);
 
 // Handles events for playlists that are rendered on the screen
 void maud_playlistmanager_handleplaylist_event(maud_t* maud, size_t playlist_index, SDL_Rect playlist_canvas);
