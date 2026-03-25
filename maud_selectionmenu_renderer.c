@@ -277,6 +277,7 @@ void maud_selectionmenu_renderer_renderselectallbtn(maud_t* maud, maud_selection
 
 void maud_selectionmenu_renderer_renderbtns(maud_t* maud, maud_selectionmenu_t* selection_menu) {
     maud_selectionmenu_selectallbtn_t* select_allbtn = &selection_menu->select_allbtn;
+    maud_queue_t* selection_queue = &maud->selection_queue;
     maud_selectionmenubtn_t *buttons[] = {
         &selection_menu->playbtn,
         &selection_menu->playnextbtn,
@@ -289,6 +290,14 @@ void maud_selectionmenu_renderer_renderbtns(maud_t* maud, maud_selectionmenu_t* 
     size_t end_renderpos = (active_tab == SONGS_TAB) ? 3 : button_count;
     maud_selectionmenu_renderer_renderselectallbtn(maud, selection_menu);
     for(size_t i=0;i<end_renderpos;i++) {
+        buttons[i]->render = true;
+        if(selection_queue->item_count > 1) {
+            selection_menu->moveup_btn.render = false;
+            selection_menu->movedown_btn.render = false;
+        }
+        if(!buttons[i]->render) {
+            continue;   
+        }
         SDL_Rect *btn_canvas = &buttons[i]->canvas,
                  *text_canvas = &buttons[i]->text.text_canvas,
                  *icon_canvas = &buttons[i]->icon_canvas;

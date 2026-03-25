@@ -121,8 +121,9 @@ void maud_settingmenu_rendermusiclibrary_locations(maud_t* maud,
     };
     SDL_Color outer_canvascolor = {0x7B, 0x08, 0x28, 0xFF}
     /*{0x03, 0x47, 0x48, 0xFF}{0x31, 0x85, 0xFC, 0xFF}{0xC4, 0x20, 0x21, 0xFF}{0x0B, 0x03, 0x2D, 0xFF}*/;
-    for(size_t i=0;i<maud->locations.count;i++) {
-        music_location.utext = maud->locations.locations[i].path;
+    maud_locationlist_t* locations = &maud->locations;
+    for(size_t i=locations->render_pos;i<locations->count;i++) {
+        music_location.utext = locations->locations[i].path;
         maud_textmanager_sizetext(maud->music_font, &music_location);
         outer_canvas.h = music_location.text_canvas.h + 20;
         SDL_SetRenderDrawColor(maud->renderer, color_toparam(outer_canvascolor));
@@ -151,6 +152,15 @@ void maud_settingmenu_rendermusiclibrary_locations(maud_t* maud,
             }
         }
         outer_canvas.y += outer_canvas.h + 10;
+    }
+    if(maud->scroll) {
+        if(maud->scroll_type == MAUDSCROLL_DOWN
+            && locations->render_pos < locations->count-1) {
+            locations->render_pos++;
+        } else if(maud->scroll_type == MAUDSCROLL_UP && locations->render_pos) {
+            locations->render_pos--;
+        }
+        maud->scroll = false;
     }
 }
 

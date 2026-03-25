@@ -22,6 +22,6 @@ typedef struct music_location {
 
 typedef struct maud_location_list {
     maud_location_t* locations;
-    size_t count;
+    size_t render_pos, count;
 } maud_locationlist_t;
 #endif

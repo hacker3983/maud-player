@@ -188,13 +188,14 @@ void maud_colorpicker_getsize(maud_colorpicker_t* color_picker) {
         slider_canvas
     };
     size_t canvas_count = sizeof(canvas_list) / sizeof(SDL_Rect);
-    int max_width = 0, total_height = slider_props->track_verticalspacing * 3;
+    int max_width = 0, total_height = 10 +
+        (slider_props->track_verticalspacing * 3);
     for(size_t i=0;i<canvas_count;i++) {
         SDL_Rect slider_canvas = canvas_list[i];
-        if(slider_canvas.w > max_width) {
-            max_width = slider_canvas.w;
+        if(canvas_list[i].w > max_width) {
+            max_width = canvas_list[i].w;
         }
-        total_height += slider_canvas.h;
+        total_height += canvas_list[i].h;
     }
     canvas->w = max_width,
     canvas->h = total_height;

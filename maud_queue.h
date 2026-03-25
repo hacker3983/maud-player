@@ -16,10 +16,12 @@ void maud_queue_handlecheckbox_itemselection(maud_t* maud, maud_queue_t* queue, 
 bool maud_queue_addmusic(maud_t* maud, maud_queue_t* queue, size_t uid, size_t music_listindex, size_t music_id);
 bool maud_queue_addmusicqueue_toplaynext(maud_t* maud, maud_queue_t* destination_queue, maud_queue_t* source_queue);
 bool maud_queue_addmusicfrom_queue(maud_queue_t* destination_queue, maud_queue_t* source_queue);
+bool maud_queue_findfirst_selection(maud_queue_t* queue, size_t* found_index);
 void maud_queue_removemusicby_uid(maud_queue_t* queue, size_t uid);
 void maud_queue_removemusicby_playid(maud_queue_t* queue, size_t playid);
 void maud_queue_removemusicby_musiclistidx_id(maud_queue_t* queue,
     size_t music_listindex, size_t musicid);
+void maud_queue_shift_itemto_end(maud_queue_t* queue, size_t item_index);
 void maud_queue_sync_itemswithmusics(maud_t* maud, maud_queue_t* queue);
 void maud_queue_removemusics_bypath(maud_t* maud, maud_queue_t* queue, const char* path);
 void maud_queue_poplast(maud_queue_t* queue);

@@ -149,6 +149,21 @@ bool maud_queue_findmusic_bypath(maud_queue_t* queue, const char* path, size_t* 
     return found;
 }
 
+bool maud_queue_findfirst_selection(maud_queue_t* queue, size_t* found_index) {
+    if(!queue->items) {
+        return false;
+    }
+    bool found = false;
+    for(size_t i=0;i<queue->item_count;i++) {
+        if(queue->items[i].checkbox_ticked) {
+            *found_index = i;
+            found = true;
+            break;
+        }
+    }
+    return found;
+}
+
 void maud_queue_removemusics_bypath(maud_t* maud, maud_queue_t* queue, const char* path) {
     printf("maud_queue_removemusics_bypath(): %ld\n", __LINE__);    
     bool found = false, stopped = false;

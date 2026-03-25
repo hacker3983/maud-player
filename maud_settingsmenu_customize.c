@@ -71,7 +71,7 @@ void maud_settingmenu_rendercustomizetab_colorpicker(maud_t* maud,
     canvas->w = text_canvas->w + 10,
     canvas->h = text_canvas->h + 10;
     canvas->x = (maud->win_width - canvas->w) / 2;
-    canvas->y = color_picker->canvas.y + color_picker->canvas.h;
+    canvas->y = color_picker->canvas.y + color_picker->canvas.h + 10;
     text_canvas->x = canvas->x + (canvas->w - text_canvas->w) / 2;
     text_canvas->y = canvas->y + (canvas->h - text_canvas->h) / 2;
 

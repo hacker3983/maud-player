@@ -18,7 +18,7 @@ typedef struct maud_selectionmenu_button {
     const char* img_path;
     SDL_Texture* img_texture;
     text_info_t text;
-    bool clicked;
+    bool clicked, render;
 } maud_selectionmenubtn_t;
 
 typedef struct maud_selectionmenu {

@@ -20,6 +20,9 @@ void maud_settingmenu(maud_t* maud) {
             maud_colorpicker_handleinputbox_events(maud, &navbar->customize_tab.color_picker);
         } else if(maud->e.type == SDL_TEXTINPUT) {
             maud_colorpicker_handleinputbox_events(maud, &navbar->customize_tab.color_picker);
+        } else if(maud->e.type == SDL_MOUSEWHEEL) {
+            maud_scrolltype_getmousewheel_scrolltype(maud->e, &maud->scroll_type);
+            maud->scroll = true;
         }
     }
     maud_getwindow_size(maud);
