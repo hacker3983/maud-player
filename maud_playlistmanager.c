@@ -83,6 +83,20 @@ void maud_playlistmanager_addmusicselection_toplaylist(maud_t* maud, const char*
     }
 }
 
+void maud_playlistmanager_copymusicfrom_playlist_toplaylist(maud_t* maud,
+    maud_playlist_t* source_playlist, const char* playlist_name) {
+    for(size_t i=0;i<maud->playlist_manager.playlist_count;i++) {
+        maud_playlist_t* playlist = &maud->playlist_manager.playlists[i];
+        if(strcmp(playlist->name, playlist_name) != 0) {
+            continue;
+        }
+        if(maud_queue_copymusicfromqueue_toqueue(maud, &source_playlist->queue, &playlist->queue)) {
+            maud_playlistmanager_write_data_tofile(maud);
+        }
+        break;
+    }
+}
+
 
 void maud_playlistmanager_addmusic_toplaylist(maud_t* maud, const char* playlist_name,
     size_t music_listindex, size_t music_id) {

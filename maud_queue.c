@@ -61,6 +61,18 @@ bool maud_queue_addmusicfrom_queue(maud_queue_t* destination_queue, maud_queue_t
     return true;
 }
 
+bool maud_queue_copymusicfromqueue_toqueue(maud_t* maud, maud_queue_t* source_queue,
+    maud_queue_t* destination_queue) {
+    if(!source_queue->items) {
+        return false;
+    }
+    for(size_t i=0;i<source_queue->item_count;i++) {
+        maud_queueitem_t* item = &source_queue->items[i];
+        maud_queue_addmusic(maud, destination_queue, item->uid, item->music_listindex, item->music_id);
+    }
+    return true;
+}
+
 void maud_queue_removemusicby_playid(maud_queue_t* queue, size_t playid) {
     if((!queue->items) || (playid >= queue->item_count)) {
         return;
@@ -254,7 +266,7 @@ void maud_queue_handleitem_selection(maud_t* maud, maud_queue_t* queue, size_t i
     SDL_Rect outer_canvas, text_info_t* item_textinfo) {
     maud_selectionmenu_t* selection_menu = &maud->selection_menu;
     maud_selectionmenubtn_t* addtobtn = &selection_menu->addtobtn;
-    maud_dropdown_menu_t* dropdown = &maud->dropdown;
+    maud_dropdown_menu_t* dropdown = &maud->dropdown_menus[maud->dropdown_menuindex];
     maud_dropdown_item_t* items = dropdown->items;
     bool addtoplaylist_clicked = false;
     if(items) {

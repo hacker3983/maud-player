@@ -13,6 +13,7 @@
 #include "maud_musicdef.h"
 #include "maud_locationdef.h"
 #include "maud_checkboxdef.h"
+#include "maud_modaldef.h"
 #include "maud_dropdown_menudef.h"
 #include "maud_selectionmenudef.h"
 #include "maud_inputboxesdef.h"
@@ -68,7 +69,8 @@ typedef struct tab_info {
 enum TAB_ID {
         SONGS_TAB,
         QUEUES_TAB,
-        PLAYLISTS_TAB
+        PLAYLISTS_TAB,
+        TESTS_TAB
 };
 
 typedef struct maud_scrollbar {
@@ -129,8 +131,9 @@ typedef struct mplayer {
     // Maud element / item properties such as color information etc
     maud_iteminfo_t item_info;
 
-    // dropdown menu test
-    maud_dropdown_menu_t dropdown;
+    // dropdown menus
+    maud_dropdown_menu_t dropdown_menus[MAUD_DROPDOWN_MENUCOUNT];
+    size_t dropdown_menuindex;
 
     // Setting menu navbar
     maud_settingmenu_navbar_t setting_navbar;
@@ -138,6 +141,8 @@ typedef struct mplayer {
     // Music Informations such music name, path, duration, etc
     maud_locationlist_t locations;
     size_t total_filecount;
+
+    maud_modal_t addtoplaylist_modal;
 
     // Notification system
     maud_notification_t notification;

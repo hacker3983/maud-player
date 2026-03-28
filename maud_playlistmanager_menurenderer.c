@@ -1,6 +1,8 @@
 #include "maud_playlistmanager.h"
 #include "maud_notification.h"
 #include "maud_songsmanager.h"
+#include "maud_dropdown_menu.h"
+#include "maud_modal.h"
 
 void maud_playlistmanager_menurenderer_init_playlistprops(maud_t* maud,
     maud_playlistprops_t* playlist_props) {
@@ -151,7 +153,8 @@ void maud_playlistmanager_menurenderer_init_menu(maud_t* maud,
                 .text_color = white
             },
             .icon_texture = maud->menu->textures[MAUD_BUTTON_TEXTURE]
-                            [music_addtobtn.texture_idx]
+                            [music_addtobtn.texture_idx],
+            .clicked = playlist_menu->addtobtn.clicked
         },
         .renamebtn = {
             .canvas = {
@@ -281,6 +284,126 @@ void maud_playlistmanager_menurenderer_renderplaylistmenu(maud_t* maud,
     maud_playlistmanager_menurenderer_renderbtns(maud, playlist_menu);
 }
 
+void maud_playlistmanager_menurenderer_init_addto_dropdown(maud_t* maud, maud_playlistmenu_t* playlist_menu) {
+    maud_dropdown_menu_t* dropdown = &maud->dropdown_menus[MAUD_DROPDOWN_PLAYLISTMENU];
+    maud_playlistmenubtn_t* addtobtn = &playlist_menu->addtobtn;
+    if(!addtobtn->clicked) {
+        return;
+    }
+    maud->dropdown_menuindex = MAUD_DROPDOWN_PLAYLISTMENU;
+    maud_dropdown_menu_init(dropdown,
+        addtobtn->canvas.x - 5,
+        addtobtn->canvas.y + addtobtn->canvas.h + 5,
+        200,
+        100,
+        maud->music_selectionmenu_addto_dropdown_color,
+        10,
+        10,
+        5,
+        30,
+        30
+    );
+    if(!dropdown->items) {
+        maud_dropdown_menu_add(dropdown,
+            maud->font,
+            "Play Queue",
+            20,
+            NULL,
+            maud->menu->textures[MAUD_BUTTON_TEXTURE]
+                    [music_playqueuebtn.texture_idx],
+            (SDL_Color){0xff, 0xff, 0xff, 0xff}
+        );
+        
+        maud_dropdown_menu_add(dropdown,
+            maud->font,
+            "New playlist",
+            20,
+            NULL,
+            maud->menu->textures[MAUD_BUTTON_TEXTURE]
+                [music_addplaylistbtn.texture_idx],
+            (SDL_Color){0xff, 0xff, 0xff, 0xff}
+        );
+    }
+    maud_dropdown_menu_setitem_positions(maud, dropdown);
+    if(dropdown->item_clicked) {
+        addtobtn->clicked = false;
+        dropdown->item_clicked = false;
+    } else if(maud->mouse_clicked && addtobtn->clicked) {
+        addtobtn->clicked = false;
+        maud->mouse_clicked = false;
+    }
+}
+
+void maud_playlistmanager_menurenderer_display_addto_dropdown(maud_t* maud, maud_playlistmenu_t* playlist_menu) {
+    maud_dropdown_menu_t* dropdown = &maud->dropdown_menus[maud->dropdown_menuindex];
+    maud_playlistmenubtn_t* addtobtn = &playlist_menu->addtobtn;
+    if(!addtobtn->clicked) {
+        return;
+    }
+    maud_dropdown_menu_render(maud, dropdown);
+}
+
+void maud_playlistmanager_menurenderer_display_addtoplaylist_modal(maud_t* maud) {
+    maud_dropdown_menu_t* dropdown = &maud->dropdown_menus[maud->dropdown_menuindex];
+    if(!dropdown->items) {
+        return;
+    }
+    maud_dropdown_item_t* item = &dropdown->items[1];
+    if(!item->clicked) {
+        return;
+    }
+    maud_modal_t* addtoplaylist_modal = &maud->addtoplaylist_modal;
+    addtoplaylist_modal->image.texture = maud->menu->textures[MAUD_BUTTON_TEXTURE]
+            [music_addplaylistbtn.texture_idx];
+    maud_modal_display(maud, addtoplaylist_modal);
+}
+
+void maud_playlistmanager_menurenderer_handle_addtoplaylist_modalevents(maud_t* maud) {
+    maud_playlistmanager_t* playlist_manager = &maud->playlist_manager;
+    maud_playlistprops_t* playlist_props = &playlist_manager->playlist_props;
+    size_t playlist_selectionindex = playlist_props->selection_index;
+    maud_playlist_t *playlists = playlist_manager->playlists,
+                    *playlist = &playlists[playlist_selectionindex];
+    maud_dropdown_menu_t* dropdown = &maud->dropdown_menus[maud->dropdown_menuindex];
+    if(!dropdown->items) {
+        return;
+    }
+    maud_dropdown_item_t* item = &dropdown->items[1];
+    if(!item->clicked) {
+        return;
+    }
+    maud_modal_t* addtoplaylist_modal = &maud->addtoplaylist_modal;
+    maud_modal_input_t* modal_input = &addtoplaylist_modal->input;
+    maud_inputbox_t* inputbox = &modal_input->inputbox;
+    maud_modal_handle_events(maud, addtoplaylist_modal);
+    if(addtoplaylist_modal->leave) {
+        item->clicked = false;
+        dropdown->item_clicked = false;
+        addtoplaylist_modal->leave = false;
+        return;
+    }
+
+    maud_modal_button_t* create_btn = &addtoplaylist_modal->confirm_button;
+    // Handle click on createbtn
+    if(create_btn->clicked && inputbox->input.data) {
+        maud_playlistmanager_createplaylist(maud, inputbox->input.data);
+        maud->selection_queue = playlist->queue;
+        maud_playlistmanager_copymusicfrom_playlist_toplaylist(maud, playlist, inputbox->input.data);
+        maud_inputbox_clear(inputbox);
+        item->clicked = false;
+        dropdown->item_clicked = false;
+        create_btn->clicked = false;
+    }
+
+    // Handle click on cancel button
+    maud_modal_button_t* cancel_btn = &addtoplaylist_modal->cancel_button;
+    if(cancel_btn->clicked) {
+        item->clicked = false;
+        dropdown->item_clicked = false;
+        cancel_btn->clicked = false;
+    }
+}
+
 void maud_playlistmanager_menurenderer_handlebtns(maud_t* maud) {
     maud_playlistmanager_t* playlist_manager = &maud->playlist_manager;
     maud_playlistmenu_t* playlist_menu = &playlist_manager->playlist_menu;
@@ -294,6 +417,10 @@ void maud_playlistmanager_menurenderer_handlebtns(maud_t* maud) {
     size_t playlist_selectionindex = playlist_props->selection_index;
     if(rename_btn->clicked) {
         maud_playlistmanager_inputbox_display_rename_input(maud, rename_input);
+    } else if(addto_btn->clicked) {
+        printf("I went here and trying to render drop down menu\n");
+        maud_playlistmanager_menurenderer_init_addto_dropdown(maud, playlist_menu);
+        maud_playlistmanager_menurenderer_display_addto_dropdown(maud, playlist_menu);
     } else if(maud_rect_hover(maud, playall_btn->canvas)) {
         maud_setcursor(maud, MAUD_CURSOR_POINTER);
         if(maud->mouse_clicked) {
@@ -316,6 +443,13 @@ void maud_playlistmanager_menurenderer_handlebtns(maud_t* maud) {
             }
             maud_songsmanager_playmusic(maud);
             printf("You clicked the play all button\n");
+            maud->mouse_clicked = false;
+        }
+    } else if(maud_rect_hover(maud, addto_btn->canvas)) {
+        maud_setcursor(maud, MAUD_CURSOR_POINTER);
+        if(maud->mouse_clicked) {
+            printf("Clicked add to button!\n");
+            addto_btn->clicked = true;
             maud->mouse_clicked = false;
         }
     } else if(maud_rect_hover(maud, rename_btn->canvas)) {
@@ -355,5 +489,8 @@ void maud_playlistmanager_menurenderer_display(maud_t* maud) {
     maud_playlistmenu_t* playlist_menu = &playlist_manager->playlist_menu;
     maud_playlistmanager_menurenderer_init(maud);
     maud_playlistmanager_menurenderer_renderplaylistmenu(maud, playlist_menu);
+    maud_playlistmanager_menurenderer_display_addto_dropdown(maud, playlist_menu);
+    maud_playlistmanager_menurenderer_display_addtoplaylist_modal(maud);
+    maud_playlistmanager_menurenderer_handle_addtoplaylist_modalevents(maud);
     maud_playlistmanager_menurenderer_handlebtns(maud);
 }

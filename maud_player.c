@@ -16,6 +16,7 @@
 #include "maud_playerbutton_manager.h"
 #include "maud_dropdown_menu.h"
 #include "maud_music.h"
+#include "maud_modal.h"
 
 SDL_Rect *playbtn_canvas = NULL, *playbtn_listcanvas = NULL,
         *prevbtn_canvas = NULL, *skipbtn_canvas = NULL,
@@ -114,6 +115,72 @@ void maud_createapp(maud_t* maud) {
     maud_queue_init(&maud->play_queue);
     maud_queue_init(&maud->selection_queue);
 
+    maud->addtoplaylist_modal = (maud_modal_t){
+        .canvas = {
+            .w = 400, .h = 450
+        },
+        .color = {0x21, 0x01, 0x24, 0xFF},
+        .header = {
+            .color = dark_purple,
+            .show_bgcolor = true,
+            .padding_x = 20,
+            .padding_y = 20,
+            .padding_height = 40,
+            .title = {
+                .font_size = 20,
+                .text = "Add to new playlist",
+                .text_color = {0xff, 0xff, 0xff, 0xff}
+            }
+        },
+        .font = maud->font,
+        .image = {
+            .canvas = {
+                .w = 140,
+                .h = 140
+            },
+            .color = {0x00},
+            .padding_y = 40,
+            .show_bgcolor = true
+        },
+        .input = {
+            .padding_y = 30
+        },
+        .confirm_button = {
+            .color = {0x00, 0x00, 0xff, 0xff},
+            .text = {
+                .font_size = 20,
+                .text = "Create",
+                .text_color = {0xff, 0xff, 0xff, 0xff}
+            },
+            .padding_x = 10,
+            .padding_y = 10,
+            .padding_width = 20,
+            .padding_height = 20,
+        },
+        .cancel_button = {
+            .color = {0xf4, 60, 36, 0xff},
+            .text = {
+                .font_size = 20,
+                .text = "Cancel",
+                .text_color = {0xff, 0xff, 0xff, 0xff}
+            },
+            .padding_x = 10,
+            .padding_y = 10,
+            .padding_width = 20,
+            .padding_height = 20
+        },
+        .button_container = {
+            .padding_y = 10,
+            .padding_height = 50,
+            .color = dark_purple
+        },
+        .enable_buttoncontainer = true
+    };
+    maud_modal_input_t* modal_input = &maud->addtoplaylist_modal.input;
+    modal_input->inputbox = maud_inputbox_create(maud->music_font, 20, input_boxcolor,
+        placeholder_text, placeholder_color,
+        cursor_color, input_datacolor, inputbox_canvas.x, inputbox_canvas.y,
+        inputbox_canvas.w, inputbox_canvas.h, 2, 50/2);
 
     // Get maud item / element properties
     maud_iteminfo_t* item_info = &maud->item_info;
@@ -1011,8 +1078,9 @@ void maud_defaultmenu(maud_t* maud) {
     int tab_hoverid = 0;
     int music_id = 0;
     maud_selectionmenu_t* selection_menu = &maud->selection_menu;
-    maud_dropdown_menu_t* dropdown = &maud->dropdown;
-    maud_dropdown_item_t* items = dropdown->items;
+    maud_dropdown_menu_t* dropdown_menu = &maud->dropdown_menus[maud->dropdown_menuindex];
+    maud_dropdown_item_t* dropdown_menuitems = dropdown_menu->items;
+    maud_modal_t* addtoplaylist_modal = &maud->addtoplaylist_modal;
     maud_set_window_title(maud, WINDOW_TITLE);
     while(SDL_PollEvent(&maud->e)) {
         if(maud->e.type == SDL_QUIT) {
@@ -1020,12 +1088,11 @@ void maud_defaultmenu(maud_t* maud) {
         } else if(maud->e.type == SDL_WINDOWEVENT && maud->e.window.event == SDL_WINDOWEVENT_RESIZED) {
             maud->window_resized = true;
         }  else if(maud->e.type == SDL_TEXTINPUT) {
-            maud_dropdown_menu_t* dropdown = &maud->dropdown;
-            maud_dropdown_item_t* items = dropdown->items;
-            printf("dropdown->item_clicked = %d\n", dropdown->item_clicked);
-            if(items && items[1].clicked) {
+            printf("dropdown->item_clicked = %d\n", dropdown_menu->item_clicked);
+            if(dropdown_menuitems && dropdown_menuitems[1].clicked) {
                 printf("here\n");
-                maud_inputbox_handle_events(maud, &maud->playlist_inputbox);
+                maud_modal_handle_inputevents(maud, addtoplaylist_modal);
+                //maud_inputbox_handle_events(maud, &maud->playlist_inputbox);
                 continue;
             } else if(maud->playlist_manager.button_bar.new_playlistbtn.clicked) {
                 maud_inputbox_handle_events(maud, &maud->playlist_manager.new_playlistinput.inputbox);
@@ -1035,10 +1102,9 @@ void maud_defaultmenu(maud_t* maud) {
                 maud_inputbox_handle_events(maud, &maud->search_inputbox);
             }
         } else if(maud->e.type == SDL_KEYDOWN) {
-            maud_dropdown_menu_t* dropdown = &maud->dropdown;
-            maud_dropdown_item_t* items = dropdown->items;
-            if(items && items[1].clicked) {
-                maud_inputbox_handle_events(maud, &maud->playlist_inputbox);
+            if(dropdown_menuitems && dropdown_menuitems[1].clicked) {
+                maud_modal_handle_inputevents(maud, addtoplaylist_modal);
+                //maud_inputbox_handle_events(maud, &maud->playlist_inputbox);
             } else if(maud->playlist_manager.button_bar.new_playlistbtn.clicked) {
                 maud_inputbox_handle_events(maud, &maud->playlist_manager.new_playlistinput.inputbox);
             } else if(maud->playlist_manager.playlist_menu.renamebtn.clicked) {
@@ -1086,9 +1152,7 @@ void maud_defaultmenu(maud_t* maud) {
             maud->mouse_x = maud->e.button.x, maud->mouse_y = maud->e.button.y;
             maud_selectionmenu_t* selection_menu = &maud->selection_menu;
             maud_selectionmenubtn_t* addtobtn = &selection_menu->addtobtn;
-            maud_dropdown_menu_t* dropdown = &maud->dropdown;
-            maud_dropdown_item_t* items = dropdown->items;
-            if(addtobtn->clicked || (items && items[1].clicked)) {
+            if(addtobtn->clicked || (dropdown_menuitems && dropdown_menuitems[1].clicked)) {
                 maud->mouse_clicked = true;
                 break;
             }
@@ -1277,13 +1341,13 @@ void maud_defaultmenu(maud_t* maud) {
             //maud_queue_print(maud, maud->selection_queue);
             maud->music_selected = false;
         }
-        if(items && items[0].clicked) {
+        if(dropdown_menuitems && dropdown_menuitems[0].clicked) {
             maud_queue_addmusicfrom_queue(&maud->play_queue, &maud->selection_queue);
             if(!Mix_PlayingMusic()) {
                 maud_songsmanager_playmusic(maud);
             }
             maud_selectionmenu_clearmusic_selection(maud, &maud->selection_menu);
-            items[0].clicked = false;
+            dropdown_menuitems[0].clicked = false;
         }
         maud->mouse_clicked = false;
     } else if(active_tab == QUEUES_TAB) {
@@ -1306,19 +1370,25 @@ void maud_defaultmenu(maud_t* maud) {
             //maud_queue_print(maud, maud->selection_queue);
             maud->music_selected = false;
         }
-        if(items && items[0].clicked) {
+        if(dropdown_menuitems && dropdown_menuitems[0].clicked) {
             maud_queue_addmusicfrom_queue(&maud->play_queue, &maud->selection_queue);
             if(!Mix_PlayingMusic()) {
                 maud_songsmanager_playmusic(maud);
             }
             maud_selectionmenu_clearmusic_selection(maud, &maud->selection_menu);
-            items[0].clicked = false;
+            dropdown_menuitems[0].clicked = false;
         }
         maud->mouse_clicked = false;
     } else if(active_tab == PLAYLISTS_TAB) {
         maud_songsmanager_handleprevbutton(maud);
         maud_songsmanager_handleskipbutton(maud);
         maud_playlistmanager_display(maud);
+        maud->mouse_clicked = false;
+    } else if(active_tab == TESTS_TAB) {
+        maud_modal_t* addto_modal = &maud->addtoplaylist_modal;
+        addtoplaylist_modal->image.texture = maud->menu->textures[MAUD_BUTTON_TEXTURE]
+            [music_addplaylistbtn.texture_idx];
+        maud_modal_display(maud, addtoplaylist_modal);
         maud->mouse_clicked = false;
     }
     maud_notification_display(maud, &maud->notification);
@@ -1356,7 +1426,9 @@ void maud_destroyapp(maud_t* maud) {
     maud_queue_destroy(&maud->selection_queue);
     maud_queue_destroy(&maud->searchresults_queue);
 
-    maud_dropdown_menu_destroy(&maud->dropdown);
+    for(size_t i=0;i<MAUD_DROPDOWN_MENUCOUNT;i++) {
+        maud_dropdown_menu_destroy(&maud->dropdown_menus[i]);
+    }
 
     // Destroy inputbox
     maud_inputbox_destroy(&maud->playlist_inputbox);

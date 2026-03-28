@@ -214,7 +214,7 @@ void maud_songsmanager_handleplaybutton(maud_t* maud, music_t* music_list, size_
 void maud_songsmanager_handlesongselection(maud_t* maud, music_t* music_list, size_t music_id, text_info_t* music_textinfo) {
     maud_selectionmenu_t* selection_menu = &maud->selection_menu;
     maud_selectionmenubtn_t* addtobtn = &selection_menu->addtobtn;
-    maud_dropdown_menu_t* dropdown = &maud->dropdown;
+    maud_dropdown_menu_t* dropdown = &maud->dropdown_menus[maud->dropdown_menuindex];
     maud_dropdown_item_t* items = dropdown->items;
     bool addtoplaylist_clicked = false;
     if(items) {

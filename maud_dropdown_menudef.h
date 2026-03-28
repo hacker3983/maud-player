@@ -27,4 +27,10 @@ typedef struct maud_dropdown_menu {
     size_t item_id, item_count;
     bool item_clicked;
 } maud_dropdown_menu_t;
+
+enum dropdown_menus {
+    MAUD_DROPDOWN_SELECTIONMENU,
+    MAUD_DROPDOWN_PLAYLISTMENU
+};
+#define MAUD_DROPDOWN_MENUCOUNT 2
 #endif

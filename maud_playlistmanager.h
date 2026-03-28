@@ -39,6 +39,8 @@ void maud_playlistmanager_addmusic_toplaylist(maud_t* maud, const char* playlist
     size_t music_listindex, size_t music_id);
 
 void maud_playlistmanager_addmusicselection_toplaylist(maud_t* maud, const char* playlist_name);
+void maud_playlistmanager_copymusicfrom_playlist_toplaylist(maud_t* maud,
+    maud_playlist_t* source_playlist, const char* playlist_name);
 bool maud_playlistmanager_removeplaylist(maud_t* maud, const char* playlist_name);
 void maud_playlistmanager_renderplaylist_listlayout(maud_t* maud, size_t playlist_index,
     SDL_Rect* playlist_background);
