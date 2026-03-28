@@ -27,6 +27,7 @@ C_FILES = [
     "maud_itemcontainer.c",
     "maud_scrollcontainer.c",
     "maud_dropdownmenu.c",
+    "maud_modal.c",
     "maud_selectionmenu.c",
     "maud_selectionmenu_renderer.c",
     "maud_settingsmenu.c",
